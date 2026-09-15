@@ -77,6 +77,19 @@ class WordsManager {
       });
     }
 
+    // Bấm Enter ở ô từ tiếng Anh cũng tự động tra cứu gợi ý ngay
+    if (wordInput) {
+      wordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const query = wordInput.value.trim();
+          if (query) {
+            this.performDictionaryLookup(query);
+          }
+        }
+      });
+    }
+
     // Nút nghe thử audio trong modal
     document.getElementById('btn-preview-audio')?.addEventListener('click', () => {
       const audioUrl = document.getElementById('word-audio-url').value;
@@ -276,11 +289,9 @@ class WordsManager {
           ipaInput.value = data.ipa;
         }
 
-        // Lưu URL audio nếu có
-        if (data.audioUrl) {
-          audioUrlInput.value = data.audioUrl;
-          previewAudioBtn.style.display = 'inline-flex';
-        }
+        // Luôn hiển thị nút nghe thử phát âm (sử dụng audio file hoặc Web Speech API)
+        audioUrlInput.value = data.audioUrl || '';
+        previewAudioBtn.style.display = 'inline-flex';
 
         // Hiển thị gợi ý nghĩa tiếng Việt
         if (data.suggestedMeanings && data.suggestedMeanings.length > 0) {
