@@ -1,0 +1,30 @@
+{
+  "name": "english-learning-app",
+  "version": "1.0.0",
+  "description": "Ứng dụng web học từ vựng tiếng Anh với cấu trúc Phần - Ngày, tự động gợi ý từ điển và ôn tập thông minh",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "english",
+    "vocabulary",
+    "learning",
+    "quiz",
+    "render",
+    "sqlite",
+    "postgres"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VocabMaster - Ứng Dụng Học Từ Tiếng Anh</title>
+  <meta name="description" content="Học từ vựng tiếng Anh theo Phần và Ngày, tự động gợi ý phiên âm IPA, dịch nghĩa và chế độ ôn tập thông minh.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">📚</div>
+      <div>
+        <span class="brand-title">VocabMaster</span>
+        <span class="brand-badge">PRO v1.0</span>
+      </div>
+    </div>
+
+    <!-- Các nút thao tác cây thư mục đặt ở góc phải header, cạnh nút + Thêm Phần -->
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btn-add-section" title="Thêm Phần mới">
+        <span>+ Thêm Phần</span>
+      </button>
+      <button class="header-tool-btn" id="btn-mode-edit" title="Bật/Tắt chế độ sửa">
+        <span>✏️ Sửa</span>
+      </button>
+      <button class="header-tool-btn" id="btn-mode-delete" title="Bật/Tắt chế độ xóa">
+        <span>🗑️ Xóa</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Main Container -->
+  <div class="app-container">
+    
+    <!-- Sidebar: Folder Tree View (Phần -> Ngày) -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          <span>📁</span> Cây Thư Mục
+        </div>
+      </div>
+
+      <div class="sidebar-content" id="tree-container">
+        <!-- Render động danh sách Phần và Ngày tại đây -->
+        <div class="empty-state" style="padding: 30px 10px;">
+          <div class="empty-desc">Đang tải danh mục...</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      
+      <!-- Top Action Toolbar -->
+      <div class="main-toolbar">
+        <div class="day-header-info">
+          <div class="current-path" id="current-breadcrumb">
+            <span>Phần 1</span> <span>›</span> <span>Ngày 1</span>
+          </div>
+          <h1 class="current-day-title" id="current-day-heading">Ngày 1: Cảm xúc & Tính cách</h1>
+        </div>
+
+        <div class="toolbar-controls">
+          <!-- Nút thêm từ vựng vào ngày này -->
+          <button class="btn btn-primary" id="btn-add-word">
+            <span>+ Thêm Từ</span>
+          </button>
+
+          <!-- iOS Switch: Lọc Chưa thuộc <-> Đã thuộc -->
+          <div class="ios-filter-container" title="Gạt để chuyển giữa xem từ chưa thuộc và từ đã thuộc">
+            <span class="filter-label" id="label-filter-unlearned">🔴 Chưa thuộc</span>
+            <label class="ios-switch">
+              <input type="checkbox" id="filter-learned-toggle">
+              <span class="ios-slider"></span>
+            </label>
+            <span class="filter-label" id="label-filter-learned">🟢 Đã thuộc</span>
+          </div>
+
+          <!-- Nút thêm ngày nhanh -->
+          <button class="btn btn-secondary" id="btn-add-day">
+            <span>📅 + Thêm Ngày</span>
+          </button>
+
+          <!-- Nút học theo ngày -->
+          <button class="btn btn-study" id="btn-study-day">
+            <span>🎯 Học Ngày Này</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Word List Table -->
+      <div class="table-container">
+        <div class="word-table-card">
+          <table class="word-table" id="words-table">
+            <thead>
+              <tr>
+                <th class="word-col-order">#</th>
+                <th class="word-col-word">Từ vựng & IPA</th>
+                <th style="width: 50px;">Nghe</th>
+                <th class="word-col-meaning">Nghĩa tiếng Việt</th>
+                <th class="word-col-example">Ví dụ minh họa</th>
+                <th class="word-col-status">Đã thuộc</th>
+                <th class="word-col-actions">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="words-tbody">
+              <!-- Render động danh sách từ -->
+            </tbody>
+          </table>
+          <div id="words-empty-state" class="empty-state" style="display: none;">
+            <div class="empty-icon">📖</div>
+            <div class="empty-title">Chưa có từ vựng nào</div>
+            <div class="empty-desc">Nhấn vào nút "+ Thêm Từ Mới" bên trên để bắt đầu thêm từ cho ngày này.</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: Thêm / Sửa Phần (Section)                                      -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-section">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-section-title">📁 Thêm Phần Mới</h3>
+        <button class="icon-btn-mini btn-close-modal" data-target="modal-section">✕</button>
+      </div>
+      <form id="form-section">
+        <input type="hidden" id="section-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Tên Phần (Ví dụ: Phần 1: Giao tiếp cơ bản)</label>
+            <input type="text" id="section-title-input" class="form-input" placeholder="Nhập tên phần..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mô tả (Tùy chọn)</label>
+            <input type="text" id="section-desc-input" class="form-input" placeholder="Mô tả ngắn về phần này...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-section">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu Phần</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: Thêm / Sửa Ngày (Day)                                          -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-day">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-day-title">📅 Thêm Ngày Học</h3>
+        <button class="icon-btn-mini btn-close-modal" data-target="modal-day">✕</button>
+      </div>
+      <form id="form-day">
+        <input type="hidden" id="day-id">
+        <input type="hidden" id="day-section-id">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Số ngày (Mặc định = Lớn nhất + 1)</label>
+              <input type="number" id="day-number-input" class="form-input" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Thuộc Phần</label>
+              <select id="day-section-select" class="form-select" disabled>
+                <!-- Render option sections -->
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tiêu đề ngày (Có thể tự đổi)</label>
+            <input type="text" id="day-title-input" class="form-input" placeholder="Ví dụ: Ngày 1: Động từ thông dụng" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-day">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu Ngày</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: Thêm / Sửa Từ Vựng (Word) - Tích hợp Gợi ý Từ Điển Thông Minh   -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-word">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-word-title">✨ Thêm Từ Vựng Mới</h3>
+        <button class="icon-btn-mini btn-close-modal" data-target="modal-word">✕</button>
+      </div>
+      <form id="form-word">
+        <input type="hidden" id="word-id">
+        <input type="hidden" id="word-day-id">
+        <input type="hidden" id="word-audio-url">
+
+        <div class="modal-body">
+          
+          <!-- Nhập từ tiếng Anh + nút tra cứu gợi ý -->
+          <div class="form-row" style="grid-template-columns: 2fr 1fr; align-items: flex-end;">
+            <div class="form-group">
+              <label class="form-label">Từ tiếng Anh <span style="color: #ff6b6b;">*</span></label>
+              <input type="text" id="word-english-input" class="form-input" placeholder="Ví dụ: confident, achievement..." required autocomplete="off">
+            </div>
+            <button type="button" class="btn btn-secondary" id="btn-lookup-dict" style="height: 44px;">
+              <span>🔍 Tra Gợi Ý</span>
+            </button>
+          </div>
+
+          <!-- Khung Gợi Ý Tự Động (Chỉ áp dụng khi thêm từ) -->
+          <div class="suggestion-box" id="suggestion-box" style="display: none;">
+            <div class="suggestion-header">
+              <span>💡 Gợi ý tự động từ từ điển</span>
+              <span id="dict-loading-spinner" style="display: none;">Đang tra cứu...</span>
+            </div>
+
+            <div id="suggested-meanings-wrap" style="display: none;">
+              <span style="font-size: 0.78rem; color: var(--text-secondary);">Gợi ý nghĩa tiếng Việt (Bấm để chọn):</span>
+              <div class="chips-container" id="suggested-chips"></div>
+            </div>
+
+            <div id="suggested-examples-wrap" style="display: none;">
+              <span style="font-size: 0.78rem; color: var(--text-secondary);">Gợi ý câu ví dụ (Bấm để chọn):</span>
+              <div style="display: flex; flex-direction: column; gap: 6px;" id="suggested-examples"></div>
+            </div>
+          </div>
+
+          <!-- Thứ tự & Phiên âm IPA -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Thứ tự (#)</label>
+              <input type="number" id="word-order-input" class="form-input" min="1" placeholder="Tự động">
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                Phiên âm IPA 
+                <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử" style="display: none; width: 22px; height: 22px; margin-left: 6px;">🔊</button>
+              </label>
+              <input type="text" id="word-ipa-input" class="form-input" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
+            </div>
+          </div>
+
+          <!-- Nghĩa tiếng Việt -->
+          <div class="form-group">
+            <label class="form-label">Nghĩa tiếng Việt <span style="color: #ff6b6b;">*</span></label>
+            <input type="text" id="word-meaning-input" class="form-input" placeholder="Nhập nghĩa hoặc bấm vào gợi ý bên trên..." required>
+          </div>
+
+          <!-- Ví dụ minh họa -->
+          <div class="form-group">
+            <label class="form-label">Câu ví dụ & Dịch nghĩa</label>
+            <textarea id="word-example-input" class="form-textarea" placeholder="Ví dụ: She is a confident speaker."></textarea>
+          </div>
+
+          <!-- Trạng thái: Nút gạt iPhone Đã thuộc -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 6px;">
+            <span class="form-label" style="margin: 0;">Trạng thái ghi nhớ:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.85rem; color: var(--text-secondary);">Đã thuộc:</span>
+              <label class="ios-switch">
+                <input type="checkbox" id="word-learned-input">
+                <span class="ios-slider"></span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-word">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu Từ Vựng</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: Chọn Ngày Ôn Tập Theo Phần                                    -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-section-study">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">📑 Chọn Các Ngày Muốn Ôn Tập</h3>
+        <button class="icon-btn-mini btn-close-modal" data-target="modal-section-study">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+          Chọn các ngày bạn muốn gom lại để cùng học và ôn tập:
+        </p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.82rem; color: var(--text-muted);">Danh sách các ngày:</span>
+          <div>
+            <button type="button" class="btn-icon-only btn-secondary" id="btn-select-all-days" style="font-size: 0.78rem; padding: 3px 8px;">Chọn tất cả</button>
+            <button type="button" class="btn-icon-only btn-secondary" id="btn-deselect-all-days" style="font-size: 0.78rem; padding: 3px 8px;">Bỏ chọn</button>
+          </div>
+        </div>
+
+        <div class="day-checklist" id="section-days-checklist">
+          <!-- Render danh sách ngày với checkbox -->
+        </div>
+
+        <!-- Lọc từ đã thuộc / chưa thuộc -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <span class="form-label" style="margin: 0;">Lọc từ khi ôn:</span>
+          <div class="ios-filter-container">
+            <span class="filter-label" id="label-section-study-unlearned">🔴 Chưa thuộc</span>
+            <label class="ios-switch">
+              <input type="checkbox" id="section-study-learned-toggle">
+              <span class="ios-slider"></span>
+            </label>
+            <span class="filter-label" id="label-section-study-learned">🟢 Đã thuộc</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-section-study">Hủy</button>
+        <button type="button" class="btn btn-study-section" id="btn-start-section-study">🚀 Bắt Đầu Ôn Tập</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: Giao Diện Học Tập Toàn Diện (Flashcard 3D & Smart Quiz)        -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-study-room">
+    <div class="modal-card study-modal-card">
+      <div class="modal-header">
+        <div class="study-header-bar">
+          <div>
+            <h3 class="modal-title" id="study-room-title">🎯 Phòng Ôn Luyện Từ Vựng</h3>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="study-scope-desc">
+              Phạm vi: Ngày 1 (5 từ)
+            </div>
+          </div>
+          
+          <div class="study-progress-info">
+            <div class="study-progress-bar-wrap">
+              <div class="study-progress-fill" id="study-progress-fill"></div>
+            </div>
+            <span style="font-size: 0.85rem; font-weight: 600; color: #34c759;" id="study-progress-text">0/5</span>
+            <button class="icon-btn-mini btn-close-modal" data-target="modal-study-room">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 28px;" id="study-interactive-area">
+        
+        <!-- ================= UNIFIED SMART STUDY VIEW (Không cần tab, câu hỏi đảo đan xen) ================= -->
+        <div id="view-quiz" class="study-view-panel">
+          <div class="quiz-container">
+            
+            <div class="quiz-prompt-card">
+              <span class="quiz-type-badge badge-choice" id="quiz-badge">Trắc nghiệm: Chọn nghĩa đúng</span>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="quiz-word-display" id="quiz-question-text">confident</div>
+                <button type="button" class="btn-audio" id="quiz-audio-btn" style="width: 36px; height: 36px; font-size: 16px;">🔊</button>
+              </div>
+              <div style="font-size: 0.95rem; color: var(--accent-cyan);" id="quiz-question-subtext">/ˈkɑːnfɪdənt/</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);" id="quiz-word-mastery-hint">Tiến trình từ này: 0/2 lần đúng</div>
+            </div>
+
+            <!-- Phương án trắc nghiệm -->
+            <div class="quiz-options-grid" id="quiz-options-container">
+              <!-- Render 4 phương án lựa chọn -->
+            </div>
+
+            <!-- Khung gõ từ chính tả (Tự động focus ngay lập tức) -->
+            <div class="quiz-input-box" id="quiz-typing-container" style="display: none;">
+              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" enterkeyhint="done">
+              <button type="button" class="btn btn-primary" id="btn-submit-typing">Xác nhận</button>
+            </div>
+
+            <!-- Thông báo phản hồi kết quả câu hỏi -->
+            <div id="quiz-feedback-box" style="display: none; text-align: center; padding: 14px; border-radius: var(--radius-md); font-weight: 600;"></div>
+
+            <!-- Thông báo gợi ý nhấn bất kỳ đâu để sang câu tiếp theo -->
+            <div id="quiz-tap-continue-prompt" style="display: none; text-align: center;">
+              <div class="tap-continue-prompt">👉 Nhấn vào bất kỳ đâu trên màn hình để sang câu tiếp theo ↵</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= QUIZ CONGRATS & SUMMARY VIEW ================= -->
+        <div id="view-congrats" class="study-view-panel" style="display: none; text-align: center; padding: 20px 10px;">
+          <div style="font-size: 48px; margin-bottom: 8px;">🎉</div>
+          <h2 style="font-size: 1.6rem; color: #34d399; margin-bottom: 4px;">Chúc mừng bạn đã hoàn thành phiên học!</h2>
+          <p style="color: var(--text-secondary); max-width: 520px; margin: 0 auto 16px auto; font-size: 0.9rem;">
+            Dưới đây là danh sách các từ bạn vừa ôn luyện. Bạn có thể bấm nút gạt iPhone để điều chỉnh trạng thái <strong>Đã thuộc / Chưa thuộc</strong> trực tiếp:
+          </p>
+
+          <!-- Bảng danh sách các từ vừa học kèm nút gạt trạng thái -->
+          <div class="summary-words-container">
+            <table class="summary-words-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">#</th>
+                  <th>Từ vựng & IPA</th>
+                  <th style="width: 45px;">Nghe</th>
+                  <th>Nghĩa tiếng Việt</th>
+                  <th style="width: 120px; text-align: center;">Đã thuộc</th>
+                </tr>
+              </thead>
+              <tbody id="summary-words-tbody">
+                <!-- Render các từ vừa học -->
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 14px; margin-top: 20px;">
+            <button class="btn btn-secondary" id="btn-restart-quiz">🔄 Luyện tập lại</button>
+            <button class="btn btn-primary btn-close-modal" data-target="modal-study-room">Hoàn tất</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/treeview.js"></script>
+  <script src="js/words.js"></script>
+  <script src="js/study.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
