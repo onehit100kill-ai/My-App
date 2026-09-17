@@ -129,6 +129,50 @@ h1, h2, h3, h4, .brand-title {
   gap: 12px;
 }
 
+.mobile-menu-btn {
+  display: none;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-menu-btn:active {
+  transform: scale(0.95);
+}
+
+/* Backdrop cho Sidebar trên màn hình di động */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.sidebar-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* App Layout: Sidebar + Main Area */
 .app-container {
   display: flex;
@@ -817,6 +861,7 @@ input:checked + .ios-slider:before {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
+  overflow-y: auto;
 }
 
 .modal-backdrop.active {
@@ -919,24 +964,212 @@ input:checked + .ios-slider:before {
   gap: 12px;
 }
 
-/* Auto Suggestion Box for Word Adding */
-.suggestion-box {
-  background: rgba(56, 139, 253, 0.06);
-  border: 1px solid rgba(56, 139, 253, 0.2);
+.form-row-english {
+  display: block;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Google Search Style Autocomplete Dropdown
+   ========================================================================== */
+.autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-with-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-lead-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.form-input.has-lead-icon {
+  padding-left: 36px;
+  width: 100%;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #1c2128;
+  border: 1px solid var(--border-focus);
   border-radius: var(--radius-md);
-  padding: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 20px var(--primary-glow);
+  z-index: 99999 !important;
+  max-height: 250px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.18s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.autocomplete-item {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: var(--transition);
+  user-select: none;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: rgba(56, 139, 253, 0.18);
+}
+
+.autocomplete-icon {
+  font-size: 13px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.autocomplete-text {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocomplete-text strong {
+  color: #79c0ff;
+  font-weight: 700;
+}
+
+.autocomplete-select-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.autocomplete-item:hover .autocomplete-select-hint,
+.autocomplete-item.active .autocomplete-select-hint {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Quizlet-Style Card Layout for Modal Thêm/Sửa Từ
+   ========================================================================== */
+.modal-quizlet-card {
+  max-width: 660px;
+  overflow: visible !important;
+  position: relative;
+}
+
+.modal-quizlet-card .modal-header {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.modal-quizlet-card .modal-footer {
+  position: relative;
+  z-index: 5;
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.quizlet-modal-body {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: visible !important;
+}
+
+.quizlet-card-block {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  transition: var(--transition);
+  position: relative;
+  z-index: 10;
 }
 
-.suggestion-header {
-  font-size: 0.82rem;
-  font-weight: 600;
+.quizlet-card-block:focus-within {
+  border-color: rgba(56, 139, 253, 0.4);
+  background: rgba(56, 139, 253, 0.02);
+  box-shadow: 0 0 12px rgba(56, 139, 253, 0.1);
+  z-index: 100 !important;
+}
+
+.quizlet-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quizlet-block-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(56, 139, 253, 0.15);
   color: #79c0ff;
+}
+
+.quizlet-block-tag.tag-meaning {
+  background: rgba(52, 199, 89, 0.15);
+  color: #34c759;
+}
+
+.quizlet-block-tag.tag-example {
+  background: rgba(188, 140, 255, 0.15);
+  color: #bc8cff;
+}
+
+.quizlet-block-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.field-suggestion-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-suggestion-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.spinner-text {
+  font-size: 0.75rem;
+  color: var(--accent-cyan);
+  animation: pulsePrompt 1s infinite;
 }
 
 .chips-container {
@@ -950,33 +1183,138 @@ input:checked + .ios-slider:before {
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 0.82rem;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: var(--transition);
+  user-select: none;
 }
 
 .chip-btn:hover {
   background: var(--primary);
   color: #ffffff;
   border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.example-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .example-item-btn {
   text-align: left;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-color);
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   font-size: 0.82rem;
   color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition);
+  line-height: 1.4;
 }
 
 .example-item-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
+  background: rgba(188, 140, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(188, 140, 255, 0.3);
+}
+
+.quizlet-learned-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+/* ==========================================================================
+   iOS Style Confirmation Dialog Modal
+   ========================================================================== */
+.modal-confirm-backdrop {
+  z-index: 2000;
+}
+
+.modal-confirm-card {
+  max-width: 380px;
+  text-align: center;
+  padding: 28px 24px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 69, 58, 0.18);
+  animation: confirmPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes confirmPop {
+  from { transform: scale(0.9) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.confirm-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 69, 58, 0.15);
+  border: 1px solid rgba(255, 69, 58, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+  box-shadow: 0 0 20px rgba(255, 69, 58, 0.2);
+}
+
+.confirm-icon {
+  font-size: 28px;
+}
+
+.confirm-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.confirm-message {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-danger {
+  background: var(--ios-red);
+  color: #ffffff;
+  border: none;
+  transition: var(--transition);
+}
+
+.btn-danger:hover {
+  background: #e03830;
+  box-shadow: 0 0 16px rgba(255, 69, 58, 0.45);
+}
+
+.btn-danger:active {
+  transform: scale(0.97);
 }
 
 /* ==========================================================================
@@ -1013,6 +1351,29 @@ input:checked + .ios-slider:before {
   background: linear-gradient(90deg, #10b981, #3b82f6);
   width: 0%;
   transition: width 0.3s ease;
+}
+
+#btn-close-study-room {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+#btn-close-study-room:hover {
+  background: rgba(255, 69, 58, 0.15);
+  border-color: rgba(255, 69, 58, 0.4);
+  color: #ff6b6b;
+  transform: scale(1.05);
 }
 
 /* Study Mode Tabs (Flashcard vs Smart Quiz) */
@@ -1319,17 +1680,387 @@ input:checked + .ios-slider:before {
   cursor: pointer;
 }
 
-/* Responsive adjustments */
+/* ==========================================================================
+   Word Cards for Mobile (iPhone 12 Pro Max & Mobile View)
+   ========================================================================== */
+.words-mobile-cards-list {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.word-card-mobile {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-card-mobile:active {
+  transform: scale(0.99);
+}
+
+.word-card-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 10px;
+}
+
+.word-card-mobile-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.word-card-order {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+}
+
+.word-card-word {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.word-card-ipa {
+  font-size: 0.88rem;
+  color: var(--accent-cyan);
+  font-family: var(--font-main);
+}
+
+.word-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-audio-card {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  border-radius: var(--radius-full);
+}
+
+.word-card-mobile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.word-card-meaning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.meaning-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: rgba(52, 199, 89, 0.15);
+  color: #34c759;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.meaning-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  line-height: 1.4;
+}
+
+.word-card-example {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 3px solid rgba(56, 139, 253, 0.4);
+  padding: 8px 12px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  line-height: 1.45;
+}
+
+.example-quote {
+  color: var(--primary);
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-right: 2px;
+}
+
+.word-card-mobile-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.word-card-status-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-learned {
+  color: #34c759;
+}
+
+.status-unlearned {
+  color: #ff6b6b;
+}
+
+.word-card-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   Responsive Optimization - Specifically Tuned for iPhone 12 Pro Max (428px)
+   ========================================================================== */
 @media (max-width: 768px) {
+  /* Header */
+  .app-header {
+    padding: 0 14px;
+    height: 60px;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+  }
+
+  .brand-title {
+    font-size: 1.1rem;
+  }
+
+  .brand-badge {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-tool-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    height: 34px;
+  }
+
+  .btn-header-add-section {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    height: 34px;
+  }
+
+  /* Off-canvas Drawer for Sidebar */
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -320px;
+    width: 300px;
+    max-width: 85vw;
+    height: 100vh;
+    z-index: 1050;
+    box-shadow: none;
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+
+  .app-sidebar.mobile-open {
+    left: 0;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+  }
+
   .app-container {
     flex-direction: column;
-    height: auto;
+    height: calc(100vh - 60px);
   }
-  .app-sidebar {
+
+  .app-main {
+    flex: 1;
+    height: 100%;
+  }
+
+  /* Main Toolbar */
+  .main-toolbar {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .current-day-title {
+    font-size: 1.25rem;
+  }
+
+  .toolbar-controls {
     width: 100%;
-    max-height: 260px;
+    justify-content: space-between;
+    gap: 8px;
   }
+
+  .toolbar-controls .btn-primary {
+    flex: 1;
+    min-height: 44px;
+    font-size: 0.92rem;
+    justify-content: center;
+  }
+
+  .ios-filter-container {
+    padding: 4px 10px;
+    gap: 6px;
+  }
+
+  .filter-label {
+    font-size: 0.78rem;
+  }
+
+  /* Switch to Word Cards on Mobile instead of 7-column table */
+  .word-table {
+    display: none !important;
+  }
+
+  .words-mobile-cards-list {
+    display: flex;
+  }
+
+  .table-container {
+    padding: 12px 14px;
+  }
+
+  /* Modals for iPhone 12 Pro Max */
+  .modal-backdrop {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-card {
+    max-height: 88vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    transform: translateY(100%);
+  }
+
+  .modal-backdrop.active .modal-card {
+    transform: translateY(0);
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+  }
+
+  .modal-footer {
+    padding: 14px 20px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 10px));
+  }
+
+  .quizlet-modal-body {
+    padding: 14px 16px;
+    max-height: calc(88vh - 140px);
+  }
+
   .quiz-options-grid {
     grid-template-columns: 1fr;
   }
+
+  .study-modal-card {
+    height: 94vh;
+    max-height: 94vh;
+  }
+
+  .study-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .study-progress-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .modal-confirm-card {
+    border-radius: var(--radius-xl);
+    margin: auto;
+    transform: scale(0.95);
+    align-self: center;
+  }
+
+  .modal-backdrop.active .modal-confirm-card {
+    transform: scale(1);
+  }
 }
+
+/* Specific Fine-Tuning for iPhone 12 Pro Max (width <= 430px) */
+@media (max-width: 430px) {
+  .main-toolbar {
+    padding: 12px 14px;
+  }
+
+  .toolbar-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .toolbar-controls .btn-primary {
+    grid-column: span 2;
+  }
+
+  .toolbar-controls .ios-filter-container {
+    grid-column: span 2;
+    justify-content: center;
+  }
+
+  .toolbar-controls #btn-add-day {
+    grid-column: span 1;
+    font-size: 0.82rem;
+    padding: 8px 10px;
+    justify-content: center;
+  }
+
+  .toolbar-controls #btn-study-day {
+    grid-column: span 1;
+    font-size: 0.82rem;
+    padding: 8px 10px;
+    justify-content: center;
+  }
+
+  .brand-title {
+    font-size: 1.05rem;
+  }
+
+  .header-actions .btn span {
+    font-size: 0.8rem;
+  }
+
+  .word-card-word {
+    font-size: 1.15rem;
+  }
+
+  .quizlet-card-block {
+    padding: 12px 14px;
+  }
+
+  .form-row.form-row-english {
+    grid-template-columns: 1fr !important;
+  }
+}
+

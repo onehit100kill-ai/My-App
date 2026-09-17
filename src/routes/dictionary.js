@@ -1,6 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { lookupWord } = require('../services/dictionaryService');
+const { lookupWord, getAutocompleteSuggestions } = require('../services/dictionaryService');
+
+// GET /api/dictionary/suggest?q=... - Gợi ý từ khi gõ (kiểu Google autocomplete)
+router.get('/suggest', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.json({ success: true, suggestions: [] });
+    }
+
+    const data = await getAutocompleteSuggestions(q);
+    res.json(data);
+  } catch (error) {
+    console.error('Error suggesting words:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // GET /api/dictionary/lookup?word=... - Gợi ý IPA, audio, nghĩa, câu ví dụ khi thêm từ
 router.get('/lookup', async (req, res) => {
@@ -19,3 +35,4 @@ router.get('/lookup', async (req, res) => {
 });
 
 module.exports = router;
+

@@ -17,17 +17,22 @@
 
   <!-- App Header -->
   <header class="app-header">
-    <div class="brand">
-      <div class="brand-icon">📚</div>
-      <div>
-        <span class="brand-title">VocabMaster</span>
-        <span class="brand-badge">PRO v1.0</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button class="mobile-menu-btn" id="btn-toggle-sidebar-mobile" title="Mở Cây Thư Mục">
+        <span>☰</span>
+      </button>
+      <div class="brand">
+        <div class="brand-icon">📚</div>
+        <div>
+          <span class="brand-title">VocabMaster</span>
+          <span class="brand-badge">PRO v1.0</span>
+        </div>
       </div>
     </div>
 
     <!-- Các nút thao tác cây thư mục đặt ở góc phải header, cạnh nút + Thêm Phần -->
     <div class="header-actions">
-      <button class="btn btn-secondary" id="btn-add-section" title="Thêm Phần mới">
+      <button class="btn btn-secondary btn-header-add-section" id="btn-add-section" title="Thêm Phần mới">
         <span>+ Thêm Phần</span>
       </button>
       <button class="header-tool-btn" id="btn-mode-edit" title="Bật/Tắt chế độ sửa">
@@ -38,6 +43,9 @@
       </button>
     </div>
   </header>
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <!-- App Main Container -->
   <div class="app-container">
@@ -108,15 +116,21 @@
                 <th class="word-col-word">Từ vựng & IPA</th>
                 <th style="width: 50px;">Nghe</th>
                 <th class="word-col-meaning">Nghĩa tiếng Việt</th>
-                <th class="word-col-example">Ví dụ minh họa</th>
+                <!-- <th class="word-col-example">Ví dụ minh họa</th> -->
                 <th class="word-col-status">Đã thuộc</th>
                 <th class="word-col-actions">Thao tác</th>
               </tr>
             </thead>
             <tbody id="words-tbody">
-              <!-- Render động danh sách từ -->
+              <!-- Render động danh sách từ dạng bảng -->
             </tbody>
           </table>
+
+          <!-- Render động danh sách từ dạng Thẻ (Word Cards) tối ưu cho iPhone 12 Pro Max -->
+          <div id="words-mobile-container" class="words-mobile-cards-list">
+            <!-- Render động danh sách thẻ từ -->
+          </div>
+
           <div id="words-empty-state" class="empty-state" style="display: none;">
             <div class="empty-icon">📖</div>
             <div class="empty-title">Chưa có từ vựng nào</div>
@@ -196,10 +210,10 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODAL: Thêm / Sửa Từ Vựng (Word) - Tích hợp Gợi ý Từ Điển Thông Minh   -->
+  <!-- MODAL: Thêm / Sửa Từ Vựng (Word) - Phong cách Quizlet & Google Suggest -->
   <!-- ===================================================================== -->
   <div class="modal-backdrop" id="modal-word">
-    <div class="modal-card" style="max-width: 650px;">
+    <div class="modal-card modal-quizlet-card" style="max-width: 650px;">
       <div class="modal-header">
         <h3 class="modal-title" id="modal-word-title">✨ Thêm Từ Vựng Mới</h3>
         <button class="icon-btn-mini btn-close-modal" data-target="modal-word">✕</button>
@@ -209,69 +223,109 @@
         <input type="hidden" id="word-day-id">
         <input type="hidden" id="word-audio-url">
 
-        <div class="modal-body">
+        <div class="modal-body quizlet-modal-body">
           
-          <!-- Nhập từ tiếng Anh + nút tra cứu gợi ý -->
-          <div class="form-row" style="grid-template-columns: 2fr 1fr; align-items: flex-end;">
-            <div class="form-group">
-              <label class="form-label">Từ tiếng Anh <span style="color: #ff6b6b;">*</span></label>
-              <input type="text" id="word-english-input" class="form-input" placeholder="Ví dụ: confident, achievement..." required autocomplete="off">
+          <!-- THẺ 1: TỪ TIẾNG ANH & GỢI Ý GOOGLE SUGGEST -->
+          <div class="quizlet-card-block">
+            <div class="quizlet-block-header">
+              <span class="quizlet-block-tag">1. THUẬT NGỮ</span>
+              <span class="quizlet-block-desc">Từ tiếng Anh & Phát âm</span>
             </div>
-            <button type="button" class="btn btn-secondary" id="btn-lookup-dict" style="height: 44px;">
-              <span>🔍 Tra Gợi Ý</span>
-            </button>
+            
+            <!-- Bỏ nút tra cứu, từ tiếng Anh hiển thị full width với gợi ý kiểu Google -->
+            <div class="form-row form-row-english" style="display: block; width: 100%;">
+              <div class="form-group autocomplete-wrapper" style="position: relative; margin: 0; width: 100%;">
+                <label class="form-label" for="word-english-input">Từ tiếng Anh <span style="color: #ff6b6b;">*</span></label>
+                <div class="input-with-icon-wrap">
+                  <span class="input-lead-icon">🔍</span>
+                  <input type="text" id="word-english-input" class="form-input has-lead-icon" placeholder="Gõ từ tiếng Anh (ví dụ: confident, achievement...)" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                </div>
+                <!-- Dropdown danh sách gợi ý lựa chọn kiểu Google -->
+                <div class="autocomplete-dropdown" id="word-autocomplete-dropdown" style="display: none;"></div>
+              </div>
+            </div>
+
+            <!-- Phiên âm IPA & Nút phát âm (STT ẩn khi tạo từ mới vì tự động tăng) -->
+            <div class="form-row" style="margin-top: 10px; align-items: center;">
+              <!-- Ẩn số thứ tự khi tạo từ vì tự động tăng -->
+              <div class="form-group" id="word-order-group" style="display: none;">
+                <label class="form-label">Thứ tự (#)</label>
+                <input type="number" id="word-order-input" class="form-input" min="1" placeholder="Tự động">
+              </div>
+              <div class="form-group" style="flex: 1; margin: 0;">
+                <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
+                  <span>Phiên âm IPA</span>
+                  <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử phát âm" style="display: none; width: 24px; height: 24px; font-size: 13px;">🔊</button>
+                </label>
+                <input type="text" id="word-ipa-input" class="form-input" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
+              </div>
+            </div>
           </div>
 
-          <!-- Khung Gợi Ý Tự Động (Chỉ áp dụng khi thêm từ) -->
-          <div class="suggestion-box" id="suggestion-box" style="display: none;">
-            <div class="suggestion-header">
-              <span>💡 Gợi ý tự động từ từ điển</span>
-              <span id="dict-loading-spinner" style="display: none;">Đang tra cứu...</span>
+          <!-- THẺ 2: NGHĨA TIẾNG VIỆT (GỢI Ý DROPDOWN DẠNG LỰA CHỌN KIỂU GOOGLE KHI NHẤN VÀO Ô, CHỈ DÙNG TIẾNG VIỆT) -->
+          <div class="quizlet-card-block">
+            <div class="quizlet-block-header">
+              <span class="quizlet-block-tag tag-meaning">2. ĐỊNH NGHĨA</span>
+              <span class="quizlet-block-desc">Nghĩa tiếng Việt</span>
             </div>
 
-            <div id="suggested-meanings-wrap" style="display: none;">
-              <span style="font-size: 0.78rem; color: var(--text-secondary);">Gợi ý nghĩa tiếng Việt (Bấm để chọn):</span>
+            <div class="form-group autocomplete-wrapper" style="position: relative; margin: 0;">
+              <label class="form-label" for="word-meaning-input">Định nghĩa / Nghĩa tiếng Việt <span style="color: #ff6b6b;">*</span></label>
+              <div class="input-with-icon-wrap">
+                <span class="input-lead-icon">💡</span>
+                <input type="text" id="word-meaning-input" class="form-input has-lead-icon" placeholder="Nhấn vào ô để xem danh sách gợi ý nghĩa tiếng Việt..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+              </div>
+              <!-- Dropdown danh sách gợi ý nghĩa tiếng Việt kiểu Google -->
+              <div class="autocomplete-dropdown" id="meaning-autocomplete-dropdown" style="display: none;"></div>
+            </div>
+
+            <!-- Gợi ý cũ dạng chips và định nghĩa tiếng Anh được comment lại theo yêu cầu -->
+            <!--
+            <div class="field-suggestion-box" id="suggested-meanings-wrap" style="display: none;">
+              <div class="field-suggestion-header">
+                <span style="font-size: 0.8rem; font-weight: 600; color: #79c0ff;">💡 Gợi ý nghĩa tiếng Việt (Bấm để chọn):</span>
+                <span id="dict-loading-spinner" class="spinner-text" style="display: none;">Đang tra từ điển...</span>
+              </div>
               <div class="chips-container" id="suggested-chips"></div>
-            </div>
 
-            <div id="suggested-examples-wrap" style="display: none;">
-              <span style="font-size: 0.78rem; color: var(--text-secondary);">Gợi ý câu ví dụ (Bấm để chọn):</span>
-              <div style="display: flex; flex-direction: column; gap: 6px;" id="suggested-examples"></div>
+              <div id="suggested-definitions-wrap" style="display: none; margin-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 8px;">
+                <span style="font-size: 0.78rem; font-weight: 600; color: var(--accent-cyan);">📖 Định nghĩa tiếng Anh (Definition):</span>
+                <div class="example-suggestions-list" id="suggested-definitions" style="margin-top: 6px;"></div>
+              </div>
             </div>
+            -->
           </div>
 
-          <!-- Thứ tự & Phiên âm IPA -->
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Thứ tự (#)</label>
-              <input type="number" id="word-order-input" class="form-input" min="1" placeholder="Tự động">
+          <!-- THẺ 3: VÍ DỤ MINH HỌA - TẠM THỜI COMMENT ẨN ĐI THEO YÊU CẦU, GIỮ INPUT HIDDEN ĐỂ KHÔNG XÓA DỮ LIỆU CSDL -->
+          <input type="hidden" id="word-example-input">
+          <!--
+          <div class="quizlet-card-block">
+            <div class="quizlet-block-header">
+              <span class="quizlet-block-tag tag-example">3. VÍ DỤ</span>
+              <span class="quizlet-block-desc">Câu ví dụ minh họa & ngữ cảnh</span>
             </div>
-            <div class="form-group">
-              <label class="form-label">
-                Phiên âm IPA 
-                <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử" style="display: none; width: 22px; height: 22px; margin-left: 6px;">🔊</button>
-              </label>
-              <input type="text" id="word-ipa-input" class="form-input" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
+
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" for="word-example-input">Câu ví dụ & Dịch nghĩa</label>
+              <textarea id="word-example-input-backup" class="form-textarea" placeholder="Ví dụ: She is a confident speaker who commands attention."></textarea>
+            </div>
+
+            <div class="field-suggestion-box" id="suggested-examples-wrap" style="display: none;">
+              <div class="field-suggestion-header">
+                <span style="font-size: 0.8rem; font-weight: 600; color: #d2a8ff;">💬 Gợi ý câu ví dụ (Bấm để chọn):</span>
+              </div>
+              <div class="example-suggestions-list" id="suggested-examples"></div>
             </div>
           </div>
+          -->
 
-          <!-- Nghĩa tiếng Việt -->
-          <div class="form-group">
-            <label class="form-label">Nghĩa tiếng Việt <span style="color: #ff6b6b;">*</span></label>
-            <input type="text" id="word-meaning-input" class="form-input" placeholder="Nhập nghĩa hoặc bấm vào gợi ý bên trên..." required>
-          </div>
-
-          <!-- Ví dụ minh họa -->
-          <div class="form-group">
-            <label class="form-label">Câu ví dụ & Dịch nghĩa</label>
-            <textarea id="word-example-input" class="form-textarea" placeholder="Ví dụ: She is a confident speaker."></textarea>
-          </div>
-
-          <!-- Trạng thái: Nút gạt iPhone Đã thuộc -->
-          <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 6px;">
-            <span class="form-label" style="margin: 0;">Trạng thái ghi nhớ:</span>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 0.85rem; color: var(--text-secondary);">Đã thuộc:</span>
+          <!-- THẺ 4: NÚT NHỚ / TRẠNG THÁI GHI NHỚ (TỪ THÊM MỚI SẼ ẨN HOÀN TOÀN) -->
+          <div class="quizlet-learned-card" id="word-learned-row" style="display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span class="form-label" style="margin: 0;">Trạng thái ghi nhớ:</span>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">Đánh dấu từ này đã thuộc lòng</span>
+              </div>
               <label class="ios-switch">
                 <input type="checkbox" id="word-learned-input">
                 <span class="ios-slider"></span>
@@ -283,9 +337,26 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-word">Hủy</button>
-          <button type="submit" class="btn btn-primary">Lưu Từ Vựng</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-word">Lưu Từ Vựng</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: Hộp Thoại Xác Nhận Xóa iOS (Bấm Đồng ý thì xóa luôn)           -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop modal-confirm-backdrop" id="modal-confirm">
+    <div class="modal-card modal-confirm-card">
+      <div class="confirm-icon-wrap">
+        <span class="confirm-icon">🗑️</span>
+      </div>
+      <h3 class="confirm-title" id="confirm-modal-title">Xác nhận xóa</h3>
+      <p class="confirm-message" id="confirm-modal-message">Bạn có chắc chắn muốn xóa mục này không? Thao tác này không thể hoàn tác.</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-secondary confirm-btn-cancel" id="confirm-btn-cancel">Hủy</button>
+        <button type="button" class="btn btn-danger confirm-btn-agree" id="confirm-btn-agree">Đồng ý Xóa</button>
+      </div>
     </div>
   </div>
 
@@ -342,21 +413,12 @@
   <div class="modal-backdrop" id="modal-study-room">
     <div class="modal-card study-modal-card">
       <div class="modal-header">
-        <div class="study-header-bar">
-          <div>
-            <h3 class="modal-title" id="study-room-title">🎯 Phòng Ôn Luyện Từ Vựng</h3>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;" id="study-scope-desc">
-              Phạm vi: Ngày 1 (5 từ)
-            </div>
+        <div class="study-header-bar" style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px;">
+          <!-- Thanh tiến độ dài full-width sang trọng -->
+          <div class="study-progress-bar-wrap" style="flex: 1; height: 10px; margin: 0;">
+            <div class="study-progress-fill" id="study-progress-fill"></div>
           </div>
-          
-          <div class="study-progress-info">
-            <div class="study-progress-bar-wrap">
-              <div class="study-progress-fill" id="study-progress-fill"></div>
-            </div>
-            <span style="font-size: 0.85rem; font-weight: 600; color: #34c759;" id="study-progress-text">0/5</span>
-            <button class="icon-btn-mini btn-close-modal" data-target="modal-study-room">✕</button>
-          </div>
+          <button type="button" class="icon-btn-mini" id="btn-close-study-room" title="Rời phòng học">✕</button>
         </div>
       </div>
 
@@ -373,7 +435,6 @@
                 <button type="button" class="btn-audio" id="quiz-audio-btn" style="width: 36px; height: 36px; font-size: 16px;">🔊</button>
               </div>
               <div style="font-size: 0.95rem; color: var(--accent-cyan);" id="quiz-question-subtext">/ˈkɑːnfɪdənt/</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);" id="quiz-word-mastery-hint">Tiến trình từ này: 0/2 lần đúng</div>
             </div>
 
             <!-- Phương án trắc nghiệm -->

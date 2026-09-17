@@ -53,6 +53,21 @@ class TreeViewManager {
       }
       this.openDayModal(this.currentSectionId);
     });
+
+    // Mobile Sidebar Drawer Controller
+    const mobileMenuBtn = document.getElementById('btn-toggle-sidebar-mobile');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const sidebar = document.querySelector('.app-sidebar');
+
+    mobileMenuBtn?.addEventListener('click', () => {
+      sidebar?.classList.toggle('mobile-open');
+      backdrop?.classList.toggle('active');
+    });
+
+    backdrop?.addEventListener('click', () => {
+      sidebar?.classList.remove('mobile-open');
+      backdrop?.classList.remove('active');
+    });
   }
 
   // Bật/tắt chế độ Sửa (hiển thị bút chì ✏️ bên cạnh Phần, Ngày, Từ)
@@ -223,6 +238,10 @@ class TreeViewManager {
 
     this.highlightActiveDay();
 
+    // Tự động đóng sidebar drawer trên mobile sau khi chọn ngày
+    document.querySelector('.app-sidebar')?.classList.remove('mobile-open');
+    document.getElementById('sidebar-backdrop')?.classList.remove('active');
+
     // Gọi WordsManager để nạp từ của ngày này
     if (window.wordsManager) {
       window.wordsManager.loadWords(dayId);
@@ -300,24 +319,27 @@ class TreeViewManager {
     }
   }
 
-  async deleteSection(sectionId) {
+  deleteSection(sectionId) {
     const sec = this.sections.find(s => s.id === sectionId);
     if (!sec) return;
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa "${sec.title}" cùng tất cả các ngày và từ bên trong không?`)) {
-      return;
-    }
-
-    try {
-      await window.api.deleteSection(sectionId);
-      if (this.currentSectionId === sectionId) {
-        this.currentSectionId = null;
-        this.currentDayId = null;
+    window.showConfirmDialog({
+      title: 'Xóa Phần Học',
+      message: `Bạn có chắc chắn muốn xóa "${sec.title}" cùng tất cả các ngày và từ vựng bên trong không?`,
+      confirmText: 'Đồng ý Xóa',
+      onConfirm: async () => {
+        try {
+          await window.api.deleteSection(sectionId);
+          if (this.currentSectionId === sectionId) {
+            this.currentSectionId = null;
+            this.currentDayId = null;
+          }
+          await this.loadTree(true);
+        } catch (err) {
+          alert('Lỗi xóa phần: ' + err.message);
+        }
       }
-      await this.loadTree(true);
-    } catch (err) {
-      alert('Lỗi xóa phần: ' + err.message);
-    }
+    });
   }
 
   // === Xử lý Modal Ngày (Tự động tính ngày lớn nhất + 1) ===
@@ -424,20 +446,23 @@ class TreeViewManager {
     }
   }
 
-  async deleteDay(dayId) {
-    if (!confirm('Bạn có chắc chắn muốn xóa ngày này và toàn bộ từ vựng trong ngày không?')) {
-      return;
-    }
-
-    try {
-      await window.api.deleteDay(dayId);
-      if (this.currentDayId === dayId) {
-        this.currentDayId = null;
+  deleteDay(dayId) {
+    window.showConfirmDialog({
+      title: 'Xóa Ngày Học',
+      message: 'Bạn có chắc chắn muốn xóa ngày này và toàn bộ từ vựng trong ngày không?',
+      confirmText: 'Đồng ý Xóa',
+      onConfirm: async () => {
+        try {
+          await window.api.deleteDay(dayId);
+          if (this.currentDayId === dayId) {
+            this.currentDayId = null;
+          }
+          await this.loadTree(true);
+        } catch (err) {
+          alert('Lỗi xóa ngày: ' + err.message);
+        }
       }
-      await this.loadTree(true);
-    } catch (err) {
-      alert('Lỗi xóa ngày: ' + err.message);
-    }
+    });
   }
 
   escapeHtml(str) {

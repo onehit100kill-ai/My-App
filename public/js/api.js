@@ -122,7 +122,12 @@ const api = {
     return await res.json();
   },
 
-  // === Dictionary Lookup ===
+  // === Dictionary Lookup & Suggestions ===
+  async getWordSuggestions(query) {
+    const res = await fetch(`${API_BASE}/dictionary/suggest?q=${encodeURIComponent(query)}`);
+    return await res.json();
+  },
+
   async lookupDictionary(word) {
     const res = await fetch(`${API_BASE}/dictionary/lookup?word=${encodeURIComponent(word)}`);
     return await res.json();

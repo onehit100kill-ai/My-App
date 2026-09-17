@@ -44,27 +44,32 @@ async function lookupWord(word) {
       }
     })(),
 
-    // --- 2. Lấy nghĩa tiếng Việt chuẩn xác & tức thì từ Google Translate Engine ---
+    // --- 2. Lấy nghĩa tiếng Việt chuẩn xác & phong phú (Google Dictionary + MyMemory) ---
     (async () => {
+      // 2.1 Google Dictionary Engine (client=dict-chrome-ex)
       try {
-        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&dt=bd&dj=1&q=${encodeURIComponent(cleanWord)}`, {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=en&tl=vi&dt=t&dt=bd&q=${encodeURIComponent(cleanWord)}`, {
           headers: { 'User-Agent': USER_AGENT },
           signal: AbortSignal.timeout(2500)
         });
         if (res.ok) {
           const data = await res.json();
           // Nghĩa chính
-          if (data.sentences && data.sentences.length > 0 && data.sentences[0].trans) {
-            const mainTrans = data.sentences[0].trans.trim().toLowerCase();
-            if (isValidMeaning(mainTrans, cleanWord)) {
-              suggestedMeanings.push(mainTrans);
+          if (data[0] && Array.isArray(data[0])) {
+            for (const item of data[0]) {
+              if (item && item[0]) {
+                const mainTrans = item[0].trim().toLowerCase();
+                if (isValidMeaning(mainTrans, cleanWord) && !suggestedMeanings.includes(mainTrans)) {
+                  suggestedMeanings.push(mainTrans);
+                }
+              }
             }
           }
-          // Các nghĩa từ loại (danh từ, tính từ, động từ...)
-          if (data.dict && Array.isArray(data.dict)) {
-            for (const d of data.dict) {
-              if (Array.isArray(d.terms)) {
-                for (const term of d.terms) {
+          // Các nghĩa theo từ loại (Danh từ, Động từ, Tính từ...)
+          if (data[1] && Array.isArray(data[1])) {
+            for (const d of data[1]) {
+              if (Array.isArray(d[1])) {
+                for (const term of d[1]) {
                   const cleanTerm = term.trim().toLowerCase();
                   if (isValidMeaning(cleanTerm, cleanWord) && !suggestedMeanings.includes(cleanTerm) && suggestedMeanings.length < 8) {
                     suggestedMeanings.push(cleanTerm);
@@ -74,22 +79,30 @@ async function lookupWord(word) {
             }
           }
         }
-      } catch (err) {
-        // Fallback sang MyMemory nếu cần
-        try {
-          const res2 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanWord)}&langpair=en|vi`, {
-            headers: { 'User-Agent': USER_AGENT },
-            signal: AbortSignal.timeout(2000)
-          });
-          if (res2.ok) {
-            const data2 = await res2.json();
-            const txt = data2.responseData?.translatedText?.trim();
-            if (txt && isValidMeaning(txt, cleanWord) && !suggestedMeanings.includes(txt.toLowerCase())) {
-              suggestedMeanings.push(txt.toLowerCase());
+      } catch (err) {}
+
+      // 2.2 MyMemory Engine (Bổ sung thêm các nghĩa thực tế nếu cần)
+      try {
+        const res2 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanWord)}&langpair=en|vi`, {
+          headers: { 'User-Agent': USER_AGENT },
+          signal: AbortSignal.timeout(2000)
+        });
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const txt = data2.responseData?.translatedText?.trim().toLowerCase();
+          if (txt && isValidMeaning(txt, cleanWord) && !suggestedMeanings.includes(txt)) {
+            suggestedMeanings.push(txt);
+          }
+          if (Array.isArray(data2.matches)) {
+            for (const m of data2.matches) {
+              const cleanM = m.translation?.trim().toLowerCase();
+              if (cleanM && isValidMeaning(cleanM, cleanWord) && !suggestedMeanings.includes(cleanM) && suggestedMeanings.length < 10) {
+                suggestedMeanings.push(cleanM);
+              }
             }
           }
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
     })(),
 
     // --- 3. Lấy định nghĩa & ví dụ siêu tốc từ Datamuse ---
@@ -140,6 +153,9 @@ async function lookupWord(word) {
               for (const m of entry.meanings) {
                 if (m.definitions && Array.isArray(m.definitions)) {
                   for (const d of m.definitions) {
+                    if (d.definition && definitions.length < 4 && !definitions.includes(d.definition)) {
+                      definitions.push(d.definition);
+                    }
                     if (d.example && examples.length < 3 && !examples.includes(d.example)) {
                       examples.push(d.example);
                     }
@@ -178,6 +194,80 @@ function isValidMeaning(str, word) {
   return true;
 }
 
+/**
+ * Lấy danh sách gợi ý autocomplete khi người dùng gõ từ tiếng Anh (kiểu Google Suggest)
+ */
+async function getAutocompleteSuggestions(query) {
+  if (!query || !query.trim()) {
+    return { success: true, suggestions: [] };
+  }
+
+  const cleanQuery = query.trim().toLowerCase();
+  const suggestions = new Set();
+
+  await Promise.allSettled([
+    // 1. Nguồn Datamuse - Từ vựng tiếng Anh chuẩn xác cao
+    (async () => {
+      try {
+        const res = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(cleanQuery)}&max=8`, {
+          headers: { 'User-Agent': USER_AGENT },
+          signal: AbortSignal.timeout(1500)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            data.forEach(item => {
+              if (item && item.word) {
+                const w = item.word.trim().toLowerCase();
+                // Chỉ nhận từ tiếng Anh hợp lệ
+                if (/^[a-z\s\-']+$/.test(w)) {
+                  suggestions.add(w);
+                }
+              }
+            });
+          }
+        }
+      } catch (err) {}
+    })(),
+
+    // 2. Nguồn Google Suggest - Độ nhạy và tần suất tìm kiếm thực tế
+    (async () => {
+      try {
+        const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(cleanQuery)}`, {
+          headers: { 'User-Agent': USER_AGENT },
+          signal: AbortSignal.timeout(1500)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && Array.isArray(data[1])) {
+            data[1].forEach(item => {
+              if (typeof item === 'string') {
+                const cleanItem = item.trim().toLowerCase();
+                // Lọc bỏ cụm tiếng Việt như "nghĩa là gì" nếu có
+                if (!cleanItem.includes('nghĩa') && !cleanItem.includes('la gi') && !cleanItem.includes('tiếng việt')) {
+                  if (/^[a-z\s\-']+$/.test(cleanItem)) {
+                    suggestions.add(cleanItem);
+                  }
+                }
+              }
+            });
+          }
+        }
+      } catch (err) {}
+    })()
+  ]);
+
+  // Luôn đảm bảo từ đang gõ có trong danh sách nếu chưa có
+  const result = Array.from(suggestions).slice(0, 8);
+  return {
+    success: true,
+    query: cleanQuery,
+    suggestions: result
+  };
+}
+
 module.exports = {
-  lookupWord
+  lookupWord,
+  getAutocompleteSuggestions
 };
+

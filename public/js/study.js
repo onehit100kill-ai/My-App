@@ -1,23 +1,23 @@
 /**
- * Chế độ Học Tập & Ôn Luyện Thông Minh (Unified Smart Study):
- * - Tự động tạo sẵn và xáo trộn các câu hỏi trắc nghiệm & gõ từ đan xen (không cần tab)
- * - Khi trả lời: tự động phát âm đọc từ đó
- * - Giữ nguyên kết quả đúng/sai trên màn hình, nhấn vào bất kỳ đâu để sang câu tiếp theo
- * - Đối với câu hỏi gõ từ: tự động focus input để người dùng không phải bấm chuột/chạm tay lại
- * - Khi sai 1 câu: chỉ reset tiến trình của riêng từ bị sai (các từ khác giữ nguyên tiến trình)
- * - Khi ôn tập xong: hiển thị danh sách các từ vừa học kèm nút gạt iPhone để sửa trạng thái Đã thuộc / Chưa thuộc trực tiếp
+ * Chế độ Học Tập & Ôn Luyện Chuẩn 4English:
+ * 1. Ôn xáo trộn các từ theo cách Điền từ (Gõ từ).
+ * 2. Sau đó xáo trộn để ôn Chọn nghĩa (Trắc nghiệm).
+ * 3. Nếu chọn hoặc gõ sai ở bất kỳ phần nào: từ đó ở CẢ 2 PHẦN đều được đưa xuống cuối và xóa tiến độ trong lần học.
+ * 4. Không cho đóng khi click ra ngoài backdrop để tránh mất tiến trình.
+ * 5. Bấm nút ✕ sẽ có hộp thoại xác nhận rời.
+ * 6. Lưu liên tục tiến trình vào localStorage; khi vào lại app sẽ hỏi người dùng có muốn tiếp tục lần học dở dang không.
  */
 
 class StudyManager {
   constructor() {
     this.words = [];
-    this.TARGET_CHOICE = 2; // Số lần trắc nghiệm cần đúng cho mỗi từ
-    this.TARGET_TYPING = 2; // Số lần gõ đúng cho mỗi từ
-
-    this.wordProgressMap = new Map(); // wordId -> { choiceCount, typingCount, isMastered }
+    this.scopeTitle = '';
+    this.wordProgressMap = new Map(); // wordId -> { passedTyping: boolean, passedChoice: boolean }
+    this.typingQueue = []; // Hàng đợi các từ cần gõ
+    this.choiceQueue = []; // Hàng đợi các từ cần chọn trắc nghiệm
+    this.currentPhase = 'typing'; // 'typing' hoặc 'choice'
     this.currentQuizItem = null;
-    this.lastWordId = null;
-    this.waitingForTap = false; // Cờ chờ người dùng chạm bất kỳ đâu để sang câu tiếp theo
+    this.waitingForTap = false;
 
     this.bindEvents();
   }
@@ -26,6 +26,11 @@ class StudyManager {
     // Nút học theo ngày
     document.getElementById('btn-study-day')?.addEventListener('click', () => {
       this.startDayStudy();
+    });
+
+    // Nút đóng phòng học (X) có xác nhận rời
+    document.getElementById('btn-close-study-room')?.addEventListener('click', () => {
+      this.requestExit();
     });
 
     // Modal chọn ngày ôn theo phần
@@ -63,7 +68,6 @@ class StudyManager {
     const studyArea = document.getElementById('study-interactive-area');
     studyArea?.addEventListener('click', (e) => {
       if (this.waitingForTap) {
-        // Tránh trigger khi bấm nút audio
         if (e.target.closest('#quiz-audio-btn')) return;
         this.advanceToNextQuestion();
       }
@@ -72,7 +76,96 @@ class StudyManager {
     // Restart Quiz
     document.getElementById('btn-restart-quiz')?.addEventListener('click', () => {
       this.initQuizState();
+      this.saveSessionState();
       this.nextQuizQuestion();
+    });
+  }
+
+  // === XỬ LÝ LƯU & KHÔI PHỤC TIẾN TRÌNH VÀO LOCALSTORAGE ===
+  saveSessionState() {
+    if (!this.words || this.words.length === 0) return;
+    try {
+      const state = {
+        words: this.words,
+        scopeTitle: this.scopeTitle,
+        currentPhase: this.currentPhase,
+        typingQueue: this.typingQueue,
+        choiceQueue: this.choiceQueue,
+        wordProgressList: Array.from(this.wordProgressMap.entries()),
+        timestamp: Date.now()
+      };
+      localStorage.setItem('english_study_session', JSON.stringify(state));
+    } catch (e) {
+      console.warn('Không thể lưu session:', e);
+    }
+  }
+
+  clearSessionState() {
+    try {
+      localStorage.removeItem('english_study_session');
+    } catch (e) {}
+  }
+
+  checkSavedSession() {
+    try {
+      const raw = localStorage.getItem('english_study_session');
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved && Array.isArray(saved.words) && saved.words.length > 0) {
+        window.showConfirmDialog({
+          title: 'Khôi phục phiên học?',
+          message: `Bạn đang có một phiên học dở dang (${saved.words.length} từ vựng). Bạn có muốn tiếp tục phiên học trước đó không?`,
+          confirmText: 'Tiếp tục học',
+          cancelText: 'Bỏ qua',
+          onConfirm: () => {
+            this.restoreSession(saved);
+          },
+          onCancel: () => {
+            this.clearSessionState();
+          }
+        });
+      }
+    } catch (err) {
+      this.clearSessionState();
+    }
+  }
+
+  restoreSession(saved) {
+    this.words = saved.words;
+    this.scopeTitle = saved.scopeTitle || '';
+    this.currentPhase = saved.currentPhase || 'typing';
+    this.typingQueue = saved.typingQueue || [];
+    this.choiceQueue = saved.choiceQueue || [];
+    this.wordProgressMap = new Map(saved.wordProgressList || []);
+    this.waitingForTap = false;
+
+    document.getElementById('view-congrats').style.display = 'none';
+    document.getElementById('view-quiz').style.display = 'block';
+    document.getElementById('modal-study-room').classList.add('active');
+
+    this.nextQuizQuestion();
+  }
+
+  // === XÁC NHẬN RỜI PHÒNG HỌC ===
+  requestExit() {
+    const congratsView = document.getElementById('view-congrats');
+    const isCompleted = congratsView && congratsView.style.display !== 'none';
+
+    if (isCompleted) {
+      this.clearSessionState();
+      document.getElementById('modal-study-room').classList.remove('active');
+      return;
+    }
+
+    window.showConfirmDialog({
+      title: 'Rời phòng ôn tập?',
+      message: 'Tiến trình ôn tập hiện tại của bạn sẽ bị hủy nếu bạn thoát bây giờ. Bạn có chắc chắn muốn rời đi không?',
+      confirmText: 'Rời phòng học',
+      cancelText: 'Tiếp tục học',
+      onConfirm: () => {
+        this.clearSessionState();
+        document.getElementById('modal-study-room').classList.remove('active');
+      }
     });
   }
 
@@ -127,10 +220,9 @@ class StudyManager {
       </label>
     `).join('');
 
-    // Khởi tạo toggle filter trong modal
     const toggle = document.getElementById('section-study-learned-toggle');
     if (toggle) {
-      toggle.checked = false; // Mặc định là Chưa thuộc
+      toggle.checked = false;
       this.updateSectionStudyFilterLabels(false);
       toggle.onchange = () => this.updateSectionStudyFilterLabels(toggle.checked);
     }
@@ -150,7 +242,6 @@ class StudyManager {
     }
   }
 
-  // Bắt đầu ôn sau khi chọn các ngày trong phần
   async startSectionStudy() {
     const checkedBoxes = document.querySelectorAll('#section-days-checklist input[type="checkbox"]:checked');
     const dayIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value, 10));
@@ -178,89 +269,121 @@ class StudyManager {
     }
   }
 
-  // === 3. MỞ PHÒNG HỌC (Không cần chuyển tab, tạo sẵn câu hỏi xáo trộn) ===
+  // === 3. MỞ PHÒNG HỌC THEO QUY TẮC 4ENGLISH ===
   openStudyRoom(wordsList, scopeTitle) {
     this.words = wordsList;
+    this.scopeTitle = scopeTitle;
     const modal = document.getElementById('modal-study-room');
-
-    document.getElementById('study-room-title').textContent = '🎯 ' + scopeTitle;
-    document.getElementById('study-scope-desc').textContent = `Tổng số: ${wordsList.length} từ vựng`;
 
     this.initQuizState();
     modal.classList.add('active');
+    this.saveSessionState();
     this.nextQuizQuestion();
   }
 
   initQuizState() {
     this.wordProgressMap.clear();
-    this.lastWordId = null;
-    this.waitingForTap = false;
-
-    // Khởi tạo tiến trình mục tiêu cho mỗi từ
-    for (const w of this.words) {
+    this.words.forEach(w => {
       this.wordProgressMap.set(w.id, {
-        choiceCount: 0,
-        typingCount: 0,
-        isMastered: false
+        passedTyping: false,
+        passedChoice: false
       });
-    }
+    });
+
+    // Phần 1: Xáo trộn các từ theo cách điền từ
+    this.typingQueue = this.shuffle([...this.words]);
+    this.choiceQueue = [];
+    this.currentPhase = 'typing';
+    this.waitingForTap = false;
 
     document.getElementById('view-congrats').style.display = 'none';
     document.getElementById('view-quiz').style.display = 'block';
   }
 
-  // Chọn câu hỏi tiếp theo đan xen
+  // Cập nhật thanh tiến độ (theo % nhiệm vụ hoàn thành)
+  updateProgressBar() {
+    const totalTasks = this.words.length * 2;
+    if (totalTasks === 0) return;
+
+    let completedTasks = 0;
+    this.words.forEach(w => {
+      const p = this.wordProgressMap.get(w.id);
+      if (p) {
+        if (p.passedTyping) completedTasks++;
+        if (p.passedChoice) completedTasks++;
+      }
+    });
+
+    const percent = Math.min(100, Math.round((completedTasks / totalTasks) * 100));
+    const fill = document.getElementById('study-progress-fill');
+    if (fill) {
+      fill.style.width = `${percent}%`;
+    }
+  }
+
+  // Chọn câu hỏi tiếp theo
   nextQuizQuestion() {
     this.waitingForTap = false;
     document.getElementById('quiz-feedback-box').style.display = 'none';
     document.getElementById('quiz-tap-continue-prompt').style.display = 'none';
 
-    // 1. Lọc danh sách các từ CHƯA thuộc mục tiêu
-    const remainingWords = this.words.filter(w => {
-      const p = this.wordProgressMap.get(w.id);
-      return p && !p.isMastered;
-    });
+    this.updateProgressBar();
 
-    // Cập nhật thanh tiến độ
-    const totalWords = this.words.length;
-    const masteredWords = totalWords - remainingWords.length;
-    const percent = Math.round((masteredWords / totalWords) * 100);
-    document.getElementById('study-progress-fill').style.width = `${percent}%`;
-    document.getElementById('study-progress-text').textContent = `${masteredWords}/${totalWords} từ thành thạo`;
-
-    // Nếu đã hoàn thành tất cả từ -> Sang màn hình chúc mừng & danh sách từ vừa học
-    if (remainingWords.length === 0) {
-      this.showCompletionScreen();
+    // 1. Kiểm tra hàng đợi Điền từ (Giai đoạn 1)
+    if (this.typingQueue.length > 0) {
+      this.currentPhase = 'typing';
+      const word = this.typingQueue[0];
+      this.currentQuizItem = { word, type: 'typing' };
+      this.renderQuizQuestion();
+      this.saveSessionState();
       return;
     }
 
-    // 2. Chọn từ tiếp theo, tránh lặp lại từ vừa làm nếu còn nhiều từ (chống học máy móc)
-    let candidateWords = remainingWords;
-    if (remainingWords.length > 1 && this.lastWordId) {
-      candidateWords = remainingWords.filter(w => w.id !== this.lastWordId);
-    }
-    const chosenWord = candidateWords[Math.floor(Math.random() * candidateWords.length)];
-    this.lastWordId = chosenWord.id;
+    // 2. Nếu Điền từ đã xong, chuyển sang Chọn nghĩa (Giai đoạn 2)
+    // Nếu choiceQueue chưa có hoặc cần chuẩn bị cho các từ đã pass điền từ
+    if (this.choiceQueue.length === 0) {
+      // Lấy các từ chưa pass trắc nghiệm
+      const pendingChoiceWords = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && p.passedTyping && !p.passedChoice;
+      });
 
-    const progress = this.wordProgressMap.get(chosenWord.id);
-
-    // 3. Quyết định loại câu hỏi (Trắc nghiệm hoặc Gõ chính tả)
-    let questionType = 'choice';
-    if (progress.choiceCount < this.TARGET_CHOICE && progress.typingCount < this.TARGET_TYPING) {
-      questionType = Math.random() > 0.5 ? 'choice' : 'typing';
-    } else if (progress.choiceCount < this.TARGET_CHOICE) {
-      questionType = 'choice';
-    } else {
-      questionType = 'typing';
+      if (pendingChoiceWords.length > 0) {
+        // "sau đó sẽ xáo trộn để ôn chọn nghĩa"
+        this.choiceQueue = this.shuffle([...pendingChoiceWords]);
+      }
     }
 
-    this.currentQuizItem = {
-      word: chosenWord,
-      type: questionType,
-      progress
-    };
+    if (this.choiceQueue.length > 0) {
+      this.currentPhase = 'choice';
+      const word = this.choiceQueue[0];
+      this.currentQuizItem = { word, type: 'choice' };
+      this.renderQuizQuestion();
+      this.saveSessionState();
+      return;
+    }
 
-    this.renderQuizQuestion();
+    // 3. Kiểm tra nếu còn từ nào chưa đạt cả 2 phần (do bị sai ở phần trắc nghiệm)
+    const unfinishedWords = this.words.filter(w => {
+      const p = this.wordProgressMap.get(w.id);
+      return p && (!p.passedTyping || !p.passedChoice);
+    });
+
+    if (unfinishedWords.length > 0) {
+      // Đưa những từ cần gõ lại vào typingQueue
+      const needsTyping = unfinishedWords.filter(w => !this.wordProgressMap.get(w.id).passedTyping);
+      if (needsTyping.length > 0) {
+        this.typingQueue = this.shuffle([...needsTyping]);
+      } else {
+        this.choiceQueue = this.shuffle([...unfinishedWords]);
+      }
+      this.nextQuizQuestion();
+      return;
+    }
+
+    // 4. Nếu toàn bộ từ đã pass cả 2 phần -> Kết thúc phiên ôn tập thành công!
+    this.clearSessionState();
+    this.showCompletionScreen();
   }
 
   renderQuizQuestion() {
@@ -270,41 +393,22 @@ class StudyManager {
     const badge = document.getElementById('quiz-badge');
     const questionText = document.getElementById('quiz-question-text');
     const questionSubtext = document.getElementById('quiz-question-subtext');
-    const masteryHint = document.getElementById('quiz-word-mastery-hint');
+    const audioBtn = document.getElementById('quiz-audio-btn');
     const optionsContainer = document.getElementById('quiz-options-container');
     const typingContainer = document.getElementById('quiz-typing-container');
 
-    // Hiển thị tiến trình riêng của từ này
-    masteryHint.textContent = `Tiến trình từ "${w.word}": Trắc nghiệm [${item.progress.choiceCount}/${this.TARGET_CHOICE}] • Gõ từ [${item.progress.typingCount}/${this.TARGET_TYPING}]`;
-
-    if (item.type === 'choice') {
-      badge.className = 'quiz-type-badge badge-choice';
-      badge.textContent = 'Trắc nghiệm: Chọn nghĩa tiếng Việt đúng';
-
-      questionText.textContent = w.word;
-      questionSubtext.textContent = w.ipa || '';
-      optionsContainer.style.display = 'grid';
-      typingContainer.style.display = 'none';
-
-      // Tạo 4 phương án trắc nghiệm
-      const options = this.generateChoiceOptions(w);
-      optionsContainer.innerHTML = options.map((opt, idx) => `
-        <button type="button" class="quiz-option-btn" onclick="studyManager.handleChoiceAnswer('${this.escapeJs(opt.text)}', ${opt.isCorrect})">
-          <span style="opacity: 0.6; font-weight: 700;">${String.fromCharCode(65 + idx)}.</span>
-          <span>${this.escapeHtml(opt.text)}</span>
-        </button>
-      `).join('');
-
-    } else {
+    if (item.type === 'typing') {
       badge.className = 'quiz-type-badge badge-type';
-      badge.textContent = 'Gõ từ chính tả: Nhập từ tiếng Anh tương ứng';
+      badge.textContent = 'ĐIỀN TỪ: NHẬP TỪ TIẾNG ANH TƯƠNG ỨNG';
 
-      questionText.textContent = w.meaning; // Hiện nghĩa tiếng Việt
-      questionSubtext.textContent = w.example ? `Ví dụ: ${w.example}` : (w.ipa || '');
+      // Phần 1 (Điền từ): Hiện nghĩa tiếng Việt làm câu hỏi
+      questionText.textContent = w.meaning;
+      questionSubtext.textContent = w.ipa || '';
+      audioBtn.style.display = 'none'; // Ẩn audio trước khi trả lời
+
       optionsContainer.style.display = 'none';
       typingContainer.style.display = 'flex';
 
-      // YÊU CẦU: Tự động mở input điện thoại hoặc nhấn sẵn vào input cho máy tính
       const input = document.getElementById('quiz-typing-input');
       input.value = '';
       setTimeout(() => {
@@ -312,15 +416,34 @@ class StudyManager {
         input.select();
         input.click();
       }, 60);
+
+    } else {
+      badge.className = 'quiz-type-badge badge-choice';
+      badge.textContent = 'TRẮC NGHIỆM: CHỌN NGHĨA TIẾNG VIỆT ĐÚNG';
+
+      // Phần 2 (Chọn nghĩa): Hiện từ tiếng Anh
+      questionText.textContent = w.word;
+      questionSubtext.textContent = w.ipa || '';
+      audioBtn.style.display = 'inline-flex';
+
+      optionsContainer.style.display = 'grid';
+      typingContainer.style.display = 'none';
+
+      const options = this.generateChoiceOptions(w);
+      optionsContainer.innerHTML = options.map((opt, idx) => `
+        <button type="button" class="quiz-option-btn" onclick="studyManager.handleChoiceAnswer('${this.escapeJs(opt.text)}', ${opt.isCorrect})">
+          <span style="opacity: 0.6; font-weight: 700;">${String.fromCharCode(65 + idx)}.</span>
+          <span>${this.escapeHtml(opt.text)}</span>
+        </button>
+      `).join('');
     }
   }
 
-  // Sinh 4 phương án cho trắc nghiệm
   generateChoiceOptions(correctWord) {
     const options = [{ text: correctWord.meaning, isCorrect: true }];
 
     const otherWords = this.words.filter(w => w.id !== correctWord.id);
-    const shuffledOthers = [...otherWords].sort(() => 0.5 - Math.random());
+    const shuffledOthers = this.shuffle([...otherWords]);
 
     for (const other of shuffledOthers) {
       if (options.length < 4 && !options.some(o => o.text === other.meaning)) {
@@ -328,17 +451,16 @@ class StudyManager {
       }
     }
 
-    const dummyMeanings = ['thành công', 'sáng tạo', 'kiên trì', 'phát triển', 'quan trọng', 'hạnh phúc', 'nỗ lực', 'thay đổi'];
+    const dummyMeanings = ['thành công', 'sáng tạo', 'kiên trì', 'phát triển', 'quan trọng', 'hạnh phúc', 'nỗ lực', 'thay đổi', 'chính xác', 'cơ hội'];
     for (const dummy of dummyMeanings) {
       if (options.length < 4 && !options.some(o => o.text === dummy)) {
         options.push({ text: dummy, isCorrect: false });
       }
     }
 
-    return options.sort(() => 0.5 - Math.random());
+    return this.shuffle(options);
   }
 
-  // Xử lý khi chọn trắc nghiệm
   handleChoiceAnswer(selectedText, isCorrect) {
     if (this.waitingForTap) return;
 
@@ -355,7 +477,6 @@ class StudyManager {
     this.processAnswerResult(isCorrect, 'choice');
   }
 
-  // Xử lý khi gõ từ chính tả
   handleTypingSubmit() {
     if (this.waitingForTap) return;
 
@@ -367,20 +488,13 @@ class StudyManager {
     this.processAnswerResult(isCorrect, 'typing');
   }
 
-  /**
-   * Xử lý kết quả câu trả lời:
-   * 1. Phát âm thanh đọc từ đó ngay lập tức
-   * 2. Nếu sai: CHỈ reset tiến trình của riêng từ bị sai
-   * 3. Giữ nguyên trên màn hình, chờ người dùng bấm vào bất kỳ đâu để sang câu tiếp theo
-   */
   processAnswerResult(isCorrect, type) {
     const feedbackBox = document.getElementById('quiz-feedback-box');
     const tapPrompt = document.getElementById('quiz-tap-continue-prompt');
-    const wordId = this.currentQuizItem.word.id;
-    const progress = this.wordProgressMap.get(wordId);
     const wordObj = this.currentQuizItem.word;
+    const progress = this.wordProgressMap.get(wordObj.id);
 
-    // YÊU CẦU: Phát âm thanh đọc từ đó
+    // Phát âm thanh đọc từ vựng ngay khi trả lời
     if (window.wordsManager) {
       window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
     }
@@ -392,43 +506,56 @@ class StudyManager {
       feedbackBox.style.color = '#34c759';
       feedbackBox.style.border = '1px solid rgba(52, 199, 89, 0.3)';
 
-      if (type === 'choice') {
-        progress.choiceCount += 1;
-        feedbackBox.innerHTML = `✔ <strong>Chính xác!</strong> Từ "${this.escapeHtml(wordObj.word)}": [${progress.choiceCount}/${this.TARGET_CHOICE} trắc nghiệm]`;
+      if (type === 'typing') {
+        // Đúng phần Điền từ -> Bỏ khỏi hàng đợi gõ, đánh dấu passedTyping
+        this.typingQueue.shift();
+        progress.passedTyping = true;
+        feedbackBox.innerHTML = `✔ <strong>Chính xác!</strong> Bạn đã gõ đúng từ: <strong>${this.escapeHtml(wordObj.word)}</strong>`;
       } else {
-        progress.typingCount += 1;
-        feedbackBox.innerHTML = `✔ <strong>Tuyệt vời!</strong> Bạn đã gõ đúng từ: <strong>${this.escapeHtml(wordObj.word)}</strong> [${progress.typingCount}/${this.TARGET_TYPING} gõ từ]`;
-      }
-
-      if (progress.choiceCount >= this.TARGET_CHOICE && progress.typingCount >= this.TARGET_TYPING) {
-        progress.isMastered = true;
-        feedbackBox.innerHTML = `🌟 <strong>Xuất sắc!</strong> Từ "<strong>${this.escapeHtml(wordObj.word)}</strong>" đã đạt mục tiêu thành thạo!`;
+        // Đúng phần Trắc nghiệm -> Bỏ khỏi hàng đợi trắc nghiệm, đánh dấu passedChoice
+        this.choiceQueue.shift();
+        progress.passedChoice = true;
+        feedbackBox.innerHTML = `✔ <strong>Chính xác!</strong>`;
       }
 
     } else {
-      // YÊU CẦU: Nếu làm sai 1 câu sẽ reset tiến trình cho từ bị sai, từ khác không ảnh hưởng
-      progress.choiceCount = 0;
-      progress.typingCount = 0;
-      progress.isMastered = false;
+      // QUY TẮC 4ENGLISH:
+      // "nếu chọn sai thì từ đó ở cả 2 phần đều được đưa xuống cuối và xóa tiến độ của từ đó hiện tại trong lần học."
+      progress.passedTyping = false;
+      progress.passedChoice = false;
 
       feedbackBox.style.background = 'rgba(255, 69, 58, 0.15)';
       feedbackBox.style.color = '#ff6b6b';
       feedbackBox.style.border = '1px solid rgba(255, 69, 58, 0.3)';
 
-      const correctAnswer = type === 'choice' ? wordObj.meaning : wordObj.word;
+      if (type === 'typing') {
+        // Sai ở phần Điền từ: Đưa xuống cuối hàng đợi Điền từ
+        const failedWord = this.typingQueue.shift();
+        this.typingQueue.push(failedWord);
 
-      feedbackBox.innerHTML = `
-        ❌ <strong>Chưa chính xác!</strong> Đáp án đúng là: <strong>"${this.escapeHtml(correctAnswer)}"</strong>.<br>
-        <span style="font-size: 0.82rem; opacity: 0.85;">Tiến trình của từ này được reset để luyện tập lại. Các từ khác giữ nguyên 100%.</span>
-      `;
+        feedbackBox.innerHTML = `
+          ❌ <strong>Chưa chính xác!</strong> Đáp án đúng là: <strong>"${this.escapeHtml(wordObj.word)}"</strong>.<br>
+          <span style="font-size: 0.82rem; opacity: 0.85;">Từ này đã được đưa xuống cuối để luyện tập lại.</span>
+        `;
+      } else {
+        // Sai ở phần Chọn nghĩa: Bị xóa tiến độ cả 2 phần, đưa xuống cuối hàng đợi Điền từ để học lại cả 2 phần!
+        const failedWord = this.choiceQueue.shift();
+        this.typingQueue.push(failedWord); // Đưa về lại hàng đợi điền từ
+
+        feedbackBox.innerHTML = `
+          ❌ <strong>Chưa chính xác!</strong> Đáp án đúng là: <strong>"${this.escapeHtml(wordObj.meaning)}"</strong>.<br>
+          <span style="font-size: 0.82rem; opacity: 0.85;">Tiến trình từ này bị reset và đưa xuống cuối để ôn lại cả 2 phần (điền từ & chọn nghĩa).</span>
+        `;
+      }
     }
 
-    // YÊU CẦU: Giữ nguyên và khi nhấn vào bất kỳ đâu sẽ chuyển sang câu tiếp theo
+    this.updateProgressBar();
+    this.saveSessionState();
+
     this.waitingForTap = true;
     tapPrompt.style.display = 'block';
   }
 
-  // Chuyển sang câu hỏi kế tiếp khi người dùng chạm bất kỳ đâu
   advanceToNextQuestion() {
     this.nextQuizQuestion();
   }
@@ -438,6 +565,9 @@ class StudyManager {
     document.getElementById('view-quiz').style.display = 'none';
     const congratsView = document.getElementById('view-congrats');
     congratsView.style.display = 'block';
+
+    const fill = document.getElementById('study-progress-fill');
+    if (fill) fill.style.width = '100%';
 
     const tbody = document.getElementById('summary-words-tbody');
     tbody.innerHTML = this.words.map((w, index) => `
@@ -456,7 +586,6 @@ class StudyManager {
           ${this.escapeHtml(w.meaning)}
         </td>
         <td style="text-align: center;">
-          <!-- Nút gạt iPhone đổi trạng thái Đã thuộc / Chưa thuộc trực tiếp -->
           <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
             <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked)">
             <span class="ios-slider"></span>
@@ -466,7 +595,6 @@ class StudyManager {
     `).join('');
   }
 
-  // Đổi trạng thái thuộc trực tiếp trên bảng tổng kết
   async toggleWordLearnedSummary(wordId, newStatus) {
     try {
       const res = await window.api.toggleWordLearned(wordId);
@@ -474,7 +602,6 @@ class StudyManager {
         const w = this.words.find(x => x.id === wordId);
         if (w) w.isLearned = res.data.isLearned;
 
-        // Cập nhật lại cây thư mục và bảng từ ngoài màn hình chính
         if (window.treeViewManager) window.treeViewManager.loadTree();
         if (window.wordsManager && window.treeViewManager?.currentDayId) {
           window.wordsManager.loadWords(window.treeViewManager.currentDayId);
@@ -483,6 +610,15 @@ class StudyManager {
     } catch (err) {
       alert('Lỗi cập nhật trạng thái: ' + err.message);
     }
+  }
+
+  shuffle(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
 
   escapeHtml(str) {
