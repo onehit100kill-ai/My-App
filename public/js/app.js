@@ -120,8 +120,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.modal-backdrop').forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
-        // KHÔNG cho phép đóng phòng học khi nhấn ra ngoài để tránh mất tiến trình đang học!
-        if (modal.id === 'modal-study-room') {
+        // KHÔNG cho phép đóng phòng học hoặc thẻ thêm từ khi nhấn ra ngoài để tránh mất dữ liệu đang nhập!
+        if (modal.id === 'modal-study-room' || modal.id === 'modal-word') {
           return;
         }
         modal.classList.remove('active');
