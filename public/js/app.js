@@ -2,13 +2,55 @@
  * App Entry & Modal Controller
  */
 
+// Toast thông báo thanh lịch
+window.showToast = function(message, duration = 2500) {
+  let toast = document.getElementById('app-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(33, 38, 45, 0.95);
+      border: 1px solid var(--border-color, rgba(240, 246, 252, 0.1));
+      color: #f0f6fc;
+      padding: 12px 22px;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: 9999;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+      text-align: center;
+      max-width: 90vw;
+    `;
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  toast.style.opacity = '1';
+
+  clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(() => {
+    toast.style.transform = 'translateX(-50%) translateY(100px)';
+    toast.style.opacity = '0';
+  }, duration);
+};
+
 // Hàm hiển thị hộp thoại xác nhận xóa chuẩn iOS (Bấm Đồng ý là xóa luôn)
 window.showConfirmDialog = function({
   title = 'Xác nhận xóa',
   message = 'Bạn có chắc chắn muốn xóa mục này không? Thao tác này không thể hoàn tác.',
   confirmText = 'Đồng ý Xóa',
   cancelText = 'Hủy',
-  onConfirm
+  onConfirm,
+  onCancel
 } = {}) {
   const modal = document.getElementById('modal-confirm');
   const titleEl = document.getElementById('confirm-modal-title');

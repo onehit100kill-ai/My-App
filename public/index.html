@@ -33,13 +33,16 @@
     <!-- Các nút thao tác cây thư mục đặt ở góc phải header, cạnh nút + Thêm Phần -->
     <div class="header-actions">
       <button class="btn btn-secondary btn-header-add-section" id="btn-add-section" title="Thêm Phần mới">
-        <span>+ Thêm Phần</span>
+        <span class="btn-icon">📁+</span><span class="btn-label"> Phần</span>
       </button>
       <button class="header-tool-btn" id="btn-mode-edit" title="Bật/Tắt chế độ sửa">
-        <span>✏️ Sửa</span>
+        <span class="btn-icon">✏️</span><span class="btn-label"> Sửa</span>
       </button>
       <button class="header-tool-btn" id="btn-mode-delete" title="Bật/Tắt chế độ xóa">
-        <span>🗑️ Xóa</span>
+        <span class="btn-icon">🗑️</span><span class="btn-label"> Xóa</span>
+      </button>
+      <button class="header-tool-btn" id="btn-open-settings" title="Cài đặt số lần ôn tập (Điền từ & Chọn nghĩa)">
+        <span class="btn-icon">⚙️</span><span class="btn-label"> Cài đặt</span>
       </button>
     </div>
   </header>
@@ -52,10 +55,11 @@
     
     <!-- Sidebar: Folder Tree View (Phần -> Ngày) -->
     <aside class="app-sidebar">
-      <div class="sidebar-header">
+      <div class="sidebar-header" id="sidebar-header-toggle" title="Nhấn để mở rộng hoặc thu nhỏ cây thư mục">
         <div class="sidebar-title">
           <span>📁</span> Cây Thư Mục
         </div>
+        <span class="sidebar-toggle-arrow" id="sidebar-toggle-arrow">▼</span>
       </div>
 
       <div class="sidebar-content" id="tree-container">
@@ -80,28 +84,13 @@
 
         <div class="toolbar-controls">
           <!-- Nút thêm từ vựng vào ngày này -->
-          <button class="btn btn-primary" id="btn-add-word">
-            <span>+ Thêm Từ</span>
-          </button>
-
-          <!-- iOS Switch: Lọc Chưa thuộc <-> Đã thuộc -->
-          <div class="ios-filter-container" title="Gạt để chuyển giữa xem từ chưa thuộc và từ đã thuộc">
-            <span class="filter-label" id="label-filter-unlearned">🔴 Chưa thuộc</span>
-            <label class="ios-switch">
-              <input type="checkbox" id="filter-learned-toggle">
-              <span class="ios-slider"></span>
-            </label>
-            <span class="filter-label" id="label-filter-learned">🟢 Đã thuộc</span>
-          </div>
-
-          <!-- Nút thêm ngày nhanh -->
-          <button class="btn btn-secondary" id="btn-add-day">
-            <span>📅 + Thêm Ngày</span>
+          <button class="btn btn-primary" id="btn-add-word" title="Thêm Từ mới">
+            <span class="btn-icon">➕</span><span class="btn-label"> Thêm Từ</span>
           </button>
 
           <!-- Nút học theo ngày -->
-          <button class="btn btn-study" id="btn-study-day">
-            <span>🎯 Học Ngày Này</span>
+          <button class="btn btn-study" id="btn-study-day" title="Ôn tập các từ của ngày này">
+            <span class="btn-icon">🎯</span><span class="btn-label"> Ôn Ngày Này</span>
           </button>
         </div>
       </div>
@@ -118,7 +107,6 @@
                 <th class="word-col-meaning">Nghĩa tiếng Việt</th>
                 <!-- <th class="word-col-example">Ví dụ minh họa</th> -->
                 <th class="word-col-status">Đã thuộc</th>
-                <th class="word-col-actions">Thao tác</th>
               </tr>
             </thead>
             <tbody id="words-tbody">
@@ -429,12 +417,12 @@
           <div class="quiz-container">
             
             <div class="quiz-prompt-card">
-              <span class="quiz-type-badge badge-choice" id="quiz-badge">Trắc nghiệm: Chọn nghĩa đúng</span>
+              <span class="quiz-type-badge badge-choice" id="quiz-badge" style="display: none;"></span>
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div class="quiz-word-display" id="quiz-question-text">confident</div>
                 <button type="button" class="btn-audio" id="quiz-audio-btn" style="width: 36px; height: 36px; font-size: 16px;">🔊</button>
               </div>
-              <div style="font-size: 0.95rem; color: var(--accent-cyan);" id="quiz-question-subtext">/ˈkɑːnfɪdənt/</div>
+              <div style="font-size: 0.95rem; color: var(--accent-cyan); display: none;" id="quiz-question-subtext"></div>
             </div>
 
             <!-- Phương án trắc nghiệm -->
@@ -442,19 +430,13 @@
               <!-- Render 4 phương án lựa chọn -->
             </div>
 
-            <!-- Khung gõ từ chính tả (Tự động focus ngay lập tức) -->
+            <!-- Khung gõ từ chính tả (Tự động focus ngay lập tức, nhấn Enter để kiểm tra) -->
             <div class="quiz-input-box" id="quiz-typing-container" style="display: none;">
-              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" enterkeyhint="done">
-              <button type="button" class="btn btn-primary" id="btn-submit-typing">Xác nhận</button>
+              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go">
             </div>
 
             <!-- Thông báo phản hồi kết quả câu hỏi -->
             <div id="quiz-feedback-box" style="display: none; text-align: center; padding: 14px; border-radius: var(--radius-md); font-weight: 600;"></div>
-
-            <!-- Thông báo gợi ý nhấn bất kỳ đâu để sang câu tiếp theo -->
-            <div id="quiz-tap-continue-prompt" style="display: none; text-align: center;">
-              <div class="tap-continue-prompt">👉 Nhấn vào bất kỳ đâu trên màn hình để sang câu tiếp theo ↵</div>
-            </div>
 
           </div>
         </div>
@@ -491,6 +473,61 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CÀI ĐẶT SỐ LẦN ÔN TẬP (ĐIỀN TỪ & CHỌN NGHĨA)                  -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-settings">
+    <div class="modal-card modal-settings-card">
+      <div class="modal-header">
+        <h2 class="modal-title">⚙️ Cài Đặt Ôn Tập</h2>
+        <button type="button" class="btn-close-modal" data-target="modal-settings">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 24px;">
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">
+          Tùy chỉnh số lần hoàn thành chính xác cho mỗi từ vựng trong mỗi phiên học theo chuẩn 4English:
+        </p>
+
+        <div class="settings-group">
+          <!-- Cài đặt số lần Điền từ -->
+          <div class="settings-option-item">
+            <div class="settings-option-info">
+              <div class="settings-option-title">✍️ Số lần điền từ</div>
+              <div class="settings-option-desc">Số lần gõ chính xác mỗi từ vựng trước khi chuyển sang trắc nghiệm</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" id="btn-dec-typing" title="Giảm">−</button>
+              <input type="number" id="setting-target-typing" class="stepper-input" min="1" max="10" value="1" readonly>
+              <button type="button" class="stepper-btn" id="btn-inc-typing" title="Tăng">+</button>
+            </div>
+          </div>
+
+          <!-- Cài đặt số lần Chọn nghĩa -->
+          <div class="settings-option-item">
+            <div class="settings-option-info">
+              <div class="settings-option-title">🎯 Số lần chọn nghĩa</div>
+              <div class="settings-option-desc">Số lần chọn đúng nghĩa tiếng Việt để hoàn thành từ vựng</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" id="btn-dec-choice" title="Giảm">−</button>
+              <input type="number" id="setting-target-choice" class="stepper-input" min="1" max="10" value="1" readonly>
+              <button type="button" class="stepper-btn" id="btn-inc-choice" title="Tăng">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-rule-note" style="margin-top: 20px; padding: 12px 14px; background: rgba(56, 139, 253, 0.08); border-left: 3px solid var(--primary); border-radius: 4px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
+          💡 <strong>Quy tắc 4English:</strong> Nếu bạn làm sai ở bất kỳ câu nào, từ đó sẽ bị xóa toàn bộ tiến trình và quay lại học từ đầu cả 2 phần (Điền từ & Chọn nghĩa).
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-settings">Hủy</button>
+        <button type="button" class="btn btn-primary" id="btn-save-settings">Lưu Cài Đặt</button>
       </div>
     </div>
   </div>

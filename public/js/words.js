@@ -4,7 +4,7 @@
 class WordsManager {
   constructor() {
     this.words = [];
-    this.currentFilter = 'unlearned'; // 'unlearned' hoặc 'learned'
+    this.currentFilter = 'all'; // Hiển thị toàn bộ từ của ngày
     this.lookupDebounceTimer = null;
     this.autocompleteTimer = null;
     this.currentSuggestions = [];
@@ -22,21 +22,11 @@ class WordsManager {
   }
 
   bindEvents() {
-    // Switch lọc Đã thuộc / Chưa thuộc trên toolbar
+    // Switch lọc Đã thuộc / Chưa thuộc (nếu còn trên giao diện cũ)
     const filterToggle = document.getElementById('filter-learned-toggle');
-    const labelUnlearned = document.getElementById('label-filter-unlearned');
-    const labelLearned = document.getElementById('label-filter-learned');
-
     if (filterToggle) {
       filterToggle.addEventListener('change', () => {
-        this.currentFilter = filterToggle.checked ? 'learned' : 'unlearned';
-        if (filterToggle.checked) {
-          labelLearned.classList.add('active');
-          labelUnlearned.classList.remove('active');
-        } else {
-          labelUnlearned.classList.add('active');
-          labelLearned.classList.remove('active');
-        }
+        this.currentFilter = filterToggle.checked ? 'learned' : 'all';
         if (window.treeViewManager?.currentDayId) {
           this.loadWords(window.treeViewManager.currentDayId);
         }
@@ -404,7 +394,11 @@ class WordsManager {
           <tr data-word-id="${w.id}">
             <td class="word-col-order">${w.order || index + 1}</td>
             <td class="word-col-word">
-              <div class="word-english">${this.escapeHtml(w.word)}</div>
+              <div class="word-english" ondblclick="wordsManager.openWordModal(${w.id})" title="Bấm đúp để sửa từ">
+                <span>${this.escapeHtml(w.word)}</span>
+                <button class="icon-btn-mini action-edit-trigger" title="Sửa từ" onclick="wordsManager.openWordModal(${w.id})">✏️</button>
+                <button class="icon-btn-mini action-delete-trigger" title="Xóa từ" onclick="wordsManager.deleteWord(${w.id})">🗑️</button>
+              </div>
               ${w.ipa ? `<div class="word-ipa">${this.escapeHtml(w.ipa)}</div>` : ''}
             </td>
             <td>
@@ -421,63 +415,42 @@ class WordsManager {
             </td>
             */ ''}
             <td class="word-col-status">
-              <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái Đã thuộc / Chưa thuộc">
+              <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
                 <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="wordsManager.toggleLearned(${w.id}, this.checked)">
                 <span class="ios-slider"></span>
               </label>
-            </td>
-            <td class="word-col-actions">
-              <button class="icon-btn-mini action-edit-trigger" title="Sửa từ" onclick="wordsManager.openWordModal(${w.id})">✏️</button>
-              <button class="icon-btn-mini action-delete-trigger" title="Xóa từ" onclick="wordsManager.deleteWord(${w.id})">🗑️</button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    // 2. Render Card View (Chuẩn phong cách Quizlet cho iPhone 12 Pro Max)
+    // 2. Render Card View (Dạng compact cho điện thoại)
     if (mobileContainer) {
-      mobileContainer.innerHTML = this.words.map((w, index) => {
+      mobileContainer.innerHTML = this.words.map((w) => {
         return `
           <div class="word-card-mobile" data-word-id="${w.id}">
-            <div class="word-card-mobile-header">
-              <div class="word-card-mobile-title-wrap">
-                <span class="word-card-order">#${w.order || index + 1}</span>
+            <div class="word-card-mobile-top">
+              <div class="word-card-term-wrap">
                 <span class="word-card-word">${this.escapeHtml(w.word)}</span>
                 ${w.ipa ? `<span class="word-card-ipa">${this.escapeHtml(w.ipa)}</span>` : ''}
               </div>
-              <div class="word-card-header-actions">
+              <div class="word-card-actions-wrap">
                 <button type="button" class="btn-audio btn-audio-card" title="Phát âm" onclick="wordsManager.playPronunciation('${this.escapeJs(w.word)}', '${w.audioUrl || ''}')">
                   🔊
                 </button>
-                <label class="ios-switch ios-switch-sm" title="Trạng thái đã thuộc">
+                <button class="icon-btn-mini action-edit-trigger" title="Sửa từ" onclick="wordsManager.openWordModal(${w.id})">✏️</button>
+                <button class="icon-btn-mini action-delete-trigger" title="Xóa từ" onclick="wordsManager.deleteWord(${w.id})">🗑️</button>
+              </div>
+            </div>
+
+            <div class="word-card-mobile-bottom">
+              <div class="word-card-meaning-text">${this.escapeHtml(w.meaning)}</div>
+              <div class="word-card-switch-wrap">
+                <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
                   <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="wordsManager.toggleLearned(${w.id}, this.checked)">
                   <span class="ios-slider"></span>
                 </label>
-              </div>
-            </div>
-
-            <div class="word-card-mobile-body">
-              <div class="word-card-meaning">
-                <span class="meaning-badge">Nghĩa:</span>
-                <span class="meaning-text">${this.escapeHtml(w.meaning)}</span>
-              </div>
-              ${/* Phần ví dụ trên mobile được comment lại theo yêu cầu:
-              w.example ? `
-                <div class="word-card-example">
-                  <span class="example-quote">“</span>${this.escapeHtml(w.example)}
-                </div>
-              ` : ''
-              */ ''}
-            </div>
-
-            <div class="word-card-mobile-footer">
-              <div class="word-card-status-label ${w.isLearned ? 'status-learned' : 'status-unlearned'}">
-                ${w.isLearned ? '🟢 Đã thuộc' : '🔴 Chưa thuộc'}
-              </div>
-              <div class="word-card-action-btns">
-                <button class="icon-btn-mini action-edit-trigger" title="Sửa từ" onclick="wordsManager.openWordModal(${w.id})">✏️</button>
-                <button class="icon-btn-mini action-delete-trigger" title="Xóa từ" onclick="wordsManager.deleteWord(${w.id})">🗑️</button>
               </div>
             </div>
           </div>
@@ -495,19 +468,8 @@ class WordsManager {
         const w = this.words.find(x => x.id === wordId);
         if (w) w.isLearned = res.data.isLearned;
 
-        // Nếu đang bật bộ lọc thì ẩn dòng từ đó sau hiệu ứng mượt
-        const row = document.querySelector(`tr[data-word-id="${wordId}"]`);
-        const card = document.querySelector(`.word-card-mobile[data-word-id="${wordId}"]`);
-        if ((this.currentFilter === 'unlearned' && newStatus) || (this.currentFilter === 'learned' && !newStatus)) {
-          if (row) row.style.opacity = '0.3';
-          if (card) card.style.opacity = '0.3';
-          setTimeout(() => {
-            this.words = this.words.filter(x => x.id !== wordId);
-            this.render();
-          }, 300);
-        } else {
-          this.render();
-        }
+        // Render lại giao diện
+        this.render();
 
         // Cập nhật lại số đếm trên sidebar
         if (window.treeViewManager) {

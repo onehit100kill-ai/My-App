@@ -54,19 +54,11 @@ class TreeViewManager {
       this.openDayModal(this.currentSectionId);
     });
 
-    // Mobile Sidebar Drawer Controller
-    const mobileMenuBtn = document.getElementById('btn-toggle-sidebar-mobile');
-    const backdrop = document.getElementById('sidebar-backdrop');
+    // Thu nhỏ / mở rộng cây thư mục (giống folder máy tính)
+    const sidebarHeader = document.getElementById('sidebar-header-toggle');
     const sidebar = document.querySelector('.app-sidebar');
-
-    mobileMenuBtn?.addEventListener('click', () => {
-      sidebar?.classList.toggle('mobile-open');
-      backdrop?.classList.toggle('active');
-    });
-
-    backdrop?.addEventListener('click', () => {
-      sidebar?.classList.remove('mobile-open');
-      backdrop?.classList.remove('active');
+    sidebarHeader?.addEventListener('click', () => {
+      sidebar?.classList.toggle('collapsed');
     });
   }
 
@@ -237,10 +229,6 @@ class TreeViewManager {
     }
 
     this.highlightActiveDay();
-
-    // Tự động đóng sidebar drawer trên mobile sau khi chọn ngày
-    document.querySelector('.app-sidebar')?.classList.remove('mobile-open');
-    document.getElementById('sidebar-backdrop')?.classList.remove('active');
 
     // Gọi WordsManager để nạp từ của ngày này
     if (window.wordsManager) {
