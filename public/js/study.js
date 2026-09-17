@@ -30,6 +30,16 @@ class StudyManager {
     this.bindEvents();
   }
 
+  setWaitingForTap(val) {
+    this.waitingForTap = val;
+    const modal = document.getElementById('modal-study-room');
+    if (val) {
+      modal?.classList.add('waiting-for-tap');
+    } else {
+      modal?.classList.remove('waiting-for-tap');
+    }
+  }
+
   // === CÀI ĐẶT SỐ LẦN ÔN TẬP ===
   loadSettings() {
     try {
@@ -194,14 +204,45 @@ class StudyManager {
       }
     });
 
-    // Nhấn vào bất kỳ đâu trong phòng học để sang câu tiếp theo khi đang hiển thị kết quả
-    const studyArea = document.getElementById('study-interactive-area');
-    studyArea?.addEventListener('click', (e) => {
-      if (this.waitingForTap) {
-        if (e.target.closest('#quiz-audio-btn')) return;
-        this.advanceToNextQuestion();
+    // Nhấn vào BẤT KỲ ĐÂU trên toàn màn hình (khoảng trống, nền, thẻ câu hỏi, các ô lựa chọn...) để sang câu tiếp theo
+    const handleStudyGlobalTap = (e) => {
+      const modal = document.getElementById('modal-study-room');
+      if (!modal || !modal.classList.contains('active')) return;
+      if (!this.waitingForTap) return;
+
+      // Đừng chuyển câu nếu bấm nút phát âm thanh hoặc nút đóng phòng học
+      if (e.target.closest('#quiz-audio-btn') || e.target.closest('#btn-close-study-room')) {
+        return;
       }
-    });
+
+      // Đừng can thiệp nếu người dùng đang ở màn hình chúc mừng / tổng kết
+      const congratsView = document.getElementById('view-congrats');
+      if (congratsView && congratsView.style.display !== 'none') {
+        return;
+      }
+
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.advanceToNextQuestion();
+    };
+
+    // Bắt sự kiện click toàn cục ở Capture Phase để bao quát 100% màn hình
+    document.addEventListener('click', handleStudyGlobalTap, true);
+
+    // Hỗ trợ cảm ứng điện thoại (iOS Safari, Android Chrome) tức thì
+    document.addEventListener('touchend', (e) => {
+      if (this.waitingForTap) {
+        const modal = document.getElementById('modal-study-room');
+        if (!modal || !modal.classList.contains('active')) return;
+        if (e.target.closest('#quiz-audio-btn') || e.target.closest('#btn-close-study-room')) return;
+        const congratsView = document.getElementById('view-congrats');
+        if (congratsView && congratsView.style.display !== 'none') return;
+
+        handleStudyGlobalTap(e);
+      }
+    }, { passive: false });
 
     // Restart Quiz
     document.getElementById('btn-restart-quiz')?.addEventListener('click', () => {
@@ -271,7 +312,7 @@ class StudyManager {
     this.wordProgressMap = new Map(saved.wordProgressList || []);
     if (saved.targetTyping) this.targetTyping = saved.targetTyping;
     if (saved.targetChoice) this.targetChoice = saved.targetChoice;
-    this.waitingForTap = false;
+    this.setWaitingForTap(false);
     this._choiceAnswered = false;
 
     document.getElementById('view-congrats').style.display = 'none';
@@ -288,6 +329,7 @@ class StudyManager {
 
     if (isCompleted) {
       this.clearSessionState();
+      this.setWaitingForTap(false);
       document.getElementById('modal-study-room').classList.remove('active');
       return;
     }
@@ -299,6 +341,7 @@ class StudyManager {
       cancelText: 'Tiếp tục học',
       onConfirm: () => {
         this.clearSessionState();
+        this.setWaitingForTap(false);
         document.getElementById('modal-study-room').classList.remove('active');
       }
     });
@@ -446,7 +489,7 @@ class StudyManager {
     this.typingQueue = this.shuffle([...this.words]);
     this.choiceQueue = [];
     this.currentPhase = 'typing';
-    this.waitingForTap = false;
+    this.setWaitingForTap(false);
     this._choiceAnswered = false;
 
     document.getElementById('view-congrats').style.display = 'none';
@@ -476,7 +519,7 @@ class StudyManager {
 
   // Chọn câu hỏi tiếp theo
   nextQuizQuestion() {
-    this.waitingForTap = false;
+    this.setWaitingForTap(false);
     this._choiceAnswered = false;
     const fb = document.getElementById('quiz-feedback-box');
     if (fb) fb.style.display = 'none';
@@ -673,9 +716,14 @@ class StudyManager {
 
   processAnswerResult(isCorrect, type) {
     const feedbackBox = document.getElementById('quiz-feedback-box');
-    const tapPrompt = document.getElementById('quiz-tap-continue-prompt');
     const wordObj = this.currentQuizItem.word;
     const progress = this.wordProgressMap.get(wordObj.id) || { typingCount: 0, choiceCount: 0 };
+
+    // Tự động thu gọn bàn phím ảo điện thoại khi nộp đáp án typing
+    if (type === 'typing') {
+      const input = document.getElementById('quiz-typing-input');
+      if (input) input.blur();
+    }
 
     // Phát âm thanh đọc từ vựng ngay khi trả lời
     if (window.wordsManager) {
@@ -728,11 +776,12 @@ class StudyManager {
     this.updateProgressBar();
     this.saveSessionState();
 
-    // Dừng chuyển câu ngay trong cú click hiện tại, cho phép người dùng quan sát kết quả đúng/sai
-    this.waitingForTap = false;
+    // Dừng chuyển câu ngay trong cú click hiện tại, cho phép người dùng quan sát kết quả đúng/sai.
+    // Kích hoạt chế độ cho phép nhấn vào BẤT KỲ ĐÂU trên toàn màn hình để chuyển sang câu tiếp theo.
+    this.setWaitingForTap(false);
     setTimeout(() => {
-      this.waitingForTap = true;
-    }, 200);
+      this.setWaitingForTap(true);
+    }, 50);
   }
 
   advanceToNextQuestion() {
@@ -741,6 +790,7 @@ class StudyManager {
 
   // === 4. KHI ÔN TẬP XONG: HIỂN THỊ DANH SÁCH CÁC TỪ VỪA HỌC KÈM NÚT SỬA TRẠNG THÁI ===
   showCompletionScreen() {
+    this.setWaitingForTap(false);
     document.getElementById('view-quiz').style.display = 'none';
     const congratsView = document.getElementById('view-congrats');
     congratsView.style.display = 'block';

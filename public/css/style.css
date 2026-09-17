@@ -1323,6 +1323,34 @@ input:checked + .ios-slider:before {
 .study-modal-card {
   max-width: 860px;
   height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.study-modal-card .modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.study-modal-card .study-view-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.study-modal-card .quiz-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Con trỏ & cử chỉ khi đang chờ chạm bất kỳ đâu trên màn hình để sang câu tiếp theo */
+#modal-study-room.waiting-for-tap,
+#modal-study-room.waiting-for-tap * {
+  cursor: pointer !important;
 }
 
 .study-header-bar {
