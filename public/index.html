@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -432,7 +433,7 @@
 
             <!-- Khung gõ từ chính tả (Tự động focus ngay lập tức, nhấn Enter để kiểm tra) -->
             <div class="quiz-input-box" id="quiz-typing-container" style="display: none;">
-              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go">
+              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go">
             </div>
 
             <!-- Thông báo phản hồi kết quả câu hỏi -->
@@ -442,13 +443,7 @@
         </div>
 
         <!-- ================= QUIZ CONGRATS & SUMMARY VIEW ================= -->
-        <div id="view-congrats" class="study-view-panel" style="display: none; text-align: center; padding: 20px 10px;">
-          <div style="font-size: 48px; margin-bottom: 8px;">🎉</div>
-          <h2 style="font-size: 1.6rem; color: #34d399; margin-bottom: 4px;">Chúc mừng bạn đã hoàn thành phiên học!</h2>
-          <p style="color: var(--text-secondary); max-width: 520px; margin: 0 auto 16px auto; font-size: 0.9rem;">
-            Dưới đây là danh sách các từ bạn vừa ôn luyện. Bạn có thể bấm nút gạt iPhone để điều chỉnh trạng thái <strong>Đã thuộc / Chưa thuộc</strong> trực tiếp:
-          </p>
-
+        <div id="view-congrats" class="study-view-panel" style="display: none; padding: 0;">
           <!-- Bảng danh sách các từ vừa học kèm nút gạt trạng thái -->
           <div class="summary-words-container">
             <table class="summary-words-table">
@@ -456,9 +451,7 @@
                 <tr>
                   <th style="width: 40px;">#</th>
                   <th>Từ vựng & IPA</th>
-                  <th style="width: 45px;">Nghe</th>
-                  <th>Nghĩa tiếng Việt</th>
-                  <th style="width: 120px; text-align: center;">Đã thuộc</th>
+                  <th style="width: 90px; text-align: center;">Đã thuộc</th>
                 </tr>
               </thead>
               <tbody id="summary-words-tbody">
@@ -469,7 +462,7 @@
 
           <div style="display: flex; justify-content: center; gap: 14px; margin-top: 20px;">
             <button class="btn btn-secondary" id="btn-restart-quiz">🔄 Luyện tập lại</button>
-            <button class="btn btn-primary btn-close-modal" data-target="modal-study-room">Hoàn tất</button>
+            <button type="button" class="btn btn-primary" id="btn-finish-study">Hoàn tất</button>
           </div>
         </div>
 
@@ -484,7 +477,7 @@
     <div class="modal-card modal-settings-card">
       <div class="modal-header">
         <h2 class="modal-title">⚙️ Cài Đặt Ôn Tập</h2>
-        <button type="button" class="btn-close-modal" data-target="modal-settings">✕</button>
+        <button type="button" class="icon-btn-mini btn-close-modal" data-target="modal-settings">✕</button>
       </div>
 
       <div class="modal-body" style="padding: 24px;">

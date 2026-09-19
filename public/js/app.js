@@ -150,5 +150,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (window.studyManager) {
     window.studyManager.checkSavedSession();
   }
+
+  // Ngăn chặn cuộn nền khi modal đang mở
+  const updateBodyScroll = () => {
+    const hasActiveModal = document.querySelectorAll('.modal-backdrop.active').length > 0;
+    if (hasActiveModal) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    let shouldUpdate = false;
+    for (const m of mutations) {
+      if (m.target.classList.contains('modal-backdrop') && m.attributeName === 'class') {
+        shouldUpdate = true;
+        break;
+      }
+    }
+    if (shouldUpdate) updateBodyScroll();
+  });
+
+  document.querySelectorAll('.modal-backdrop').forEach(modal => {
+    observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  // Khởi tạo trạng thái ban đầu
+  updateBodyScroll();
 });
 

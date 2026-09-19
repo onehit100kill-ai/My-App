@@ -65,6 +65,10 @@ body {
   line-height: 1.5;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 /* Typography */
 h1, h2, h3, h4, .brand-title {
   font-family: var(--font-display);
@@ -2180,6 +2184,41 @@ input:checked + .ios-slider:before {
 .stepper-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* ==========================================================================
+   Summary Words View 
+   ========================================================================== */
+.summary-words-container {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-top: 0;
+}
+.summary-words-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.summary-words-table th {
+  background: var(--bg-surface-elevated);
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.summary-words-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.95rem;
+}
+.summary-words-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* ==========================================================================
