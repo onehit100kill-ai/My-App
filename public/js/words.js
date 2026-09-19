@@ -384,6 +384,16 @@ class WordsManager {
       return;
     }
 
+    // Sắp xếp danh sách: Ưu tiên từ chưa thuộc (isLearned: false/undefined) lên trên
+    this.words.sort((a, b) => {
+      const aLearned = a.isLearned ? 1 : 0;
+      const bLearned = b.isLearned ? 1 : 0;
+      if (aLearned !== bLearned) {
+        return aLearned - bLearned;
+      }
+      return (a.order || 0) - (b.order || 0);
+    });
+
     if (table) table.style.display = 'table';
     if (emptyState) emptyState.style.display = 'none';
 
