@@ -15,7 +15,6 @@ async function lookupWord(word) {
 
   const cleanWord = word.trim().toLowerCase();
   let ipa = '';
-  let arpaIpa = '';
   let audioUrl = '';
   let examples = [];
   let definitions = [];
@@ -117,15 +116,6 @@ async function lookupWord(word) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
             const item = data[0];
-            
-            if (item.tags && Array.isArray(item.tags)) {
-              const pronTag = item.tags.find(t => t.startsWith('pron:'));
-              if (pronTag) {
-                const arpa = pronTag.replace('pron:', '').replace(/[0-9]/g, '').trim().toLowerCase();
-                if (arpa) arpaIpa = '/' + arpa + '/';
-              }
-            }
-
             if (item.defs && Array.isArray(item.defs)) {
               for (const rawDef of item.defs) {
                 const cleanDef = rawDef.replace(/^[a-z]+\t/, '').trim();
@@ -185,13 +175,10 @@ async function lookupWord(word) {
     examples.push(`This is a key example of ${cleanWord} in daily practice.`);
   }
 
-  // Tự động tạo IPA nếu chưa có, ưu tiên dạng sát chữ cái nhất (ARPAbet)
-  let finalIpa = arpaIpa || ipa || '/' + cleanWord + '/';
-
   return {
     success: true,
     word: cleanWord,
-    ipa: finalIpa,
+    ipa: ipa || '',
     audioUrl: audioUrl || '',
     suggestedMeanings,
     examples,
