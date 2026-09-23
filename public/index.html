@@ -364,7 +364,7 @@
         </p>
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.82rem; color: var(--text-muted);">Danh sách các ngày:</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;" id="section-study-total-words">Tổng số từ: 0 từ</span>
           <div>
             <button type="button" class="btn-icon-only btn-secondary" id="btn-select-all-days" style="font-size: 0.78rem; padding: 3px 8px;">Chọn tất cả</button>
             <button type="button" class="btn-icon-only btn-secondary" id="btn-deselect-all-days" style="font-size: 0.78rem; padding: 3px 8px;">Bỏ chọn</button>
@@ -375,16 +375,19 @@
           <!-- Render danh sách ngày với checkbox -->
         </div>
 
-        <!-- Lọc từ đã thuộc / chưa thuộc -->
-        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <span class="form-label" style="margin: 0;">Lọc từ khi ôn:</span>
-          <div class="ios-filter-container">
-            <span class="filter-label" id="label-section-study-unlearned">🔴 Chưa thuộc</span>
-            <label class="ios-switch">
-              <input type="checkbox" id="section-study-learned-toggle">
-              <span class="ios-slider"></span>
+        <!-- Lọc từ đã thuộc / chưa thuộc bằng Radio List -->
+        <div style="display: flex; flex-direction: column; gap: 10px; background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <span class="form-label" style="margin: 0; margin-bottom: 4px;">Cấu hình học theo phần:</span>
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+              <input type="radio" name="section-study-profile" value="all" checked> Tất cả
             </label>
-            <span class="filter-label" id="label-section-study-learned">🟢 Đã thuộc</span>
+            <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+              <input type="radio" name="section-study-profile" value="unlearned"> Chưa thuộc
+            </label>
+            <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+              <input type="radio" name="section-study-profile" value="learned"> Đã thuộc
+            </label>
           </div>
         </div>
 
@@ -417,7 +420,14 @@
         <div id="view-quiz" class="study-view-panel">
           <div class="quiz-container">
             
-            <div class="quiz-prompt-card">
+            <!-- Container riêng cho phần Nghe điền từ -->
+            <div id="quiz-listening-container" style="display: none; flex-direction: column; align-items: center; gap: 20px; padding: 30px 0;">
+              <button type="button" class="btn-audio" id="quiz-big-audio-btn" style="width: 80px; height: 80px; font-size: 36px; border-radius: 50%; box-shadow: 0 4px 15px rgba(56,139,253,0.3);">🔊</button>
+              <div style="color: var(--text-secondary); font-size: 0.95rem;">Nghe và điền từ chính xác</div>
+            </div>
+
+            <!-- Container gốc cho Điền từ & Trắc nghiệm -->
+            <div class="quiz-prompt-card" id="quiz-prompt-container">
               <span class="quiz-type-badge badge-choice" id="quiz-badge" style="display: none;"></span>
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div class="quiz-word-display" id="quiz-question-text">confident</div>
@@ -481,20 +491,40 @@
       </div>
 
       <div class="modal-body" style="padding: 24px;">
-        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">
-          Tùy chỉnh số lần hoàn thành chính xác cho mỗi từ vựng trong mỗi phiên học theo chuẩn 4English:
-        </p>
+        <!-- Lựa chọn cấu hình áp dụng -->
+        <div style="margin-bottom: 20px; display: flex; gap: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+          <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+            <input type="radio" name="setting-profile" value="all" checked> Tất cả
+          </label>
+          <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+            <input type="radio" name="setting-profile" value="unlearned"> Chưa thuộc
+          </label>
+          <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+            <input type="radio" name="setting-profile" value="learned"> Đã thuộc
+          </label>
+        </div>
 
         <div class="settings-group">
+          <!-- Cài đặt số lần Nghe điền từ -->
+          <div class="settings-option-item">
+            <div class="settings-option-info">
+              <div class="settings-option-title">🎧 Nghe điền từ</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" id="btn-dec-listening" title="Giảm">−</button>
+              <input type="number" id="setting-target-listening" class="stepper-input" min="0" max="10" value="0" readonly>
+              <button type="button" class="stepper-btn" id="btn-inc-listening" title="Tăng">+</button>
+            </div>
+          </div>
+
           <!-- Cài đặt số lần Điền từ -->
           <div class="settings-option-item">
             <div class="settings-option-info">
-              <div class="settings-option-title">✍️ Số lần điền từ</div>
-              <div class="settings-option-desc">Số lần gõ chính xác mỗi từ vựng trước khi chuyển sang trắc nghiệm</div>
+              <div class="settings-option-title">✍️ Điền từ</div>
             </div>
             <div class="number-stepper">
               <button type="button" class="stepper-btn" id="btn-dec-typing" title="Giảm">−</button>
-              <input type="number" id="setting-target-typing" class="stepper-input" min="1" max="10" value="1" readonly>
+              <input type="number" id="setting-target-typing" class="stepper-input" min="0" max="10" value="1" readonly>
               <button type="button" class="stepper-btn" id="btn-inc-typing" title="Tăng">+</button>
             </div>
           </div>
@@ -502,19 +532,14 @@
           <!-- Cài đặt số lần Chọn nghĩa -->
           <div class="settings-option-item">
             <div class="settings-option-info">
-              <div class="settings-option-title">🎯 Số lần chọn nghĩa</div>
-              <div class="settings-option-desc">Số lần chọn đúng nghĩa tiếng Việt để hoàn thành từ vựng</div>
+              <div class="settings-option-title">🎯 Chọn nghĩa</div>
             </div>
             <div class="number-stepper">
               <button type="button" class="stepper-btn" id="btn-dec-choice" title="Giảm">−</button>
-              <input type="number" id="setting-target-choice" class="stepper-input" min="1" max="10" value="1" readonly>
+              <input type="number" id="setting-target-choice" class="stepper-input" min="0" max="10" value="1" readonly>
               <button type="button" class="stepper-btn" id="btn-inc-choice" title="Tăng">+</button>
             </div>
           </div>
-        </div>
-
-        <div class="settings-rule-note" style="margin-top: 20px; padding: 12px 14px; background: rgba(56, 139, 253, 0.08); border-left: 3px solid var(--primary); border-radius: 4px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">
-          💡 <strong>Quy tắc 4English:</strong> Nếu bạn làm sai ở bất kỳ câu nào, từ đó sẽ bị xóa toàn bộ tiến trình và quay lại học từ đầu cả 2 phần (Điền từ & Chọn nghĩa).
         </div>
       </div>
 

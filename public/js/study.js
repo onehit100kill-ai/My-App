@@ -15,16 +15,22 @@ class StudyManager {
   constructor() {
     this.words = [];
     this.scopeTitle = '';
-    this.wordProgressMap = new Map(); // wordId -> { typingCount: number, choiceCount: number }
+    this.wordProgressMap = new Map(); // wordId -> { listeningCount: number, typingCount: number, choiceCount: number }
+    this.listeningQueue = []; // Hàng đợi Nghe điền từ
     this.typingQueue = []; // Hàng đợi các từ cần gõ
     this.choiceQueue = []; // Hàng đợi các từ cần chọn trắc nghiệm
-    this.currentPhase = 'typing'; // 'typing' hoặc 'choice'
+    this.currentPhase = 'listening'; // 'listening', 'typing', 'choice'
     this.currentQuizItem = null;
     this.waitingForTap = false;
 
-    // Cài đặt số lần ôn tập (mặc định: 1 lần điền từ, 1 lần chọn nghĩa)
-    this.targetTyping = 1;
-    this.targetChoice = 1;
+    // Cài đặt số lần ôn tập theo 3 loại
+    this.studySettings = {
+      all: { listening: 0, typing: 1, choice: 1 },
+      unlearned: { listening: 1, typing: 1, choice: 1 },
+      learned: { listening: 0, typing: 1, choice: 1 }
+    };
+    this.currentStudyProfile = 'all'; // Profile đang dùng cho phiên học
+    this.currentConfigProfile = 'all'; // Profile đang được chọn để chỉnh sửa trong Cài đặt
 
     this.loadSettings();
     this.bindEvents();
@@ -60,36 +66,55 @@ class StudyManager {
   // === CÀI ĐẶT SỐ LẦN ÔN TẬP ===
   loadSettings() {
     try {
-      const raw = localStorage.getItem('study_settings');
+      const raw = localStorage.getItem('study_settings_profiles');
       if (raw) {
         const parsed = JSON.parse(raw);
-        this.targetTyping = Math.max(1, Math.min(10, parseInt(parsed.targetTyping, 10) || 1));
-        this.targetChoice = Math.max(1, Math.min(10, parseInt(parsed.targetChoice, 10) || 1));
+        if (parsed.all) this.studySettings.all = parsed.all;
+        if (parsed.unlearned) this.studySettings.unlearned = parsed.unlearned;
+        if (parsed.learned) this.studySettings.learned = parsed.learned;
       }
     } catch (e) {
-      this.targetTyping = 1;
-      this.targetChoice = 1;
+      console.warn("Could not load study settings, using default.", e);
     }
-    this.updateSettingsUI();
   }
 
-  saveSettings(typingVal, choiceVal) {
-    this.targetTyping = Math.max(1, Math.min(10, parseInt(typingVal, 10) || 1));
-    this.targetChoice = Math.max(1, Math.min(10, parseInt(choiceVal, 10) || 1));
+  saveSettings() {
+    // Đọc giá trị hiện tại trên UI và lưu vào currentConfigProfile
+    const listeningVal = parseInt(document.getElementById('setting-target-listening')?.value || 0, 10);
+    const typingVal = parseInt(document.getElementById('setting-target-typing')?.value || 0, 10);
+    const choiceVal = parseInt(document.getElementById('setting-target-choice')?.value || 0, 10);
+    
+    if (listeningVal === 0 && typingVal === 0 && choiceVal === 0) {
+      if (window.showToast) window.showToast('Lỗi: Cần có ít nhất 1 phương pháp học > 0');
+      return false; // Validation failed
+    }
+
+    this.studySettings[this.currentConfigProfile] = {
+      listening: Math.max(0, Math.min(10, listeningVal)),
+      typing: Math.max(0, Math.min(10, typingVal)),
+      choice: Math.max(0, Math.min(10, choiceVal))
+    };
+
     try {
-      localStorage.setItem('study_settings', JSON.stringify({
-        targetTyping: this.targetTyping,
-        targetChoice: this.targetChoice
-      }));
+      localStorage.setItem('study_settings_profiles', JSON.stringify(this.studySettings));
     } catch (e) {}
-    this.updateSettingsUI();
+    
+    return true; // Saved successfully
   }
 
   updateSettingsUI() {
+    const listeningInput = document.getElementById('setting-target-listening');
     const typingInput = document.getElementById('setting-target-typing');
     const choiceInput = document.getElementById('setting-target-choice');
-    if (typingInput) typingInput.value = this.targetTyping;
-    if (choiceInput) choiceInput.value = this.targetChoice;
+    
+    const currentConf = this.studySettings[this.currentConfigProfile];
+    if (listeningInput) listeningInput.value = currentConf.listening;
+    if (typingInput) typingInput.value = currentConf.typing;
+    if (choiceInput) choiceInput.value = currentConf.choice;
+    
+    // Đồng bộ UI radio button
+    const radioSelected = document.querySelector(`input[name="setting-profile"][value="${this.currentConfigProfile}"]`);
+    if (radioSelected) radioSelected.checked = true;
   }
 
   bindEvents() {
@@ -103,38 +128,43 @@ class StudyManager {
       modalSettings?.classList.add('active');
     });
 
-    // Steppers cho Điền từ
-    document.getElementById('btn-dec-typing')?.addEventListener('click', () => {
-      const input = document.getElementById('setting-target-typing');
-      let val = parseInt(input.value, 10) || 1;
-      if (val > 1) input.value = val - 1;
-    });
-    document.getElementById('btn-inc-typing')?.addEventListener('click', () => {
-      const input = document.getElementById('setting-target-typing');
-      let val = parseInt(input.value, 10) || 1;
-      if (val < 10) input.value = val + 1;
+    // Sự kiện chuyển đổi cấu hình
+    document.querySelectorAll('input[name="setting-profile"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        // Lưu lại thay đổi của profile hiện tại trước khi chuyển
+        this.saveSettings(); // Không bắt buộc validation khi chuyển tab, nhưng để an toàn cứ lưu tạm
+        this.currentConfigProfile = e.target.value;
+        this.updateSettingsUI();
+      });
     });
 
-    // Steppers cho Chọn nghĩa
-    document.getElementById('btn-dec-choice')?.addEventListener('click', () => {
-      const input = document.getElementById('setting-target-choice');
-      let val = parseInt(input.value, 10) || 1;
-      if (val > 1) input.value = val - 1;
-    });
-    document.getElementById('btn-inc-choice')?.addEventListener('click', () => {
-      const input = document.getElementById('setting-target-choice');
-      let val = parseInt(input.value, 10) || 1;
-      if (val < 10) input.value = val + 1;
-    });
+    // Helper tạo event cho stepper
+    const setupStepper = (idName, min, max) => {
+      document.getElementById(`btn-dec-${idName}`)?.addEventListener('click', () => {
+        const input = document.getElementById(`setting-target-${idName}`);
+        if (!input) return;
+        let val = parseInt(input.value, 10) || 0;
+        if (val > min) input.value = val - 1;
+      });
+      document.getElementById(`btn-inc-${idName}`)?.addEventListener('click', () => {
+        const input = document.getElementById(`setting-target-${idName}`);
+        if (!input) return;
+        let val = parseInt(input.value, 10) || 0;
+        if (val < max) input.value = val + 1;
+      });
+    };
+
+    setupStepper('listening', 0, 10);
+    setupStepper('typing', 0, 10);
+    setupStepper('choice', 0, 10);
 
     // Lưu cài đặt
     btnSaveSettings?.addEventListener('click', () => {
-      const typingVal = document.getElementById('setting-target-typing')?.value || 1;
-      const choiceVal = document.getElementById('setting-target-choice')?.value || 1;
-      this.saveSettings(typingVal, choiceVal);
-      modalSettings?.classList.remove('active');
-      if (window.showToast) {
-        window.showToast('Đã lưu cài đặt ôn tập thành công!');
+      if (this.saveSettings()) {
+        modalSettings?.classList.remove('active');
+        if (window.showToast) {
+          window.showToast('Đã lưu cài đặt ôn tập thành công!');
+        }
       }
     });
 
@@ -152,10 +182,27 @@ class StudyManager {
     // Modal chọn ngày ôn theo phần
     document.getElementById('btn-select-all-days')?.addEventListener('click', () => {
       document.querySelectorAll('#section-days-checklist input[type="checkbox"]').forEach(cb => cb.checked = true);
+      this.updateSectionStudyWordCount();
     });
     document.getElementById('btn-deselect-all-days')?.addEventListener('click', () => {
       document.querySelectorAll('#section-days-checklist input[type="checkbox"]').forEach(cb => cb.checked = false);
+      this.updateSectionStudyWordCount();
     });
+    
+    // Khi thay đổi radio mode trong modal section study
+    document.querySelectorAll('input[name="section-study-profile"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        this.renderSectionStudyChecklist();
+      });
+    });
+
+    // Khi thay đổi checkbox trong danh sách ngày
+    document.getElementById('section-days-checklist')?.addEventListener('change', (e) => {
+      if (e.target.tagName.toLowerCase() === 'input' && e.target.type === 'checkbox') {
+        this.updateSectionStudyWordCount();
+      }
+    });
+
     document.getElementById('btn-start-section-study')?.addEventListener('click', () => {
       this.startSectionStudy();
     });
@@ -166,12 +213,15 @@ class StudyManager {
     });
 
     // Audio Quiz
-    document.getElementById('quiz-audio-btn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
+    const playCurrentAudio = (e) => {
+      if (e) e.stopPropagation();
       if (this.currentQuizItem && window.wordsManager) {
         window.wordsManager.playPronunciation(this.currentQuizItem.word.word, this.currentQuizItem.word.audioUrl);
       }
-    });
+    };
+    
+    document.getElementById('quiz-audio-btn')?.addEventListener('click', playCurrentAudio);
+    document.getElementById('quiz-big-audio-btn')?.addEventListener('click', playCurrentAudio);
 
     // Submit gõ từ chính tả
     document.getElementById('btn-submit-typing')?.addEventListener('click', (e) => {
@@ -288,11 +338,11 @@ class StudyManager {
           words: this.words,
           scopeTitle: this.scopeTitle,
           currentPhase: this.currentPhase,
+          currentStudyProfile: this.currentStudyProfile,
+          listeningQueue: this.listeningQueue.map(w => w.id), // Tối ưu bộ nhớ
           typingQueue: this.typingQueue.map(w => w.id), // Tối ưu bộ nhớ
           choiceQueue: this.choiceQueue.map(w => w.id), // Tối ưu bộ nhớ
           wordProgressList: Array.from(this.wordProgressMap.entries()),
-          targetTyping: this.targetTyping,
-          targetChoice: this.targetChoice,
           timestamp: Date.now()
         };
         localStorage.setItem('english_study_session', JSON.stringify(state));
@@ -336,26 +386,25 @@ class StudyManager {
   restoreSession(saved) {
     this.words = saved.words || [];
     this.scopeTitle = saved.scopeTitle || '';
-    this.currentPhase = saved.currentPhase || 'typing';
+    this.currentPhase = saved.currentPhase || 'listening';
+    this.currentStudyProfile = saved.currentStudyProfile || 'all';
     
     // Tái tạo lại Object từ ID để tránh lỗi
     const wordMap = new Map(this.words.map(w => [w.id, w]));
     
-    if (saved.typingQueue && saved.typingQueue.length > 0 && typeof saved.typingQueue[0] !== 'object') {
-      this.typingQueue = saved.typingQueue.map(id => wordMap.get(id)).filter(Boolean);
-    } else {
-      this.typingQueue = saved.typingQueue || [];
-    }
-    
-    if (saved.choiceQueue && saved.choiceQueue.length > 0 && typeof saved.choiceQueue[0] !== 'object') {
-      this.choiceQueue = saved.choiceQueue.map(id => wordMap.get(id)).filter(Boolean);
-    } else {
-      this.choiceQueue = saved.choiceQueue || [];
-    }
+    const restoreQueue = (savedQ) => {
+      if (savedQ && savedQ.length > 0 && typeof savedQ[0] !== 'object') {
+        return savedQ.map(id => wordMap.get(id)).filter(Boolean);
+      }
+      return savedQ || [];
+    };
+
+    this.listeningQueue = restoreQueue(saved.listeningQueue);
+    this.typingQueue = restoreQueue(saved.typingQueue);
+    this.choiceQueue = restoreQueue(saved.choiceQueue);
 
     this.wordProgressMap = new Map(saved.wordProgressList || []);
-    if (saved.targetTyping) this.targetTyping = saved.targetTyping;
-    if (saved.targetChoice) this.targetChoice = saved.targetChoice;
+    
     this.setWaitingForTap(false);
     this._choiceAnswered = false;
 
@@ -468,37 +517,65 @@ class StudyManager {
       alert('Phần này chưa có Ngày nào.');
       return;
     }
+    
+    this._currentStudySection = section; // Lưu tạm section đang mở modal
 
-    const checklist = document.getElementById('section-days-checklist');
-    checklist.innerHTML = section.days.map(day => `
-      <label class="day-check-item">
-        <input type="checkbox" value="${day.id}" checked>
-        <span style="font-weight: 500;">${this.escapeHtml(day.title)}</span>
-        <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: auto;">
-          (${day.totalWords} từ)
-        </span>
-      </label>
-    `).join('');
-
-    const toggle = document.getElementById('section-study-learned-toggle');
-    if (toggle) {
-      toggle.checked = false;
-      this.updateSectionStudyFilterLabels(false);
-      toggle.onchange = () => this.updateSectionStudyFilterLabels(toggle.checked);
-    }
-
+    this.renderSectionStudyChecklist();
     document.getElementById('modal-section-study').classList.add('active');
   }
 
-  updateSectionStudyFilterLabels(isLearned) {
-    const unlearned = document.getElementById('label-section-study-unlearned');
-    const learned = document.getElementById('label-section-study-learned');
-    if (isLearned) {
-      learned.classList.add('active');
-      unlearned.classList.remove('active');
-    } else {
-      unlearned.classList.add('active');
-      learned.classList.remove('active');
+  renderSectionStudyChecklist() {
+    if (!this._currentStudySection) return;
+    const section = this._currentStudySection;
+    const checklist = document.getElementById('section-days-checklist');
+    const profileRadio = document.querySelector('input[name="section-study-profile"]:checked');
+    const profile = profileRadio ? profileRadio.value : 'all';
+
+    // Giữ nguyên trạng thái checked của các ngày (nếu re-render)
+    const existingChecks = new Set(
+      Array.from(checklist.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value)
+    );
+    const isInitialRender = checklist.innerHTML.trim() === '';
+
+    checklist.innerHTML = section.days.map(day => {
+      const total = day.totalWords || 0;
+      const learned = day.learnedWords || 0;
+      let count = 0;
+      if (profile === 'all') count = total;
+      else if (profile === 'learned') count = learned;
+      else if (profile === 'unlearned') count = total - learned;
+      
+      const checked = isInitialRender ? 'checked' : (existingChecks.has(String(day.id)) ? 'checked' : '');
+
+      return `
+      <label class="day-check-item">
+        <input type="checkbox" value="${day.id}" ${checked}>
+        <span style="font-weight: 500;">${this.escapeHtml(day.title)}</span>
+        <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: auto;" data-count="${count}">
+          (${count} từ)
+        </span>
+      </label>
+    `}).join('');
+    
+    this.updateSectionStudyWordCount();
+  }
+
+  updateSectionStudyWordCount() {
+    const checkedBoxes = document.querySelectorAll('#section-days-checklist input[type="checkbox"]:checked');
+    let total = 0;
+    checkedBoxes.forEach(cb => {
+      const label = cb.closest('.day-check-item');
+      if (label) {
+        const countSpan = label.querySelector('[data-count]');
+        if (countSpan) {
+          total += parseInt(countSpan.getAttribute('data-count'), 10) || 0;
+        }
+      }
+    });
+    
+    const countText = document.getElementById('section-study-total-words');
+    if (countText) {
+      countText.textContent = `Tổng số từ: ${total} từ`;
     }
   }
 
@@ -511,8 +588,14 @@ class StudyManager {
       return;
     }
 
-    const isLearned = document.getElementById('section-study-learned-toggle').checked;
-    const status = isLearned ? 'learned' : 'unlearned';
+    const profileRadio = document.querySelector('input[name="section-study-profile"]:checked');
+    const profile = profileRadio ? profileRadio.value : 'all';
+    let status = 'all';
+    if (profile === 'learned') status = 'learned';
+    else if (profile === 'unlearned') status = 'unlearned';
+
+    // Cập nhật profile cho phiên học
+    this.currentStudyProfile = profile;
 
     this.prepareFocusForMobile();
 
@@ -524,7 +607,10 @@ class StudyManager {
           modal.classList.remove('active');
           modal.style.opacity = '';
         }
-        const filterText = isLearned ? 'đã thuộc' : 'chưa thuộc';
+        let filterText = '';
+        if (profile === 'learned') filterText = 'đã thuộc';
+        else if (profile === 'unlearned') filterText = 'chưa thuộc';
+        
         alert(`Không tìm thấy từ nào ${filterText} trong các ngày đã chọn.`);
         return;
       }
@@ -559,15 +645,18 @@ class StudyManager {
     this.wordProgressMap.clear();
     this.words.forEach(w => {
       this.wordProgressMap.set(w.id, {
+        listeningCount: 0,
         typingCount: 0,
         choiceCount: 0
       });
     });
 
-    // Phần 1: Xáo trộn các từ theo cách điền từ
-    this.typingQueue = this.shuffle([...this.words]);
-    this.choiceQueue = [];
-    this.currentPhase = 'typing';
+    const conf = this.studySettings[this.currentStudyProfile];
+    this.listeningQueue = conf.listening > 0 ? this.shuffle([...this.words]) : [];
+    this.typingQueue = conf.listening === 0 && conf.typing > 0 ? this.shuffle([...this.words]) : [];
+    this.choiceQueue = conf.listening === 0 && conf.typing === 0 && conf.choice > 0 ? this.shuffle([...this.words]) : [];
+
+    this.currentPhase = null;
     this.setWaitingForTap(false);
     this._choiceAnswered = false;
 
@@ -577,15 +666,17 @@ class StudyManager {
 
   // Cập nhật thanh tiến độ theo số lần hoàn thành mục tiêu cài đặt
   updateProgressBar() {
-    const totalTasks = this.words.length * (this.targetTyping + this.targetChoice);
+    const conf = this.studySettings[this.currentStudyProfile];
+    const totalTasks = this.words.length * (conf.listening + conf.typing + conf.choice);
     if (totalTasks === 0) return;
 
     let completedTasks = 0;
     this.words.forEach(w => {
       const p = this.wordProgressMap.get(w.id);
       if (p) {
-        completedTasks += Math.min(this.targetTyping, p.typingCount || 0);
-        completedTasks += Math.min(this.targetChoice, p.choiceCount || 0);
+        completedTasks += Math.min(conf.listening, p.listeningCount || 0);
+        completedTasks += Math.min(conf.typing, p.typingCount || 0);
+        completedTasks += Math.min(conf.choice, p.choiceCount || 0);
       }
     });
 
@@ -604,8 +695,27 @@ class StudyManager {
     if (fb) fb.style.display = 'none';
 
     this.updateProgressBar();
+    const conf = this.studySettings[this.currentStudyProfile];
 
-    // 1. Kiểm tra hàng đợi Điền từ (Giai đoạn 1)
+    // 1. Kiểm tra hàng đợi Nghe điền từ
+    if (this.listeningQueue.length > 0) {
+      this.currentPhase = 'listening';
+      const word = this.listeningQueue[0];
+      this.currentQuizItem = { word, type: 'listening' };
+      this.renderQuizQuestion();
+      this.saveSessionState();
+      return;
+    }
+
+    // 2. Hàng đợi Điền từ
+    if (this.typingQueue.length === 0 && conf.typing > 0) {
+      const pendingTyping = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && p.listeningCount >= conf.listening && p.typingCount < conf.typing;
+      });
+      if (pendingTyping.length > 0) this.typingQueue = this.shuffle([...pendingTyping]);
+    }
+
     if (this.typingQueue.length > 0) {
       this.currentPhase = 'typing';
       const word = this.typingQueue[0];
@@ -615,18 +725,13 @@ class StudyManager {
       return;
     }
 
-    // 2. Nếu Điền từ đã xong, chuẩn bị hoặc tiếp tục Chọn nghĩa (Giai đoạn 2)
-    if (this.choiceQueue.length === 0) {
-      // Lấy các từ đã hoàn thành điền từ nhưng chưa đủ số lần chọn nghĩa
-      const pendingChoiceWords = this.words.filter(w => {
+    // 3. Hàng đợi Chọn nghĩa
+    if (this.choiceQueue.length === 0 && conf.choice > 0) {
+      const pendingChoice = this.words.filter(w => {
         const p = this.wordProgressMap.get(w.id);
-        return p && p.typingCount >= this.targetTyping && p.choiceCount < this.targetChoice;
+        return p && p.listeningCount >= conf.listening && p.typingCount >= conf.typing && p.choiceCount < conf.choice;
       });
-
-      if (pendingChoiceWords.length > 0) {
-        // "sau đó sẽ xáo trộn để ôn chọn nghĩa"
-        this.choiceQueue = this.shuffle([...pendingChoiceWords]);
-      }
+      if (pendingChoice.length > 0) this.choiceQueue = this.shuffle([...pendingChoice]);
     }
 
     if (this.choiceQueue.length > 0) {
@@ -638,30 +743,44 @@ class StudyManager {
       return;
     }
 
-    // 3. Kiểm tra nếu còn từ nào chưa đạt cả 2 phần (do bị sai và reset)
-    const unfinishedTyping = this.words.filter(w => {
-      const p = this.wordProgressMap.get(w.id);
-      return p && p.typingCount < this.targetTyping;
-    });
-
-    if (unfinishedTyping.length > 0) {
-      this.typingQueue = this.shuffle([...unfinishedTyping]);
-      this.nextQuizQuestion();
-      return;
+    // 4. Kiểm tra lại phòng hờ sai/rớt nhịp (Punishment loop fallback)
+    if (conf.listening > 0) {
+      const unfinished = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && p.listeningCount < conf.listening;
+      });
+      if (unfinished.length > 0) {
+        this.listeningQueue = this.shuffle([...unfinished]);
+        this.nextQuizQuestion();
+        return;
+      }
+    }
+    
+    if (conf.typing > 0) {
+      const unfinished = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && p.typingCount < conf.typing;
+      });
+      if (unfinished.length > 0) {
+        this.typingQueue = this.shuffle([...unfinished]);
+        this.nextQuizQuestion();
+        return;
+      }
     }
 
-    const unfinishedChoice = this.words.filter(w => {
-      const p = this.wordProgressMap.get(w.id);
-      return p && p.choiceCount < this.targetChoice;
-    });
-
-    if (unfinishedChoice.length > 0) {
-      this.choiceQueue = this.shuffle([...unfinishedChoice]);
-      this.nextQuizQuestion();
-      return;
+    if (conf.choice > 0) {
+      const unfinished = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && p.choiceCount < conf.choice;
+      });
+      if (unfinished.length > 0) {
+        this.choiceQueue = this.shuffle([...unfinished]);
+        this.nextQuizQuestion();
+        return;
+      }
     }
 
-    // 4. Nếu toàn bộ từ đã pass cả 2 phần theo đúng target cài đặt -> Kết thúc phiên ôn tập thành công!
+    // 5. Nếu toàn bộ từ đã pass cả 3 phần -> Kết thúc phiên ôn tập thành công!
     this.clearSessionState();
     this.showCompletionScreen();
   }
@@ -669,20 +788,47 @@ class StudyManager {
   renderQuizQuestion() {
     const item = this.currentQuizItem;
     const w = item.word;
-    const progress = this.wordProgressMap.get(w.id) || { typingCount: 0, choiceCount: 0 };
+    const progress = this.wordProgressMap.get(w.id) || { listeningCount: 0, typingCount: 0, choiceCount: 0 };
 
     const badge = document.getElementById('quiz-badge');
     const questionText = document.getElementById('quiz-question-text');
     const questionSubtext = document.getElementById('quiz-question-subtext');
     const audioBtn = document.getElementById('quiz-audio-btn');
+    
+    const promptContainer = document.getElementById('quiz-prompt-container');
+    const listeningContainer = document.getElementById('quiz-listening-container');
     const optionsContainer = document.getElementById('quiz-options-container');
     const typingContainer = document.getElementById('quiz-typing-container');
 
     // Ẩn badge tiêu đề rườm rà theo yêu cầu của người dùng
     if (badge) badge.style.display = 'none';
 
-    if (item.type === 'typing') {
-      // Phần 1 (Điền từ): Hiện duy nhất nghĩa tiếng Việt làm câu hỏi, ẩn hoàn toàn phiên âm IPA
+    if (item.type === 'listening') {
+      // Phần Nghe điền từ: Ẩn hoàn toàn prompt, hiện nút loa to
+      if (promptContainer) promptContainer.style.display = 'none';
+      if (listeningContainer) listeningContainer.style.display = 'flex';
+      
+      optionsContainer.style.display = 'none';
+      typingContainer.style.display = 'flex';
+
+      const input = document.getElementById('quiz-typing-input');
+      input.value = '';
+
+      // Tự động phát âm thanh
+      if (window.wordsManager) {
+        window.wordsManager.playPronunciation(w.word, w.audioUrl);
+      }
+
+      input.focus();
+      input.click();
+      requestAnimationFrame(() => input.focus());
+      setTimeout(() => input.focus(), 50);
+
+    } else if (item.type === 'typing') {
+      // Phần Điền từ: Hiện duy nhất nghĩa tiếng Việt làm câu hỏi, ẩn hoàn toàn phiên âm IPA
+      if (promptContainer) promptContainer.style.display = 'flex';
+      if (listeningContainer) listeningContainer.style.display = 'none';
+      
       questionText.textContent = w.meaning;
       if (questionSubtext) {
         questionSubtext.style.display = 'none';
@@ -696,22 +842,16 @@ class StudyManager {
       const input = document.getElementById('quiz-typing-input');
       input.value = '';
 
-      // TỰ ĐỘNG MỞ BÀN PHÍM TRÊN ĐIỆN THOẠI:
-      // Focus ĐỒNG BỘ trong cùng luồng sự kiện chạm/nhấn để trình duyệt điện thoại (iOS Safari & Android Chrome)
-      // nhận diện gesture token và tự động bật bàn phím ảo ngay lập tức.
       input.focus();
       input.click();
-
-      // Hỗ trợ thêm cho một số trình duyệt có micro-delay layout
-      requestAnimationFrame(() => {
-        input.focus();
-      });
-      setTimeout(() => {
-        input.focus();
-      }, 50);
+      requestAnimationFrame(() => input.focus());
+      setTimeout(() => input.focus(), 50);
 
     } else {
-      // Phần 2 (Chọn nghĩa): Hiện từ tiếng Anh, hiện phiên âm IPA và audio
+      // Phần Chọn nghĩa: Hiện từ tiếng Anh, hiện phiên âm IPA và audio
+      if (promptContainer) promptContainer.style.display = 'flex';
+      if (listeningContainer) listeningContainer.style.display = 'none';
+      
       questionText.textContent = w.word;
       if (questionSubtext) {
         if (w.ipa) {
@@ -807,22 +947,22 @@ class StudyManager {
     const correctWord = this.currentQuizItem.word.word.trim().toLowerCase();
 
     const isCorrect = val === correctWord;
-    this.processAnswerResult(isCorrect, 'typing');
+    this.processAnswerResult(isCorrect, this.currentQuizItem.type);
   }
 
   processAnswerResult(isCorrect, type) {
     const feedbackBox = document.getElementById('quiz-feedback-box');
     const wordObj = this.currentQuizItem.word;
-    const progress = this.wordProgressMap.get(wordObj.id) || { typingCount: 0, choiceCount: 0 };
+    const progress = this.wordProgressMap.get(wordObj.id) || { listeningCount: 0, typingCount: 0, choiceCount: 0 };
+    const conf = this.studySettings[this.currentStudyProfile];
 
     // Phát âm thanh NGAY LẬP TỨC để trình duyệt iOS ghi nhận đây là kết quả của user gesture.
-    // Nếu để sau các lệnh thay đổi focus (blur), iOS Safari sẽ hiểu là gesture đã bị consume và chặn âm thanh.
     if (window.wordsManager) {
       window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
     }
 
-    // Tự động thu gọn bàn phím ảo điện thoại khi nộp đáp án typing
-    if (type === 'typing') {
+    // Tự động thu gọn bàn phím ảo điện thoại khi nộp đáp án
+    if (type === 'typing' || type === 'listening') {
       const input = document.getElementById('quiz-typing-input');
       // Trì hoãn việc blur để không cản trở luồng phát âm thanh đồng bộ
       if (input) {
@@ -837,16 +977,22 @@ class StudyManager {
       feedbackBox.style.color = '#34c759';
       feedbackBox.style.border = '1px solid rgba(52, 199, 89, 0.3)';
 
-      if (type === 'typing') {
+      if (type === 'listening') {
+        progress.listeningCount = (progress.listeningCount || 0) + 1;
+        this.listeningQueue.shift();
+        if (progress.listeningCount < conf.listening) {
+          this.listeningQueue.push(wordObj);
+        }
+      } else if (type === 'typing') {
         progress.typingCount = (progress.typingCount || 0) + 1;
         this.typingQueue.shift();
-        if (progress.typingCount < this.targetTyping) {
+        if (progress.typingCount < conf.typing) {
           this.typingQueue.push(wordObj);
         }
       } else {
         progress.choiceCount = (progress.choiceCount || 0) + 1;
         this.choiceQueue.shift();
-        if (progress.choiceCount < this.targetChoice) {
+        if (progress.choiceCount < conf.choice) {
           this.choiceQueue.push(wordObj);
         }
       }
@@ -854,7 +1000,8 @@ class StudyManager {
       feedbackBox.textContent = 'Chính xác';
 
     } else {
-      // QUY TẮC 4ENGLISH:
+      // QUY TẮC PHẠT MỚI: Reset tiến trình và bắt ôn lại theo config đã chọn
+      progress.listeningCount = 0;
       progress.typingCount = 0;
       progress.choiceCount = 0;
 
@@ -862,13 +1009,20 @@ class StudyManager {
       feedbackBox.style.color = '#ff6b6b';
       feedbackBox.style.border = '1px solid rgba(255, 69, 58, 0.3)';
 
-      if (type === 'typing') {
+      if (type === 'listening') {
+        const failedWord = this.listeningQueue.shift();
+        if (conf.listening > 0) this.listeningQueue.push(failedWord);
+        feedbackBox.textContent = `Sai, từ đúng: ${wordObj.word}`;
+      } else if (type === 'typing') {
         const failedWord = this.typingQueue.shift();
-        this.typingQueue.push(failedWord);
+        if (conf.listening > 0) this.listeningQueue.push(failedWord);
+        else if (conf.typing > 0) this.typingQueue.push(failedWord);
         feedbackBox.textContent = `Sai, từ đúng: ${wordObj.word}`;
       } else {
         const failedWord = this.choiceQueue.shift();
-        this.typingQueue.push(failedWord);
+        if (conf.listening > 0) this.listeningQueue.push(failedWord);
+        else if (conf.typing > 0) this.typingQueue.push(failedWord);
+        else if (conf.choice > 0) this.choiceQueue.push(failedWord);
         feedbackBox.textContent = `Sai, từ đúng: ${wordObj.meaning}`;
       }
     }
