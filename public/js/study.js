@@ -459,8 +459,13 @@ class StudyManager {
     this.prepareFocusForMobile(); // Kích hoạt focus đồng bộ trước khi await
 
     try {
-      // Chỉ lấy các từ Chưa thuộc (được đánh dấu để học)
-      const res = await window.api.getWords(dayId, 'unlearned');
+      const profile = this.currentConfigProfile || 'all';
+      this.currentStudyProfile = profile;
+      let status = 'all';
+      if (profile === 'learned') status = 'learned';
+      else if (profile === 'unlearned') status = 'unlearned';
+
+      const res = await window.api.getWords(dayId, status);
       if (res.success && res.data.length > 0) {
         const dayObj = await window.api.getDay(dayId);
         const title = dayObj.data ? dayObj.data.title : `Ngày ${dayId}`;
@@ -468,38 +473,47 @@ class StudyManager {
         return;
       }
 
-      // Nếu không có từ chưa thuộc nào, kiểm tra xem có từ trong ngày không
-      const resAll = await window.api.getWords(dayId, 'all');
-      if (!resAll.success || resAll.data.length === 0) {
-        alert('Ngày này chưa có từ vựng nào để ôn tập.');
-        return;
-      }
-
-      // Nếu tất cả từ đã thuộc, hỏi người dùng có muốn ôn lại không
+      // Nếu không có từ nào theo bộ lọc, hiển thị thông báo
       const modal = document.getElementById('modal-study-room');
       if (modal) {
         modal.classList.remove('active');
         modal.style.opacity = '';
       }
+      document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím
       
-      window.showConfirmDialog({
-        title: 'Tất cả từ đã thuộc',
-        message: 'Tất cả từ vựng trong ngày này đều đã được đánh dấu Đã thuộc. Bạn có muốn ôn lại toàn bộ không?',
-        confirmText: 'Ôn lại toàn bộ',
-        cancelText: 'Hủy',
-        onConfirm: async () => {
-          this.prepareFocusForMobile();
-          const dayObj = await window.api.getDay(dayId);
-          const title = dayObj.data ? dayObj.data.title : `Ngày ${dayId}`;
-          this.openStudyRoom(resAll.data, `Ôn lại toàn bộ: ${title}`);
+      let filterText = '';
+      if (profile === 'learned') filterText = 'đã thuộc';
+      else if (profile === 'unlearned') filterText = 'chưa thuộc';
+      
+      // Nếu profile là unlearned, kiểm tra xem có thể gợi ý ôn lại không
+      if (profile === 'unlearned') {
+        const resAll = await window.api.getWords(dayId, 'all');
+        if (resAll.success && resAll.data.length > 0) {
+          window.showConfirmDialog({
+            title: 'Tất cả từ đã thuộc',
+            message: 'Tất cả từ vựng trong ngày này đều đã được đánh dấu Đã thuộc. Bạn có muốn ôn lại toàn bộ không?',
+            confirmText: 'Ôn lại toàn bộ',
+            cancelText: 'Hủy',
+            onConfirm: async () => {
+              this.prepareFocusForMobile();
+              this.currentStudyProfile = 'all'; // Tự động chuyển profile sang all để ôn
+              const dayObj = await window.api.getDay(dayId);
+              const title = dayObj.data ? dayObj.data.title : `Ngày ${dayId}`;
+              this.openStudyRoom(resAll.data, `Ôn lại toàn bộ: ${title}`);
+            }
+          });
+          return;
         }
-      });
+      }
+
+      alert(`Ngày này chưa có từ vựng nào ${filterText} để ôn tập.`);
     } catch (err) {
       const modal = document.getElementById('modal-study-room');
       if (modal) {
         modal.classList.remove('active');
         modal.style.opacity = '';
       }
+      document.getElementById('quiz-typing-input')?.blur();
       alert('Lỗi tải từ ôn tập: ' + err.message);
     }
   }
@@ -607,6 +621,8 @@ class StudyManager {
           modal.classList.remove('active');
           modal.style.opacity = '';
         }
+        document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím
+        
         let filterText = '';
         if (profile === 'learned') filterText = 'đã thuộc';
         else if (profile === 'unlearned') filterText = 'chưa thuộc';
@@ -819,10 +835,10 @@ class StudyManager {
         window.wordsManager.playPronunciation(w.word, w.audioUrl);
       }
 
-      input.focus();
+      input.focus({ preventScroll: true });
       input.click();
-      requestAnimationFrame(() => input.focus());
-      setTimeout(() => input.focus(), 50);
+      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
 
     } else if (item.type === 'typing') {
       // Phần Điền từ: Hiện duy nhất nghĩa tiếng Việt làm câu hỏi, ẩn hoàn toàn phiên âm IPA
@@ -842,16 +858,19 @@ class StudyManager {
       const input = document.getElementById('quiz-typing-input');
       input.value = '';
 
-      input.focus();
+      input.focus({ preventScroll: true });
       input.click();
-      requestAnimationFrame(() => input.focus());
-      setTimeout(() => input.focus(), 50);
+      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
 
     } else {
       // Phần Chọn nghĩa: Hiện từ tiếng Anh, hiện phiên âm IPA và audio
       if (promptContainer) promptContainer.style.display = 'flex';
       if (listeningContainer) listeningContainer.style.display = 'none';
       
+      const input = document.getElementById('quiz-typing-input');
+      if (input) input.blur(); // Chắc chắn bàn phím ảo thụt xuống khi sang câu hỏi chọn nghĩa
+
       questionText.textContent = w.word;
       if (questionSubtext) {
         if (w.ipa) {
@@ -961,15 +980,10 @@ class StudyManager {
       window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
     }
 
-    // Tự động thu gọn bàn phím ảo điện thoại khi nộp đáp án
-    if (type === 'typing' || type === 'listening') {
-      const input = document.getElementById('quiz-typing-input');
-      // Trì hoãn việc blur để không cản trở luồng phát âm thanh đồng bộ
-      if (input) {
-        setTimeout(() => input.blur(), 100);
-      }
-    }
-
+    // KHÔNG TỰ ĐỘNG THU GỌN BÀN PHÍM. 
+    // Cho phép người dùng giữ bàn phím để gõ Enter liên tục chuyển câu hoặc type tiếp.
+    // Nếu câu tiếp theo là chọn nghĩa (choice), bàn phím sẽ tự động thu ở renderQuizQuestion.
+    
     feedbackBox.style.display = 'block';
 
     if (isCorrect) {
