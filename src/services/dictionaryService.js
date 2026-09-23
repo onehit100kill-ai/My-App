@@ -228,32 +228,6 @@ async function getAutocompleteSuggestions(query) {
           }
         }
       } catch (err) {}
-    })(),
-
-    // 2. Nguồn Google Suggest - Độ nhạy và tần suất tìm kiếm thực tế
-    (async () => {
-      try {
-        const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(cleanQuery)}`, {
-          headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(1500)
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && Array.isArray(data[1])) {
-            data[1].forEach(item => {
-              if (typeof item === 'string') {
-                const cleanItem = item.trim().toLowerCase();
-                // Lọc bỏ cụm tiếng Việt như "nghĩa là gì" nếu có
-                if (!cleanItem.includes('nghĩa') && !cleanItem.includes('la gi') && !cleanItem.includes('tiếng việt')) {
-                  if (/^[a-z\s\-']+$/.test(cleanItem)) {
-                    suggestions.add(cleanItem);
-                  }
-                }
-              }
-            });
-          }
-        }
-      } catch (err) {}
     })()
   ]);
 
