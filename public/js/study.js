@@ -892,7 +892,9 @@ class StudyManager {
     requestAnimationFrame(() => {
       document.getElementById('view-quiz').style.display = 'none';
       const congratsView = document.getElementById('view-congrats');
-      congratsView.style.display = 'block';
+      congratsView.style.display = 'flex';
+      congratsView.style.flexDirection = 'column';
+      congratsView.style.maxHeight = 'calc(100vh - 140px)';
 
       const fill = document.getElementById('study-progress-fill');
       if (fill) fill.style.width = '100%';

@@ -107,14 +107,21 @@ class TreeViewManager {
           }
 
           if (selectFirst || !this.currentDayId) {
-            // Tìm ngày đầu tiên để chọn
-            const firstSecWithDays = this.sections.find(s => s.days && s.days.length > 0);
-            if (firstSecWithDays && firstSecWithDays.days.length > 0) {
-              const firstDay = firstSecWithDays.days[0];
-              this.selectDay(firstSecWithDays.id, firstDay.id);
+            // Tìm ngày mới nhất (cuối cùng của phần cuối cùng có ngày)
+            let lastSecWithDays = null;
+            for (let i = this.sections.length - 1; i >= 0; i--) {
+              if (this.sections[i].days && this.sections[i].days.length > 0) {
+                lastSecWithDays = this.sections[i];
+                break;
+              }
+            }
+            if (lastSecWithDays && lastSecWithDays.days.length > 0) {
+              const lastDay = lastSecWithDays.days[lastSecWithDays.days.length - 1];
+              this.expandedSections.add(lastSecWithDays.id);
+              this.selectDay(lastSecWithDays.id, lastDay.id);
             } else {
-              this.currentSectionId = this.sections[0].id;
-              this.updateBreadcrumb(this.sections[0].title, 'Chưa có ngày');
+              this.currentSectionId = this.sections[this.sections.length - 1]?.id || this.sections[0].id;
+              this.updateBreadcrumb(this.sections[this.sections.length - 1]?.title || this.sections[0].title, 'Chưa có ngày');
             }
           } else {
             // Giữ nguyên ngày đang chọn nếu có

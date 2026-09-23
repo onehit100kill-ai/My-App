@@ -443,9 +443,9 @@
         </div>
 
         <!-- ================= QUIZ CONGRATS & SUMMARY VIEW ================= -->
-        <div id="view-congrats" class="study-view-panel" style="display: none; padding: 0;">
+        <div id="view-congrats" class="study-view-panel" style="display: none; padding: 0; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 140px);">
           <!-- Bảng danh sách các từ vừa học kèm nút gạt trạng thái -->
-          <div class="summary-words-container">
+          <div class="summary-words-container" style="flex: 1; overflow-y: auto; padding-right: 4px; margin-bottom: 20px;">
             <table class="summary-words-table">
               <thead>
                 <tr>
@@ -460,7 +460,7 @@
             </table>
           </div>
 
-          <div style="display: flex; justify-content: center; gap: 14px; margin-top: 20px;">
+          <div style="display: flex; justify-content: center; gap: 14px; margin-top: 20px; flex-shrink: 0; padding-bottom: 20px;">
             <button class="btn btn-secondary" id="btn-restart-quiz">🔄 Luyện tập lại</button>
             <button type="button" class="btn btn-primary" id="btn-finish-study">Hoàn tất</button>
           </div>

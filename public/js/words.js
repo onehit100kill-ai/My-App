@@ -506,7 +506,9 @@ class WordsManager {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(word);
       utterance.lang = 'en-US';
-      utterance.rate = 0.9;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.2;
+      window._currentUtterance = utterance;
       window.speechSynthesis.speak(utterance);
     }
   }
