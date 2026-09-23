@@ -815,15 +815,19 @@ class StudyManager {
     const wordObj = this.currentQuizItem.word;
     const progress = this.wordProgressMap.get(wordObj.id) || { typingCount: 0, choiceCount: 0 };
 
+    // Phát âm thanh NGAY LẬP TỨC để trình duyệt iOS ghi nhận đây là kết quả của user gesture.
+    // Nếu để sau các lệnh thay đổi focus (blur), iOS Safari sẽ hiểu là gesture đã bị consume và chặn âm thanh.
+    if (window.wordsManager) {
+      window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
+    }
+
     // Tự động thu gọn bàn phím ảo điện thoại khi nộp đáp án typing
     if (type === 'typing') {
       const input = document.getElementById('quiz-typing-input');
-      if (input) input.blur();
-    }
-
-    // Phát âm thanh đọc từ vựng ngay khi trả lời
-    if (window.wordsManager) {
-      window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
+      // Trì hoãn việc blur để không cản trở luồng phát âm thanh đồng bộ
+      if (input) {
+        setTimeout(() => input.blur(), 100);
+      }
     }
 
     feedbackBox.style.display = 'block';

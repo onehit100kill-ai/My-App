@@ -19,26 +19,6 @@ class WordsManager {
     this.bindEvents();
     this.initAutocomplete();
     this.initMeaningAutocomplete();
-    this.unlockIosAudio();
-  }
-
-  unlockIosAudio() {
-    // Unlock iOS Audio & SpeechSynthesis on first touch
-    const unlock = () => {
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance('');
-        utterance.volume = 0;
-        window.speechSynthesis.speak(utterance);
-      }
-      const audio = new Audio();
-      audio.volume = 0;
-      audio.play().catch(() => {});
-
-      document.removeEventListener('touchstart', unlock);
-      document.removeEventListener('click', unlock);
-    };
-    document.addEventListener('touchstart', unlock, { once: true });
-    document.addEventListener('click', unlock, { once: true });
   }
 
   bindEvents() {
