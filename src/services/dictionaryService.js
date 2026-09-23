@@ -175,10 +175,21 @@ async function lookupWord(word) {
     examples.push(`This is a key example of ${cleanWord} in daily practice.`);
   }
 
+  // Chỉnh sửa lại các ký tự IPA bị ngược gây khó đọc (thường gặp từ Wiktionary)
+  let cleanIpa = ipa || '';
+  if (cleanIpa) {
+    cleanIpa = cleanIpa
+      .replace(/ɹ/g, 'r')  // r lật ngược
+      .replace(/ɾ/g, 'r')  // r vỗ
+      .replace(/ɐ/g, 'a')  // a lật ngược
+      .replace(/ʍ/g, 'w')  // w lật ngược
+      .replace(/ɥ/g, 'h'); // h lật ngược
+  }
+
   return {
     success: true,
     word: cleanWord,
-    ipa: ipa || '',
+    ipa: cleanIpa,
     audioUrl: audioUrl || '',
     suggestedMeanings,
     examples,
