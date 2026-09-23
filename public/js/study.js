@@ -73,6 +73,18 @@ class StudyManager {
         if (parsed.unlearned) this.studySettings.unlearned = parsed.unlearned;
         if (parsed.learned) this.studySettings.learned = parsed.learned;
       }
+      
+      const activeProfile = localStorage.getItem('study_settings_active_profile') || 'unlearned';
+      this.currentConfigProfile = activeProfile;
+      
+      // Cập nhật UI radio button ở Cài đặt
+      const settingRadio = document.querySelector(`input[name="setting-profile"][value="${activeProfile}"]`);
+      if (settingRadio) settingRadio.checked = true;
+
+      // Cập nhật UI radio button ở phần Chọn ngày
+      const sectionRadio = document.querySelector(`input[name="section-study-profile"][value="${activeProfile}"]`);
+      if (sectionRadio) sectionRadio.checked = true;
+
     } catch (e) {
       console.warn("Could not load study settings, using default.", e);
     }
@@ -89,6 +101,9 @@ class StudyManager {
       return false; // Validation failed
     }
 
+    const activeProfile = document.querySelector('input[name="setting-profile"]:checked')?.value || 'unlearned';
+    this.currentConfigProfile = activeProfile;
+
     this.studySettings[this.currentConfigProfile] = {
       listening: Math.max(0, Math.min(10, listeningVal)),
       typing: Math.max(0, Math.min(10, typingVal)),
@@ -97,6 +112,11 @@ class StudyManager {
 
     try {
       localStorage.setItem('study_settings_profiles', JSON.stringify(this.studySettings));
+      localStorage.setItem('study_settings_active_profile', activeProfile);
+      
+      // Đồng bộ sang UI phần Chọn ngày
+      const sectionRadio = document.querySelector(`input[name="section-study-profile"][value="${activeProfile}"]`);
+      if (sectionRadio) sectionRadio.checked = true;
     } catch (e) {}
     
     return true; // Saved successfully
@@ -214,19 +234,37 @@ class StudyManager {
 
     // Audio Quiz
     const playCurrentAudio = (e) => {
-      if (e) e.stopPropagation();
+      if (e) {
+        e.preventDefault(); // Ngăn trình duyệt làm mất focus của input
+        e.stopPropagation();
+      }
       if (this.currentQuizItem && window.wordsManager) {
         window.wordsManager.playPronunciation(this.currentQuizItem.word.word, this.currentQuizItem.word.audioUrl);
       }
     };
     
-    document.getElementById('quiz-audio-btn')?.addEventListener('click', playCurrentAudio);
-    document.getElementById('quiz-big-audio-btn')?.addEventListener('click', playCurrentAudio);
+    const audioBtns = ['quiz-audio-btn', 'quiz-big-audio-btn'];
+    audioBtns.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        // Dùng mousedown và touchstart để bắt sự kiện TRƯỚC KHI input bị mất focus
+        btn.addEventListener('mousedown', playCurrentAudio);
+        btn.addEventListener('touchstart', playCurrentAudio, { passive: false });
+      }
+    });
 
     // Submit gõ từ chính tả
     document.getElementById('btn-submit-typing')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.handleTypingSubmit();
+    });
+
+    // Fix lỗi kéo thẻ lên cao trên iOS khi bị mất focus
+    document.getElementById('quiz-typing-input')?.addEventListener('blur', () => {
+      setTimeout(() => {
+        // Cuộn về đầu trang để tránh bị khoảng trống ảo bên dưới do bàn phím tạo ra
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     });
 
     // Xử lý phím Enter trên ô gõ từ:
@@ -308,7 +346,7 @@ class StudyManager {
       if (this.waitingForTap) {
         const modal = document.getElementById('modal-study-room');
         if (!modal || !modal.classList.contains('active')) return;
-        if (e.target.closest('#quiz-audio-btn') || e.target.closest('#btn-close-study-room')) return;
+        if (e.target.closest('#quiz-audio-btn') || e.target.closest('#quiz-big-audio-btn') || e.target.closest('#btn-close-study-room')) return;
         const congratsView = document.getElementById('view-congrats');
         if (congratsView && congratsView.style.display !== 'none') return;
 
