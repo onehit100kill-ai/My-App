@@ -402,7 +402,7 @@ class WordsManager {
       tbody.innerHTML = this.words.map((w, index) => {
         return `
           <tr data-word-id="${w.id}">
-            <td class="word-col-order">${w.order || index + 1}</td>
+            <td class="word-col-order">${index + 1}</td>
             <td class="word-col-word">
               <div class="word-english" ondblclick="wordsManager.openWordModal(${w.id})" title="Bấm đúp để sửa từ">
                 <span>${this.escapeHtml(w.word)}</span>
@@ -485,9 +485,13 @@ class WordsManager {
         if (window.treeViewManager) {
           window.treeViewManager.loadTree();
         }
+      } else {
+        alert('Lỗi cập nhật trạng thái: ' + (res.message || 'Lỗi không xác định'));
+        this.render(); // Revert back to original state on UI
       }
     } catch (err) {
       alert('Lỗi cập nhật trạng thái: ' + err.message);
+      this.render(); // Revert back to original state on UI
     }
   }
 

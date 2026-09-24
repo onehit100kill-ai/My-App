@@ -90,8 +90,7 @@ class StudyManager {
     }
   }
 
-  saveSettings() {
-    // Đọc giá trị hiện tại trên UI và lưu vào currentConfigProfile
+  saveSettings(profileToSave = null) {
     const listeningVal = parseInt(document.getElementById('setting-target-listening')?.value || 0, 10);
     const typingVal = parseInt(document.getElementById('setting-target-typing')?.value || 0, 10);
     const choiceVal = parseInt(document.getElementById('setting-target-choice')?.value || 0, 10);
@@ -101,10 +100,9 @@ class StudyManager {
       return false; // Validation failed
     }
 
-    const activeProfile = document.querySelector('input[name="setting-profile"]:checked')?.value || 'unlearned';
-    this.currentConfigProfile = activeProfile;
+    const targetProfile = profileToSave || this.currentConfigProfile;
 
-    this.studySettings[this.currentConfigProfile] = {
+    this.studySettings[targetProfile] = {
       listening: Math.max(0, Math.min(10, listeningVal)),
       typing: Math.max(0, Math.min(10, typingVal)),
       choice: Math.max(0, Math.min(10, choiceVal))
@@ -112,11 +110,15 @@ class StudyManager {
 
     try {
       localStorage.setItem('study_settings_profiles', JSON.stringify(this.studySettings));
-      localStorage.setItem('study_settings_active_profile', activeProfile);
-      
-      // Đồng bộ sang UI phần Chọn ngày
-      const sectionRadio = document.querySelector(`input[name="section-study-profile"][value="${activeProfile}"]`);
-      if (sectionRadio) sectionRadio.checked = true;
+      // Nếu không truyền tham số profileToSave, nghĩa là click Save, ta update active_profile
+      if (!profileToSave) {
+          const activeProfile = document.querySelector('input[name="setting-profile"]:checked')?.value || 'unlearned';
+          localStorage.setItem('study_settings_active_profile', activeProfile);
+          
+          // Đồng bộ sang UI phần Chọn ngày
+          const sectionRadio = document.querySelector(`input[name="section-study-profile"][value="${activeProfile}"]`);
+          if (sectionRadio) sectionRadio.checked = true;
+      }
     } catch (e) {}
     
     return true; // Saved successfully
@@ -151,8 +153,8 @@ class StudyManager {
     // Sự kiện chuyển đổi cấu hình
     document.querySelectorAll('input[name="setting-profile"]').forEach(radio => {
       radio.addEventListener('change', (e) => {
-        // Lưu lại thay đổi của profile hiện tại trước khi chuyển
-        this.saveSettings(); // Không bắt buộc validation khi chuyển tab, nhưng để an toàn cứ lưu tạm
+        // Lưu lại thay đổi của profile hiện tại TRƯỚC KHI chuyển
+        this.saveSettings(this.currentConfigProfile); 
         this.currentConfigProfile = e.target.value;
         this.updateSettingsUI();
       });
@@ -1124,7 +1126,7 @@ class StudyManager {
             </td>
             <td style="text-align: center;">
               <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
-                <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked)">
+                <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
                 <span class="ios-slider"></span>
               </label>
             </td>
@@ -1135,7 +1137,7 @@ class StudyManager {
     });
   }
 
-  async toggleWordLearnedSummary(wordId, newStatus) {
+  async toggleWordLearnedSummary(wordId, newStatus, element = null) {
     try {
       const res = await window.api.toggleWordLearned(wordId);
       if (res.success) {
@@ -1146,9 +1148,13 @@ class StudyManager {
         if (window.wordsManager && window.treeViewManager?.currentDayId) {
           window.wordsManager.loadWords(window.treeViewManager.currentDayId);
         }
+      } else {
+        alert('Lỗi cập nhật trạng thái: ' + (res.message || 'Lỗi không xác định'));
+        if (element) element.checked = !newStatus;
       }
     } catch (err) {
       alert('Lỗi cập nhật trạng thái: ' + err.message);
+      if (element) element.checked = !newStatus;
     }
   }
 

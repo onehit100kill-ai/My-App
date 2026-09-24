@@ -158,6 +158,7 @@ class TreeViewManager {
               <span class="chevron-icon">▶</span>
               <span class="folder-icon">${isExpanded ? '📂' : '📁'}</span>
               <span class="tree-section-title" title="${this.escapeHtml(sec.title)}">${this.escapeHtml(sec.title)}</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted); opacity: 0.7; margin-left: 6px;">(${daysCount})</span>
             </div>
             
             <div class="tree-actions-wrap" onclick="event.stopPropagation()">
@@ -195,9 +196,14 @@ class TreeViewManager {
                   <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${this.escapeHtml(day.title)}</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 4px;">
-                  <span class="day-badge" title="${day.totalWords} từ (${day.learnedWords} đã thuộc)">
-                    ${day.totalWords}
-                  </span>
+                  <div style="display: flex; gap: 4px;" title="Đã thuộc: ${day.learnedWords} / Chưa thuộc: ${day.totalWords - day.learnedWords}">
+                    <span class="day-badge" style="background: rgba(46, 160, 67, 0.15); color: #3fb950;">
+                      ${day.learnedWords}
+                    </span>
+                    <span class="day-badge" style="background: rgba(248, 81, 73, 0.15); color: #ff7b72;">
+                      ${day.totalWords - day.learnedWords}
+                    </span>
+                  </div>
                   <!-- Ký hiệu Sửa Ngày (chỉ hiện khi bật Sửa) -->
                   <button class="icon-btn-mini action-edit-trigger" style="width: 22px; height: 22px; font-size: 12px;" title="Sửa Ngày" onclick="event.stopPropagation(); treeViewManager.openEditDayModal(${day.id})">✏️</button>
                   <!-- Ký hiệu Xóa Ngày (chỉ hiện khi bật Xóa) -->
