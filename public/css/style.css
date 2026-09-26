@@ -490,13 +490,17 @@ body.mode-delete .action-delete-trigger:hover {
 /* Top Action Toolbar */
 .main-toolbar {
   padding: 20px 28px;
-  background: var(--bg-surface);
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .day-header-info {

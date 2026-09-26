@@ -107,6 +107,20 @@ window.showConfirmDialog = function({
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Lắng nghe sự thay đổi class 'active' trên tất cả các modal để vô hiệu hóa cuộn nền
+  const modalObserver = new MutationObserver(() => {
+    const anyModalOpen = document.querySelector('.modal-backdrop.active');
+    if (anyModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+  });
+
+  document.querySelectorAll('.modal-backdrop').forEach(modal => {
+    modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+
   // Đóng modal khi bấm nút close hoặc click bên ngoài
   document.querySelectorAll('.btn-close-modal').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -561,8 +561,8 @@ class WordsManager {
       audioUrlInput.value = w.audioUrl || '';
       learnedInput.checked = !!w.isLearned;
 
-      // Khi sửa từ: Cho phép hiển thị STT và nút trạng thái ghi nhớ
-      if (orderGroup) orderGroup.style.display = 'block';
+      // Khi sửa từ: Ẩn STT không cho phép sửa
+      if (orderGroup) orderGroup.style.display = 'none';
       if (learnedRow) learnedRow.style.display = 'flex';
       if (previewAudioBtn) previewAudioBtn.style.display = 'inline-flex';
 
