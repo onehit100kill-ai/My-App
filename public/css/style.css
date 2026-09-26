@@ -264,7 +264,14 @@ h1, h2, h3, h4, .brand-title {
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 10px;
+  padding: 0 10px 12px 10px;
+}
+
+.sidebar-content::before {
+  content: "";
+  display: block;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 /* Section Default Actions: + (Thêm ngày) và Ôn tập */
