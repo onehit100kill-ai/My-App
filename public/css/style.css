@@ -1959,14 +1959,15 @@ input:checked + .ios-slider:before {
 
   .app-container {
     flex-direction: column !important;
-    height: auto !important;
-    min-height: calc(100vh - 60px) !important;
+    height: calc(100vh - 64px) !important;
+    overflow: hidden !important;
   }
 
   .app-main {
     flex: 1 !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
+    overflow-y: auto !important;
   }
 
   /* Main Toolbar */
