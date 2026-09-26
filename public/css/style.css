@@ -418,6 +418,8 @@ body.mode-delete .action-delete-trigger:hover {
   padding: 4px 8px 8px 24px;
   flex-direction: column;
   gap: 3px;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .tree-section.expanded .tree-days-list {
