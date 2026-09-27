@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>VocabMaster - Ứng Dụng Học Từ Tiếng Anh</title>
   <meta name="description" content="Học từ vựng tiếng Anh theo Phần và Ngày, tự động gợi ý phiên âm IPA, dịch nghĩa và chế độ ôn tập thông minh.">
   
@@ -33,6 +33,9 @@
 
     <!-- Các nút thao tác cây thư mục đặt ở góc phải header, cạnh nút + Thêm Phần -->
     <div class="header-actions">
+      <button class="header-tool-btn" id="btn-global-search" title="Tìm kiếm từ vựng (Có sẵn trong hệ thống)">
+        <span class="btn-icon">🔍</span><span class="btn-label"> Tìm kiếm</span>
+      </button>
       <button class="btn btn-secondary btn-header-add-section" id="btn-add-section" title="Thêm Phần mới">
         <span class="btn-icon">📁+</span><span class="btn-label"> Phần</span>
       </button>
@@ -50,6 +53,20 @@
 
   <!-- Mobile Sidebar Backdrop Overlay -->
   <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- Global Search Overlay -->
+  <div class="global-search-overlay" id="global-search-overlay">
+    <div class="global-search-container">
+      <div class="global-search-input-wrap">
+        <span class="global-search-icon">🔍</span>
+        <input type="text" id="global-search-input" placeholder="Tìm kiếm từ tiếng Anh..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="icon-btn-mini" id="btn-close-global-search" title="Đóng tìm kiếm">✕</button>
+      </div>
+      <div class="global-search-results" id="global-search-results">
+        <!-- Render results here -->
+      </div>
+    </div>
+  </div>
 
   <!-- App Main Container -->
   <div class="app-container">

@@ -190,6 +190,86 @@ document.addEventListener('DOMContentLoaded', async () => {
     observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
   });
 
+  // ================= Global Search Logic =================
+  const btnGlobalSearch = document.getElementById('btn-global-search');
+  const globalSearchOverlay = document.getElementById('global-search-overlay');
+  const globalSearchInput = document.getElementById('global-search-input');
+  const btnCloseGlobalSearch = document.getElementById('btn-close-global-search');
+  const globalSearchResults = document.getElementById('global-search-results');
+  let globalSearchTimeout = null;
+
+  btnGlobalSearch?.addEventListener('click', () => {
+    globalSearchOverlay.classList.add('active');
+    globalSearchInput.value = '';
+    globalSearchResults.innerHTML = '';
+    setTimeout(() => globalSearchInput.focus(), 100);
+  });
+
+  btnCloseGlobalSearch?.addEventListener('click', () => {
+    globalSearchOverlay.classList.remove('active');
+  });
+
+  globalSearchInput?.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(globalSearchTimeout);
+    
+    if (!query) {
+      globalSearchResults.innerHTML = '';
+      return;
+    }
+
+    globalSearchTimeout = setTimeout(async () => {
+      try {
+        const res = await window.api.searchGlobalWords(query);
+        if (res.success && res.data.length > 0) {
+          globalSearchResults.innerHTML = res.data.map(word => {
+            const sectionTitle = word.day?.section?.title || 'Chưa có phần';
+            const dayTitle = word.day?.title || 'Chưa có ngày';
+            return `
+              <div class="search-result-item" onclick="appNavigateToWord(${word.day?.sectionId}, ${word.dayId}, ${word.id})">
+                <div>
+                  <div class="search-result-word">${word.word} <span style="font-size: 0.8rem; color: #39c5cf; font-weight: normal; margin-left: 6px;">${word.ipa || ''}</span></div>
+                  <div class="search-result-meaning">${word.meaning}</div>
+                </div>
+                <div class="search-result-path">
+                  <span>📁 ${sectionTitle}</span>
+                  <span>›</span>
+                  <span>📅 ${dayTitle}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          globalSearchResults.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted);">Không tìm thấy từ nào phù hợp.</div>';
+        }
+      } catch (err) {
+        console.error('Search error:', err);
+      }
+    }, 300);
+  });
+
+  window.appNavigateToWord = (sectionId, dayId, wordId) => {
+    if (sectionId && dayId && window.treeViewManager) {
+      window.treeViewManager.expandedSections.add(sectionId);
+      window.treeViewManager.render();
+      window.treeViewManager.selectDay(sectionId, dayId);
+    }
+    
+    globalSearchOverlay.classList.remove('active');
+
+    setTimeout(() => {
+      const row = document.querySelector(`tr[data-word-id="${wordId}"]`) || document.querySelector(`.word-card-mobile[data-word-id="${wordId}"]`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.transition = 'background-color 0.5s ease';
+        row.style.backgroundColor = 'rgba(56, 139, 253, 0.3)';
+        setTimeout(() => {
+          row.style.backgroundColor = '';
+        }, 1500);
+      }
+    }, 400); // Đợi words render xong
+  };
+
   // Khởi tạo trạng thái ban đầu
   updateBodyScroll();
 });

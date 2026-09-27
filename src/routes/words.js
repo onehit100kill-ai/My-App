@@ -71,6 +71,36 @@ router.post('/by-days', async (req, res) => {
   }
 });
 
+// GET /api/words/search - Tìm kiếm từ vựng trên toàn hệ thống
+router.get('/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const words = await Word.findAll({
+      where: {
+        word: {
+          [Op.like]: `%${q}%`
+        }
+      },
+      limit: 15,
+      include: [
+        {
+          model: Day,
+          as: 'day',
+          attributes: ['id', 'title', 'sectionId']
+        }
+      ]
+    });
+    res.json({ success: true, data: words });
+  } catch (error) {
+    console.error('Error searching words:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST /api/words - Thêm từ vựng mới
 router.post('/', async (req, res) => {
   try {

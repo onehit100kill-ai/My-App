@@ -131,6 +131,11 @@ const api = {
   async lookupDictionary(word) {
     const res = await fetch(`${API_BASE}/dictionary/lookup?word=${encodeURIComponent(word)}`);
     return await res.json();
+  },
+
+  async searchGlobalWords(query) {
+    const res = await fetch(`${API_BASE}/words/search?q=${encodeURIComponent(query)}`);
+    return await res.json();
   }
 };
 
