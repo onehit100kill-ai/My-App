@@ -67,6 +67,9 @@ body {
 
 body.modal-open {
   overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 /* Typography */
@@ -2325,10 +2328,11 @@ input:checked + .ios-slider:before {
 
   /* Tối ưu hóa Giao diện Ôn Tập trên Điện Thoại (iPhone 12 Pro Max) */
   .study-modal-card {
-    height: 96vh;
-    max-height: 96vh;
+    height: auto;
+    min-height: 50vh;
+    max-height: 88vh;
     width: 100%;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-radius: var(--radius-xl);
   }
 
   .study-header-bar {
@@ -2343,6 +2347,11 @@ input:checked + .ios-slider:before {
 
   .modal-body#study-interactive-area {
     padding: 14px 16px;
+  }
+
+  .study-modal-card .quiz-container {
+    justify-content: flex-start !important;
+    padding-top: 10vh;
   }
 
   .quiz-prompt-card {
