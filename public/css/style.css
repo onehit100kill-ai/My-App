@@ -1358,6 +1358,7 @@ input:checked + .ios-slider:before {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .study-modal-card .study-view-panel {
@@ -2326,12 +2327,12 @@ input:checked + .ios-slider:before {
 
   /* Tối ưu hóa Giao diện Ôn Tập trên Điện Thoại (iPhone 12 Pro Max) */
   .study-modal-card {
-    height: 96vh;
+    height: 85vh;
 
-    max-height: 96vh;
-    margin-top: 35vh;
+    max-height: 85vh;
+    margin: auto;
     width: 100%;
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-radius: var(--radius-xl);
   }
 
   .study-header-bar {
