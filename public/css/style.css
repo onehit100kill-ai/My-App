@@ -2041,15 +2041,15 @@ input:checked + .ios-slider:before {
   /* Modals for Mobile (iPhone 12 Pro Max, etc.): Căn giữa màn hình */
   .modal-backdrop {
     padding: 14px;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
   }
 
   .modal-card {
     max-height: 88vh;
     border-radius: var(--radius-xl);
-    margin: auto;
-    align-self: center;
+    margin: 15px auto auto auto;
+    align-self: flex-start;
     transform: scale(0.95);
   }
 
@@ -2067,8 +2067,8 @@ input:checked + .ios-slider:before {
   }
 
   .modal-quizlet-card {
-    margin: auto !important;
-    align-self: center !important;
+    margin: 15px auto auto auto !important;
+    align-self: flex-start !important;
     width: 95% !important;
     border-radius: var(--radius-xl) !important;
   }
@@ -2100,9 +2100,9 @@ input:checked + .ios-slider:before {
 
   .modal-confirm-card {
     border-radius: var(--radius-xl);
-    margin: auto;
+    margin: 15px auto auto auto;
     transform: scale(0.95);
-    align-self: center;
+    align-self: flex-start;
   }
 
   .modal-backdrop.active .modal-confirm-card {

@@ -1016,7 +1016,8 @@ class StudyManager {
     const conf = this.studySettings[this.currentStudyProfile];
 
     // Phát âm thanh NGAY LẬP TỨC để trình duyệt iOS ghi nhận đây là kết quả của user gesture.
-    if (window.wordsManager) {
+    // Ngoại trừ phần nghe điền (listening) để tránh loạn âm với câu tiếp theo
+    if (window.wordsManager && type !== 'listening') {
       window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
     }
 
