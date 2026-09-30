@@ -2324,23 +2324,21 @@ input:checked + .ios-slider:before {
   }
 
   .toolbar-controls .btn {
-    height: 42px;
-    padding: 0 10px;
+    height: 38px;
+    width: 38px;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.95rem;
     font-weight: 600;
-    flex: 1 1 0 !important;
-    width: 50% !important;
+    flex: 0 0 auto !important;
     white-space: nowrap;
     border-radius: var(--radius-md);
   }
 
   .toolbar-controls .btn-label {
-    display: inline !important;
-    margin-left: 6px;
-    font-size: 0.92rem;
+    display: none !important;
   }
 
   .toolbar-controls .btn-icon {

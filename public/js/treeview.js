@@ -260,10 +260,7 @@ class TreeViewManager {
         btnPrev.style.display = 'inline-flex';
         btnPrev.onclick = () => {
           const prev = flatDays[currentIndex - 1];
-          // Auto-expand the section of the prev day
-          this.expandedSections.add(prev.sectionId);
-          this.render();
-          this.selectDay(prev.sectionId, prev.dayId);
+                    this.selectDay(prev.sectionId, prev.dayId);
         };
       } else {
         btnPrev.style.display = 'none';
@@ -275,10 +272,7 @@ class TreeViewManager {
         btnNext.style.display = 'inline-flex';
         btnNext.onclick = () => {
           const next = flatDays[currentIndex + 1];
-          // Auto-expand the section of the next day
-          this.expandedSections.add(next.sectionId);
-          this.render();
-          this.selectDay(next.sectionId, next.dayId);
+                    this.selectDay(next.sectionId, next.dayId);
         };
       } else {
         btnNext.style.display = 'none';
