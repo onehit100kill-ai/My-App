@@ -1853,6 +1853,8 @@ input:checked + .ios-slider:before {
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.01em;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .word-card-ipa {
@@ -1894,6 +1896,8 @@ input:checked + .ios-slider:before {
   color: var(--text-primary);
   line-height: 1.35;
   flex: 1;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .word-card-switch-wrap {
@@ -2059,7 +2063,7 @@ input:checked + .ios-slider:before {
   }
 
   /* Switch to Word Cards on Mobile instead of 7-column table */
-  .word-table {
+  #words-table {
     display: none !important;
   }
 
@@ -2284,7 +2288,7 @@ input:checked + .ios-slider:before {
   /* Ẩn chữ trong các nút header để chỉ hiện icon tinh gọn, không bị tràn */
   .header-actions .btn-label,
   .filter-text {
-    display: none !important;
+    display: inline !important;
   }
 
   /* Header Actions: Chỉ hiện icon, vừa vặn không tràn */
@@ -2296,14 +2300,14 @@ input:checked + .ios-slider:before {
 
   .header-tool-btn,
   .btn-header-add-section {
-    width: 38px;
+    padding: 0 6px;
     height: 36px;
-    padding: 0;
+    /* width removed */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
+    font-size: 0.85rem;
+    flex-shrink: 1;
   }
 
   /* Main Toolbar: 2 nút 'Thêm từ' và 'Ôn tập' có chữ, căn đều bằng nhau chính xác 50-50 */
@@ -2326,7 +2330,7 @@ input:checked + .ios-slider:before {
   .toolbar-controls .btn {
     height: 38px;
     width: 38px;
-    padding: 0;
+    padding: 0 !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;

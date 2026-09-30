@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td>
           <div style="font-weight: bold; color: var(--text-primary); font-size: 1.05rem;">${word.word}</div>
           ${word.ipa ? `<div style="font-size: 0.85rem; color: var(--accent-cyan); font-family: monospace;">${word.ipa}</div>` : ''}
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">📅 ${word.day?.title || 'Chưa rõ'}</div>
+
         </td>
         <td style="color: var(--text-primary); font-size: 0.95rem;">${word.meaning}</td>
         <td style="text-align: center;">
@@ -438,7 +438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td>
           <div style="font-weight: bold; color: var(--text-primary); font-size: 1.05rem;">${word.word}</div>
           ${word.ipa ? `<div style="font-size: 0.85rem; color: var(--accent-cyan); font-family: monospace;">${word.ipa}</div>` : ''}
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">📅 ${word.day?.title || 'Chưa rõ'}</div>
+
         </td>
         <td style="color: var(--text-primary); font-size: 0.95rem;">${word.meaning}</td>
         <td style="text-align: center;">
