@@ -31,6 +31,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/words/intensive - Lấy tất cả từ chuyên sâu
+router.get('/intensive', async (req, res) => {
+  try {
+    const words = await Word.findAll({
+      where: { isIntensive: true },
+      include: [{ model: Day, as: 'day', attributes: ['id', 'title'] }],
+      order: [['id', 'DESC']]
+    });
+    res.json({ success: true, count: words.length, data: words });
+  } catch (error) {
+    console.error('Error fetching intensive words:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/words/unlearned - Lấy tất cả từ chưa thuộc
+router.get('/unlearned', async (req, res) => {
+  try {
+    const words = await Word.findAll({
+      where: { isLearned: false },
+      include: [{ model: Day, as: 'day', attributes: ['id', 'title'] }],
+      order: [['id', 'DESC']]
+    });
+    res.json({ success: true, count: words.length, data: words });
+  } catch (error) {
+    console.error('Error fetching unlearned words:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // POST /api/words/by-days - Lấy từ của NHIỀU ngày (cho ôn tập theo phần hoặc chọn nhiều ngày)
 router.post('/by-days', async (req, res) => {
   try {
@@ -133,7 +163,8 @@ router.post('/', async (req, res) => {
       meaning: meaning.trim(),
       example: example ? example.trim() : null,
       audioUrl: audioUrl ? audioUrl.trim() : null,
-      isLearned: !!isLearned
+      isLearned: !!isLearned,
+      isIntensive: req.body.isIntensive !== undefined ? !!req.body.isIntensive : false
     });
 
     res.status(201).json({ success: true, data: newWord });
@@ -159,6 +190,7 @@ router.put('/:id', async (req, res) => {
     if (example !== undefined) existingWord.example = example ? example.trim() : null;
     if (audioUrl !== undefined) existingWord.audioUrl = audioUrl ? audioUrl.trim() : null;
     if (isLearned !== undefined) existingWord.isLearned = !!isLearned;
+    if (req.body.isIntensive !== undefined) existingWord.isIntensive = !!req.body.isIntensive;
 
     await existingWord.save();
     res.json({ success: true, data: existingWord });
@@ -188,6 +220,30 @@ router.patch('/:id/toggle-learned', async (req, res) => {
     });
   } catch (error) {
     console.error('Error toggling word learned status:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/words/:id/toggle-intensive - Đổi trạng thái chuyên sâu
+router.patch('/:id/toggle-intensive', async (req, res) => {
+  try {
+    const word = await Word.findByPk(req.params.id);
+    if (!word) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy từ vựng' });
+    }
+
+    word.isIntensive = !word.isIntensive;
+    await word.save();
+
+    res.json({
+      success: true,
+      data: {
+        id: word.id,
+        isIntensive: word.isIntensive
+      }
+    });
+  } catch (error) {
+    console.error('Error toggling word intensive status:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

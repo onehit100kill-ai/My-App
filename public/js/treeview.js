@@ -243,6 +243,48 @@ class TreeViewManager {
 
     this.highlightActiveDay();
 
+    // ================== PREV / NEXT DAY LOGIC ==================
+    const flatDays = [];
+    this.sections.forEach(sec => {
+      if (sec.days) {
+        sec.days.forEach(d => flatDays.push({ sectionId: sec.id, dayId: d.id }));
+      }
+    });
+
+    const currentIndex = flatDays.findIndex(d => d.dayId === dayId);
+    const btnPrev = document.getElementById('btn-prev-day');
+    const btnNext = document.getElementById('btn-next-day');
+
+    if (btnPrev) {
+      if (currentIndex > 0) {
+        btnPrev.style.visibility = 'visible'; // Using visibility instead of display keeps the header centered layout stable
+        btnPrev.onclick = () => {
+          const prev = flatDays[currentIndex - 1];
+          // Auto-expand the section of the prev day
+          this.expandedSections.add(prev.sectionId);
+          this.render();
+          this.selectDay(prev.sectionId, prev.dayId);
+        };
+      } else {
+        btnPrev.style.visibility = 'hidden';
+      }
+    }
+
+    if (btnNext) {
+      if (currentIndex >= 0 && currentIndex < flatDays.length - 1) {
+        btnNext.style.visibility = 'visible';
+        btnNext.onclick = () => {
+          const next = flatDays[currentIndex + 1];
+          // Auto-expand the section of the next day
+          this.expandedSections.add(next.sectionId);
+          this.render();
+          this.selectDay(next.sectionId, next.dayId);
+        };
+      } else {
+        btnNext.style.visibility = 'hidden';
+      }
+    }
+
     // Gọi WordsManager để nạp từ của ngày này
     if (window.wordsManager) {
       window.wordsManager.loadWords(dayId);

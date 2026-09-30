@@ -39,6 +39,10 @@ const Word = sequelize.define('Word', {
   isLearned: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  isIntensive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   timestamps: true

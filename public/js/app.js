@@ -272,5 +272,139 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Khởi tạo trạng thái ban đầu
   updateBodyScroll();
-});
 
+  // ================= THEME TOGGLE =================
+  const themeToggleBtn = document.getElementById('btn-theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  
+  const applyTheme = (theme) => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+      if (themeIcon) themeIcon.textContent = '☀️';
+    } else {
+      document.body.classList.remove('light-theme');
+      if (themeIcon) themeIcon.textContent = '🌙';
+    }
+  };
+
+  const currentTheme = localStorage.getItem('app_theme') || 'dark';
+  applyTheme(currentTheme);
+
+  themeToggleBtn?.addEventListener('click', () => {
+    const isLight = document.body.classList.contains('light-theme');
+    const newTheme = isLight ? 'dark' : 'light';
+    localStorage.setItem('app_theme', newTheme);
+    applyTheme(newTheme);
+  });
+
+  // ================= INTENSIVE STUDY MODAL =================
+  const brandLogo = document.getElementById('brand-logo');
+  const modalIntensive = document.getElementById('modal-intensive');
+  const intensiveTabs = document.querySelectorAll('.intensive-tab');
+  const intensiveTabContents = document.querySelectorAll('.intensive-tab-content');
+  const intensiveTbody = document.getElementById('intensive-tbody');
+  const unlearnedTbody = document.getElementById('unlearned-tbody');
+
+  brandLogo?.addEventListener('click', () => {
+    modalIntensive?.classList.add('active');
+    loadIntensiveData();
+  });
+
+  intensiveTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      intensiveTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      const target = tab.getAttribute('data-tab');
+      intensiveTabContents.forEach(content => {
+        content.style.display = 'none';
+      });
+      document.getElementById(`tab-content-${target}`).style.display = 'flex';
+    });
+  });
+
+  window.loadIntensiveData = async function() {
+    try {
+      const intensiveRes = await window.api.getIntensiveWords();
+      const unlearnedRes = await window.api.getUnlearnedWords();
+
+      renderIntensiveList(intensiveRes.data || []);
+      renderUnlearnedList(unlearnedRes.data || []);
+    } catch (err) {
+      console.error('Error loading intensive data:', err);
+    }
+  };
+
+  function renderIntensiveList(words) {
+    if (!intensiveTbody) return;
+    if (words.length === 0) {
+      intensiveTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-muted);">Chưa có từ nào trong danh sách chuyên sâu</td></tr>`;
+      return;
+    }
+
+    intensiveTbody.innerHTML = words.map(word => `
+      <tr>
+        <td>
+          <div style="font-weight: bold; color: var(--text-primary); font-size: 1.05rem;">${word.word}</div>
+          ${word.ipa ? `<div style="font-size: 0.85rem; color: var(--accent-cyan); font-family: monospace;">${word.ipa}</div>` : ''}
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">📅 ${word.day?.title || 'Chưa rõ'}</div>
+        </td>
+        <td style="color: var(--text-primary); font-size: 0.95rem;">${word.meaning}</td>
+        <td style="text-align: center;">
+          <button class="icon-btn-mini btn-remove-intensive" data-id="${word.id}" style="color: #ff6b6b; font-size: 18px;" title="Bỏ khỏi chuyên sâu">✕</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderUnlearnedList(words) {
+    if (!unlearnedTbody) return;
+    // Lọc bỏ những từ đã có trong chuyên sâu (mặc dù backend có thể trả về cả, nhưng ta lọc lại cho chắc)
+    const filtered = words.filter(w => !w.isIntensive);
+
+    if (filtered.length === 0) {
+      unlearnedTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-muted);">Không có từ chưa thuộc nào để thêm</td></tr>`;
+      return;
+    }
+
+    unlearnedTbody.innerHTML = filtered.map(word => `
+      <tr>
+        <td>
+          <div style="font-weight: bold; color: var(--text-primary); font-size: 1.05rem;">${word.word}</div>
+          ${word.ipa ? `<div style="font-size: 0.85rem; color: var(--accent-cyan); font-family: monospace;">${word.ipa}</div>` : ''}
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">📅 ${word.day?.title || 'Chưa rõ'}</div>
+        </td>
+        <td style="color: var(--text-primary); font-size: 0.95rem;">${word.meaning}</td>
+        <td style="text-align: center;">
+          <button class="icon-btn-mini btn-add-intensive" data-id="${word.id}" style="color: #34c759; font-size: 18px;" title="Thêm vào chuyên sâu">➕</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // Delegate events cho nút Thêm / Bỏ chuyên sâu
+  document.addEventListener('click', async (e) => {
+    const btnAdd = e.target.closest('.btn-add-intensive');
+    if (btnAdd) {
+      const id = btnAdd.getAttribute('data-id');
+      try {
+        await window.api.toggleWordIntensive(id);
+        window.loadIntensiveData();
+      } catch (err) {
+        window.showToast('Lỗi khi thêm từ vào chuyên sâu');
+      }
+    }
+
+    const btnRemove = e.target.closest('.btn-remove-intensive');
+    if (btnRemove) {
+      const id = btnRemove.getAttribute('data-id');
+      try {
+        await window.api.toggleWordIntensive(id);
+        window.loadIntensiveData();
+      } catch (err) {
+        window.showToast('Lỗi khi xóa từ khỏi chuyên sâu');
+      }
+    }
+  });
+
+});

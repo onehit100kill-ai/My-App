@@ -108,8 +108,25 @@ const api = {
     return await res.json();
   },
 
+  async getIntensiveWords() {
+    const res = await fetch(`${API_BASE}/words/intensive`);
+    return await res.json();
+  },
+
+  async getUnlearnedWords() {
+    const res = await fetch(`${API_BASE}/words/unlearned`);
+    return await res.json();
+  },
+
   async toggleWordLearned(id) {
     const res = await fetch(`${API_BASE}/words/${id}/toggle-learned`, {
+      method: 'PATCH'
+    });
+    return await res.json();
+  },
+
+  async toggleWordIntensive(id) {
+    const res = await fetch(`${API_BASE}/words/${id}/toggle-intensive`, {
       method: 'PATCH'
     });
     return await res.json();

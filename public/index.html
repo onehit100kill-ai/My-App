@@ -22,7 +22,7 @@
       <button class="mobile-menu-btn" id="btn-toggle-sidebar-mobile" title="Mở Cây Thư Mục">
         <span>☰</span>
       </button>
-      <div class="brand">
+      <div class="brand" id="brand-logo" style="cursor: pointer;" title="Nhấn để mở Học Chuyên Sâu">
         <div class="brand-icon">📚</div>
         <div>
           <span class="brand-title">VocabMaster</span>
@@ -92,23 +92,30 @@
     <main class="app-main">
       
       <!-- Top Action Toolbar -->
-      <div class="main-toolbar">
-        <div class="day-header-info">
-          <div class="current-path" id="current-breadcrumb">
+      <div class="main-toolbar" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+        <!-- Left empty space to balance center if needed, or we can use absolute centering -->
+        <div class="toolbar-left" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+           <button class="btn btn-secondary btn-icon-only" id="btn-prev-day" title="Ngày trước" style="display: none; padding: 6px 10px;">◀</button>
+        </div>
+
+        <div class="day-header-info" style="text-align: center; flex: 2; display: flex; flex-direction: column; align-items: center;">
+          <div class="current-path" id="current-breadcrumb" style="justify-content: center;">
             <span>Phần 1</span> <span>›</span> <span>Ngày 1</span>
           </div>
           <h1 class="current-day-title" id="current-day-heading">Ngày 1: Cảm xúc & Tính cách</h1>
         </div>
 
-        <div class="toolbar-controls">
+        <div class="toolbar-controls" style="flex: 1; justify-content: flex-end; display: flex; gap: 8px;">
+          <button class="btn btn-secondary btn-icon-only" id="btn-next-day" title="Ngày sau" style="display: none; padding: 6px 10px;">▶</button>
+          
           <!-- Nút thêm từ vựng vào ngày này -->
           <button class="btn btn-primary" id="btn-add-word" title="Thêm từ mới">
-            <span class="btn-icon">➕</span><span class="btn-label"> Thêm từ</span>
+            <span class="btn-icon">➕</span><span class="btn-label mobile-hidden"> Thêm từ</span>
           </button>
 
           <!-- Nút học theo ngày -->
           <button class="btn btn-study" id="btn-study-day" title="Ôn tập các từ của ngày này">
-            <span class="btn-icon">🎯</span><span class="btn-label"> Ôn tập</span>
+            <span class="btn-icon">🎯</span><span class="btn-label mobile-hidden"> Ôn tập</span>
           </button>
         </div>
       </div>
@@ -508,6 +515,14 @@
       </div>
 
       <div class="modal-body" style="padding: 24px;">
+        <!-- Giao diện Theme Toggle -->
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+          <span style="font-size: 0.95rem; font-weight: 600;">Giao diện (Theme)</span>
+          <button type="button" class="btn btn-secondary btn-icon-only" id="btn-theme-toggle" style="border-radius: 50%; font-size: 18px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+            <span id="theme-icon">🌙</span>
+          </button>
+        </div>
+
         <!-- Lựa chọn cấu hình áp dụng -->
         <div style="margin-bottom: 20px; display: flex; gap: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
           <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
@@ -563,6 +578,123 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-settings">Hủy</button>
         <button type="button" class="btn btn-primary" id="btn-save-settings">Lưu Cài Đặt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: HỌC CHUYÊN SÂU                                                 -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-intensive">
+    <div class="modal-card" style="max-width: 650px; height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h3 class="modal-title">🔥 Học Chuyên Sâu</h3>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="icon-btn-mini" id="btn-intensive-settings" title="Cài đặt chuyên sâu" style="font-size: 16px;">⚙️</button>
+          <button type="button" class="icon-btn-mini btn-close-modal" data-target="modal-intensive">✕</button>
+        </div>
+      </div>
+      
+      <div class="modal-body" style="padding: 0; display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <!-- Tabs -->
+        <div style="display: flex; border-bottom: 1px solid var(--border-color);">
+          <button class="intensive-tab active" data-tab="intensive" style="flex: 1; padding: 12px; background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--primary); font-size: 0.95rem;">Danh sách chuyên sâu</button>
+          <button class="intensive-tab" data-tab="unlearned" style="flex: 1; padding: 12px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.95rem;">Các từ chưa thuộc</button>
+        </div>
+        
+        <!-- Tab Content: Intensive List -->
+        <div class="intensive-tab-content" id="tab-content-intensive" style="flex: 1; overflow-y: auto; padding: 15px;">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+            <button class="btn btn-study" id="btn-start-intensive-study">
+              <span class="btn-icon">🎯</span><span class="btn-label"> Ôn tập chuyên sâu</span>
+            </button>
+          </div>
+          <table class="word-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th style="padding: 10px;">Từ & IPA</th>
+                <th style="padding: 10px;">Nghĩa</th>
+                <th style="padding: 10px; width: 60px; text-align: center;">Bỏ</th>
+              </tr>
+            </thead>
+            <tbody id="intensive-tbody">
+              <!-- Render dynamic -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab Content: Unlearned List -->
+        <div class="intensive-tab-content" id="tab-content-unlearned" style="display: none; flex: 1; overflow-y: auto; padding: 15px;">
+          <table class="word-table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th style="padding: 10px;">Từ & IPA</th>
+                <th style="padding: 10px;">Nghĩa</th>
+                <th style="padding: 10px; width: 60px; text-align: center;">Thêm</th>
+              </tr>
+            </thead>
+            <tbody id="unlearned-tbody">
+              <!-- Render dynamic -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CÀI ĐẶT CHUYÊN SÂU                                             -->
+  <!-- ===================================================================== -->
+  <div class="modal-backdrop" id="modal-settings-intensive">
+    <div class="modal-card modal-settings-card">
+      <div class="modal-header">
+        <h2 class="modal-title">⚙️ Cài Đặt Chuyên Sâu</h2>
+        <button type="button" class="icon-btn-mini btn-close-modal" data-target="modal-settings-intensive">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 24px;">
+        <div class="settings-group">
+          <!-- Cài đặt số lần Nghe điền từ -->
+          <div class="settings-option-item">
+            <div class="settings-option-info">
+              <div class="settings-option-title">🎧 Nghe điền từ (Chuyên sâu)</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" id="btn-dec-listening-int" title="Giảm">−</button>
+              <input type="number" id="setting-target-listening-int" class="stepper-input" min="0" max="10" value="0" readonly>
+              <button type="button" class="stepper-btn" id="btn-inc-listening-int" title="Tăng">+</button>
+            </div>
+          </div>
+
+          <!-- Cài đặt số lần Điền từ -->
+          <div class="settings-option-item">
+            <div class="settings-option-info">
+              <div class="settings-option-title">✍️ Điền từ (Chuyên sâu)</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" id="btn-dec-typing-int" title="Giảm">−</button>
+              <input type="number" id="setting-target-typing-int" class="stepper-input" min="0" max="10" value="1" readonly>
+              <button type="button" class="stepper-btn" id="btn-inc-typing-int" title="Tăng">+</button>
+            </div>
+          </div>
+
+          <!-- Cài đặt số lần Chọn nghĩa -->
+          <div class="settings-option-item">
+            <div class="settings-option-info">
+              <div class="settings-option-title">🎯 Chọn nghĩa (Chuyên sâu)</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" id="btn-dec-choice-int" title="Giảm">−</button>
+              <input type="number" id="setting-target-choice-int" class="stepper-input" min="0" max="10" value="1" readonly>
+              <button type="button" class="stepper-btn" id="btn-inc-choice-int" title="Tăng">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-settings-intensive">Hủy</button>
+        <button type="button" class="btn btn-primary" id="btn-save-settings-intensive">Lưu Cài Đặt</button>
       </div>
     </div>
   </div>

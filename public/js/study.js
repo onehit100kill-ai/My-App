@@ -32,6 +32,8 @@ class StudyManager {
     this.currentStudyProfile = 'all'; // Profile đang dùng cho phiên học
     this.currentConfigProfile = 'all'; // Profile đang được chọn để chỉnh sửa trong Cài đặt
 
+    this.intensiveSettings = { listening: 1, typing: 1, choice: 1 };
+
     this.loadSettings();
     this.bindEvents();
   }
@@ -84,6 +86,12 @@ class StudyManager {
       // Cập nhật UI radio button ở phần Chọn ngày
       const sectionRadio = document.querySelector(`input[name="section-study-profile"][value="${activeProfile}"]`);
       if (sectionRadio) sectionRadio.checked = true;
+
+      // Lấy cài đặt chuyên sâu
+      const rawInt = localStorage.getItem('intensive_study_settings');
+      if (rawInt) {
+        this.intensiveSettings = JSON.parse(rawInt);
+      }
 
     } catch (e) {
       console.warn("Could not load study settings, using default.", e);
@@ -139,6 +147,39 @@ class StudyManager {
     if (radioSelected) radioSelected.checked = true;
   }
 
+  saveIntensiveSettings() {
+    const listeningVal = parseInt(document.getElementById('setting-target-listening-int')?.value || 0, 10);
+    const typingVal = parseInt(document.getElementById('setting-target-typing-int')?.value || 0, 10);
+    const choiceVal = parseInt(document.getElementById('setting-target-choice-int')?.value || 0, 10);
+    
+    if (listeningVal === 0 && typingVal === 0 && choiceVal === 0) {
+      if (window.showToast) window.showToast('Lỗi: Cần có ít nhất 1 phương pháp học > 0');
+      return false;
+    }
+
+    this.intensiveSettings = {
+      listening: Math.max(0, Math.min(10, listeningVal)),
+      typing: Math.max(0, Math.min(10, typingVal)),
+      choice: Math.max(0, Math.min(10, choiceVal))
+    };
+
+    try {
+      localStorage.setItem('intensive_study_settings', JSON.stringify(this.intensiveSettings));
+    } catch (e) {}
+    
+    return true;
+  }
+
+  updateIntensiveSettingsUI() {
+    const listeningInput = document.getElementById('setting-target-listening-int');
+    const typingInput = document.getElementById('setting-target-typing-int');
+    const choiceInput = document.getElementById('setting-target-choice-int');
+    
+    if (listeningInput) listeningInput.value = this.intensiveSettings.listening;
+    if (typingInput) typingInput.value = this.intensiveSettings.typing;
+    if (choiceInput) choiceInput.value = this.intensiveSettings.choice;
+  }
+
   bindEvents() {
     // --- CÀI ĐẶT (SETTINGS) MODAL ---
     const btnOpenSettings = document.getElementById('btn-open-settings');
@@ -179,6 +220,10 @@ class StudyManager {
     setupStepper('listening', 0, 10);
     setupStepper('typing', 0, 10);
     setupStepper('choice', 0, 10);
+    
+    setupStepper('listening-int', 0, 10);
+    setupStepper('typing-int', 0, 10);
+    setupStepper('choice-int', 0, 10);
 
     // Lưu cài đặt
     btnSaveSettings?.addEventListener('click', () => {
@@ -188,6 +233,27 @@ class StudyManager {
           window.showToast('Đã lưu cài đặt ôn tập thành công!');
         }
       }
+    });
+
+    // --- CÀI ĐẶT CHUYÊN SÂU ---
+    document.getElementById('btn-intensive-settings')?.addEventListener('click', () => {
+      this.updateIntensiveSettingsUI();
+      document.getElementById('modal-settings-intensive')?.classList.add('active');
+    });
+
+    document.getElementById('btn-save-settings-intensive')?.addEventListener('click', () => {
+      if (this.saveIntensiveSettings()) {
+        document.getElementById('modal-settings-intensive')?.classList.remove('active');
+        if (window.showToast) {
+          window.showToast('Đã lưu cài đặt ôn tập chuyên sâu!');
+        }
+      }
+    });
+
+    // Nút học chuyên sâu
+    document.getElementById('btn-start-intensive-study')?.addEventListener('click', () => {
+      this.startIntensiveStudy();
+      document.getElementById('modal-intensive')?.classList.remove('active');
     });
 
     // --- PHÒNG HỌC (STUDY ROOM) ---
@@ -558,6 +624,36 @@ class StudyManager {
     }
   }
 
+  // === BẮT ĐẦU HỌC CHUYÊN SÂU ===
+  async startIntensiveStudy() {
+    this.prepareFocusForMobile();
+    try {
+      const res = await window.api.getIntensiveWords();
+      if (res.success && res.data.length > 0) {
+        // Set profile 'intensive' to bypass standard settings and use intensiveSettings
+        this.studySettings['intensive'] = this.intensiveSettings;
+        this.currentStudyProfile = 'intensive'; 
+        this.openStudyRoom(res.data, '🔥 Ôn tập Chuyên Sâu');
+      } else {
+        const modal = document.getElementById('modal-study-room');
+        if (modal) {
+          modal.classList.remove('active');
+          modal.style.opacity = '';
+        }
+        document.getElementById('quiz-typing-input')?.blur();
+        alert('Chưa có từ vựng nào trong danh sách chuyên sâu để ôn tập.');
+      }
+    } catch (err) {
+      const modal = document.getElementById('modal-study-room');
+      if (modal) {
+        modal.classList.remove('active');
+        modal.style.opacity = '';
+      }
+      document.getElementById('quiz-typing-input')?.blur();
+      alert('Lỗi tải từ chuyên sâu: ' + err.message);
+    }
+  }
+
   // === 2. MỞ MODAL CHỌN NGÀY ÔN THEO PHẦN ===
   openSectionStudyModal(sectionId = null) {
     const secId = sectionId || window.treeViewManager?.currentSectionId;
@@ -707,7 +803,7 @@ class StudyManager {
       });
     });
 
-    const conf = this.studySettings[this.currentStudyProfile];
+    const conf = this.currentStudyProfile === 'intensive' ? this.intensiveSettings : this.studySettings[this.currentStudyProfile];
     this.listeningQueue = conf.listening > 0 ? this.shuffle([...this.words]) : [];
     this.typingQueue = conf.listening === 0 && conf.typing > 0 ? this.shuffle([...this.words]) : [];
     this.choiceQueue = conf.listening === 0 && conf.typing === 0 && conf.choice > 0 ? this.shuffle([...this.words]) : [];
@@ -722,7 +818,7 @@ class StudyManager {
 
   // Cập nhật thanh tiến độ theo số lần hoàn thành mục tiêu cài đặt
   updateProgressBar() {
-    const conf = this.studySettings[this.currentStudyProfile];
+    const conf = this.currentStudyProfile === 'intensive' ? this.intensiveSettings : this.studySettings[this.currentStudyProfile];
     const totalTasks = this.words.length * (conf.listening + conf.typing + conf.choice);
     if (totalTasks === 0) return;
 
