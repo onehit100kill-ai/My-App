@@ -92,32 +92,45 @@
     <main class="app-main">
       
       <!-- Top Action Toolbar -->
-      <div class="main-toolbar" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
-        <!-- Left empty space to balance center if needed, or we can use absolute centering -->
-        <div class="toolbar-left" style="flex: 1; display: flex; align-items: center; gap: 8px;">
-           <button class="btn btn-secondary btn-icon-only" id="btn-prev-day" title="Ngày trước" style="display: none; padding: 6px 10px;">◀</button>
+      <div class="main-toolbar" style="display: flex; justify-content: space-between; align-items: center; padding-left: 15px; padding-right: 15px; flex-wrap: wrap;">
+        
+        <!-- Left: Previous Button -->
+        <div class="toolbar-left" style="flex: 1; display: flex; justify-content: flex-start;">
+          <button class="btn btn-secondary nav-day-btn" id="btn-prev-day" title="Ngày trước" style="display: none; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-surface-elevated); align-items: center; justify-content: center; height: 38px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
         </div>
 
-        <div class="day-header-info" style="text-align: center; flex: 2; display: flex; flex-direction: column; align-items: center;">
-          <div class="current-path" id="current-breadcrumb" style="justify-content: center;">
-            <span>Phần 1</span> <span>›</span> <span>Ngày 1</span>
-          </div>
-          <h1 class="current-day-title" id="current-day-heading">Ngày 1: Cảm xúc & Tính cách</h1>
-        </div>
-
-        <div class="toolbar-controls" style="flex: 1; justify-content: flex-end; display: flex; gap: 8px;">
-          <button class="btn btn-secondary btn-icon-only" id="btn-next-day" title="Ngày sau" style="display: none; padding: 6px 10px;">▶</button>
+        <!-- Center: Day Info and Actions -->
+        <div class="toolbar-center" style="flex: 4; display: flex; justify-content: center; align-items: center;">
           
-          <!-- Nút thêm từ vựng vào ngày này -->
-          <button class="btn btn-primary" id="btn-add-word" title="Thêm từ mới">
-            <span class="btn-icon">➕</span><span class="btn-label mobile-hidden"> Thêm từ</span>
-          </button>
+          <div class="day-action-group" style="display: flex; flex-direction: row; align-items: center; gap: 16px; background: var(--bg-surface-elevated); padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+            
+            <div class="day-header-info" style="margin: 0; display: flex; flex-direction: column;">
+              <div class="current-path" id="current-breadcrumb" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px;"></div>
+              <h1 class="current-day-title" id="current-day-heading" style="margin: 0; font-size: 1.15rem; font-weight: 600; white-space: nowrap;">Ngày 1: Cảm xúc & Tính cách</h1>
+            </div>
+            
+            <div class="toolbar-controls" style="display: flex; gap: 8px; margin: 0; padding: 0;">
+              <button class="btn btn-primary" id="btn-add-word" title="Thêm từ mới" style="padding: 6px 12px; min-height: 36px; border-radius: 8px;">
+                <span class="btn-icon">➕</span><span class="btn-label mobile-hidden" style="font-size: 0.9rem;"> Thêm từ</span>
+              </button>
+              <button class="btn btn-study" id="btn-study-day" title="Ôn tập các từ của ngày này" style="padding: 6px 12px; min-height: 36px; border-radius: 8px;">
+                <span class="btn-icon">🎯</span><span class="btn-label mobile-hidden" style="font-size: 0.9rem;"> Ôn tập</span>
+              </button>
+            </div>
 
-          <!-- Nút học theo ngày -->
-          <button class="btn btn-study" id="btn-study-day" title="Ôn tập các từ của ngày này">
-            <span class="btn-icon">🎯</span><span class="btn-label mobile-hidden"> Ôn tập</span>
+          </div>
+
+        </div>
+
+        <!-- Right: Next Button -->
+        <div class="toolbar-right" style="flex: 1; display: flex; justify-content: flex-end;">
+          <button class="btn btn-secondary nav-day-btn" id="btn-next-day" title="Ngày sau" style="display: none; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-surface-elevated); align-items: center; justify-content: center; height: 38px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
+
       </div>
 
       <!-- Word List Table -->
@@ -605,7 +618,7 @@
         <!-- Tab Content: Intensive List -->
         <div class="intensive-tab-content" id="tab-content-intensive" style="flex: 1; overflow-y: auto; padding: 15px;">
           <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-            <button class="btn btn-study" id="btn-start-intensive-study">
+            <button class="btn btn-study" id="btn-start-intensive-study" style="padding: 10px 20px; font-size: 1rem; width: auto; height: auto;">
               <span class="btn-icon">🎯</span><span class="btn-label"> Ôn tập chuyên sâu</span>
             </button>
           </div>

@@ -257,7 +257,7 @@ class TreeViewManager {
 
     if (btnPrev) {
       if (currentIndex > 0) {
-        btnPrev.style.visibility = 'visible'; // Using visibility instead of display keeps the header centered layout stable
+        btnPrev.style.display = 'inline-flex';
         btnPrev.onclick = () => {
           const prev = flatDays[currentIndex - 1];
           // Auto-expand the section of the prev day
@@ -266,13 +266,13 @@ class TreeViewManager {
           this.selectDay(prev.sectionId, prev.dayId);
         };
       } else {
-        btnPrev.style.visibility = 'hidden';
+        btnPrev.style.display = 'none';
       }
     }
 
     if (btnNext) {
       if (currentIndex >= 0 && currentIndex < flatDays.length - 1) {
-        btnNext.style.visibility = 'visible';
+        btnNext.style.display = 'inline-flex';
         btnNext.onclick = () => {
           const next = flatDays[currentIndex + 1];
           // Auto-expand the section of the next day
@@ -281,7 +281,7 @@ class TreeViewManager {
           this.selectDay(next.sectionId, next.dayId);
         };
       } else {
-        btnNext.style.visibility = 'hidden';
+        btnNext.style.display = 'none';
       }
     }
 

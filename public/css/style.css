@@ -2045,6 +2045,9 @@ input:checked + .ios-slider:before {
     display: inline-flex;
     align-items: center;
   }
+  .mobile-hidden {
+    display: none !important;
+  }
 
   .ios-filter-container {
     padding: 4px 10px;
