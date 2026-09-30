@@ -305,6 +305,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   const intensiveTbody = document.getElementById('intensive-tbody');
   const unlearnedTbody = document.getElementById('unlearned-tbody');
 
+  
+  // Add All Intensive
+  const btnAddAllIntensive = document.getElementById('btn-add-all-intensive');
+  if (btnAddAllIntensive) {
+    btnAddAllIntensive.addEventListener('click', async () => {
+      try {
+        const unlearnedRes = await window.api.getUnlearnedWords();
+        const words = unlearnedRes.data || [];
+        const filtered = words.filter(w => !w.isIntensive);
+        if (filtered.length === 0) return window.showToast('Không có từ nào để thêm');
+        
+        // Cần add tất cả - gọi API từng cái
+        const confirmMsg = 'Thêm ' + filtered.length + ' từ vào chuyên sâu?';
+        if (!confirm(confirmMsg)) return;
+
+        btnAddAllIntensive.disabled = true;
+        btnAddAllIntensive.innerText = 'Đang thêm...';
+        await Promise.all(filtered.map(w => window.api.toggleWordIntensive(w.id)));
+        window.showToast('Đã thêm tất cả vào chuyên sâu!');
+        window.loadIntensiveData();
+      } catch (err) {
+        console.error(err);
+        window.showToast('Lỗi khi thêm tất cả');
+      } finally {
+        if (btnAddAllIntensive) {
+          btnAddAllIntensive.disabled = false;
+          btnAddAllIntensive.innerText = '➕ Thêm tất cả';
+        }
+      }
+    });
+  }
+
+  // Remove All Intensive
+  const btnRemoveAllIntensive = document.getElementById('btn-remove-all-intensive');
+  if (btnRemoveAllIntensive) {
+    btnRemoveAllIntensive.addEventListener('click', async () => {
+      try {
+        const intensiveRes = await window.api.getIntensiveWords();
+        const words = intensiveRes.data || [];
+        if (words.length === 0) return window.showToast('Không có từ nào để xóa');
+
+        if (!confirm('Bạn có chắc muốn xóa tất cả ' + words.length + ' từ khỏi chuyên sâu?')) return;
+        
+        btnRemoveAllIntensive.disabled = true;
+        btnRemoveAllIntensive.innerText = 'Đang xóa...';
+        await Promise.all(words.map(w => window.api.toggleWordIntensive(w.id)));
+        window.showToast('Đã xóa tất cả khỏi chuyên sâu!');
+        window.loadIntensiveData();
+      } catch (err) {
+        console.error(err);
+        window.showToast('Lỗi khi xóa tất cả');
+      } finally {
+        if (btnRemoveAllIntensive) {
+          btnRemoveAllIntensive.disabled = false;
+          btnRemoveAllIntensive.innerText = '✕ Xóa tất cả';
+        }
+      }
+    });
+  }
+
   brandLogo?.addEventListener('click', () => {
     modalIntensive?.classList.add('active');
     loadIntensiveData();
@@ -312,8 +372,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   intensiveTabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      intensiveTabs.forEach(t => t.classList.remove('active'));
+      intensiveTabs.forEach(t => {
+        t.classList.remove('active');
+        t.style.color = 'var(--text-secondary)';
+        t.style.borderBottomColor = 'transparent';
+      });
       tab.classList.add('active');
+      tab.style.color = 'var(--primary)';
+      tab.style.borderBottomColor = 'var(--primary)';
       
       const target = tab.getAttribute('data-tab');
       intensiveTabContents.forEach(content => {
