@@ -2288,7 +2288,7 @@ input:checked + .ios-slider:before {
   /* Ẩn chữ trong các nút header để chỉ hiện icon tinh gọn, không bị tràn */
   .header-actions .btn-label,
   .filter-text {
-    display: inline !important;
+    display: none !important;
   }
 
   /* Header Actions: Chỉ hiện icon, vừa vặn không tràn */
