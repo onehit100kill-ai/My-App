@@ -27,7 +27,7 @@ async function lookupWord(word) {
       try {
         const res = await fetch(`https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(cleanWord)}&prop=wikitext&format=json`, {
           headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(3000)
+          signal: AbortSignal.timeout(6000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -40,17 +40,17 @@ async function lookupWord(word) {
           }
         }
       } catch (err) {
-        // Fallback tự động
+        console.error('Wiktionary API Error:', err.message);
       }
     })(),
 
     // --- 2. Lấy nghĩa tiếng Việt chuẩn xác & phong phú (Google Dictionary + MyMemory) ---
     (async () => {
-      // 2.1 Google Dictionary Engine (client=dict-chrome-ex)
+      // 2.1 Google Translate Engine (client=gtx)
       try {
-        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=en&tl=vi&dt=t&dt=bd&q=${encodeURIComponent(cleanWord)}`, {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&dt=bd&q=${encodeURIComponent(cleanWord)}`, {
           headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(2500)
+          signal: AbortSignal.timeout(5000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -79,13 +79,15 @@ async function lookupWord(word) {
             }
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Google Translate API Error:', err.message);
+      }
 
       // 2.2 MyMemory Engine (Bổ sung thêm các nghĩa thực tế nếu cần)
       try {
-        const res2 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanWord)}&langpair=en|vi`, {
+        const res2 = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanWord)}&langpair=en|vi&de=admin@example.com`, {
           headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(2000)
+          signal: AbortSignal.timeout(5000)
         });
         if (res2.ok) {
           const data2 = await res2.json();
@@ -102,7 +104,9 @@ async function lookupWord(word) {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('MyMemory API Error:', e.message);
+      }
     })(),
 
     // --- 3. Lấy định nghĩa & ví dụ siêu tốc từ Datamuse ---
@@ -110,7 +114,7 @@ async function lookupWord(word) {
       try {
         const res = await fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(cleanWord)}&md=dfrp&max=1`, {
           headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(2000)
+          signal: AbortSignal.timeout(5000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -126,7 +130,9 @@ async function lookupWord(word) {
             }
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Datamuse API Error:', err.message);
+      }
     })(),
 
     // --- 4. Lấy Audio mp3 & ví dụ bổ sung từ Free Dictionary API ---
@@ -134,7 +140,7 @@ async function lookupWord(word) {
       try {
         const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`, {
           headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(2000)
+          signal: AbortSignal.timeout(5000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -165,7 +171,9 @@ async function lookupWord(word) {
             }
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Free Dictionary API Error:', err.message);
+      }
     })()
   ]);
 
@@ -222,7 +230,7 @@ async function getAutocompleteSuggestions(query) {
       try {
         const res = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(cleanQuery)}&max=8`, {
           headers: { 'User-Agent': USER_AGENT },
-          signal: AbortSignal.timeout(1500)
+          signal: AbortSignal.timeout(3000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -238,7 +246,9 @@ async function getAutocompleteSuggestions(query) {
             });
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Datamuse Suggest API Error:', err.message);
+      }
     })()
   ]);
 
