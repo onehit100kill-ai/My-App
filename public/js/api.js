@@ -139,15 +139,91 @@ const api = {
     return await res.json();
   },
 
-  // === Dictionary Lookup & Suggestions ===
+  // === Dictionary Lookup & Suggestions (Client-Side để tránh lỗi IP block trên Render) ===
   async getWordSuggestions(query) {
-    const res = await fetch(`${API_BASE}/dictionary/suggest?q=${encodeURIComponent(query)}`);
-    return await res.json();
+    try {
+      const res = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      return {
+        success: true,
+        suggestions: data.map(item => item.word)
+      };
+    } catch (err) {
+      console.error('Datamuse API error:', err);
+      return { success: false, suggestions: [] };
+    }
   },
 
   async lookupDictionary(word) {
-    const res = await fetch(`${API_BASE}/dictionary/lookup?word=${encodeURIComponent(word)}`);
-    return await res.json();
+    const cleanWord = word.trim().toLowerCase();
+    let ipa = '';
+    let suggestedMeanings = [];
+    let audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(cleanWord)}&type=2`;
+
+    const isValidMeaning = (str, w) => {
+      if (!str) return false;
+      if (str.toLowerCase() === w) return false;
+      if (str.includes('[object') || str.includes('http') || str.includes('<') || str.includes('>') || str.includes('MYMEMORY')) return false;
+      if (str.length > 35) return false;
+      return true;
+    };
+
+    try {
+      // 1. Lấy phiên âm IPA từ Wiktionary (origin=* để tránh CORS)
+      const wiktionaryRes = await fetch(`https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(cleanWord)}&prop=wikitext&format=json&origin=*`);
+      if (wiktionaryRes.ok) {
+        const wData = await wiktionaryRes.json();
+        const text = wData.parse?.wikitext?.['*'] || '';
+        const m = text.match(/\{\{IPA\|en\|([^}]+)\}\}/);
+        if (m) {
+          let raw = m[1].split('|')[0].trim();
+          if (!raw.startsWith('/')) raw = '/' + raw + '/';
+          ipa = raw;
+        }
+      }
+    } catch (e) {
+      console.warn('Wiktionary client fetch error:', e);
+    }
+
+    try {
+      // 2. Lấy nghĩa tiếng Việt từ Google Translate API
+      const gtRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&dt=bd&q=${encodeURIComponent(cleanWord)}`);
+      if (gtRes.ok) {
+        const data = await gtRes.json();
+        if (data[0] && Array.isArray(data[0])) {
+          for (const item of data[0]) {
+            if (item && item[0]) {
+              const mainTrans = item[0].trim().toLowerCase();
+              if (isValidMeaning(mainTrans, cleanWord) && !suggestedMeanings.includes(mainTrans)) {
+                suggestedMeanings.push(mainTrans);
+              }
+            }
+          }
+        }
+        if (data[1] && Array.isArray(data[1])) {
+          for (const d of data[1]) {
+            if (Array.isArray(d[1])) {
+              for (const term of d[1]) {
+                const cleanTerm = term.trim().toLowerCase();
+                if (isValidMeaning(cleanTerm, cleanWord) && !suggestedMeanings.includes(cleanTerm) && suggestedMeanings.length < 8) {
+                  suggestedMeanings.push(cleanTerm);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Google Translate client fetch error:', e);
+    }
+
+    return {
+      success: true,
+      word: cleanWord,
+      ipa,
+      audioUrl,
+      suggestedMeanings
+    };
   },
 
   async searchGlobalWords(query) {
