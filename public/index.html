@@ -281,7 +281,7 @@
               </div>
               <div class="form-group" style="flex: 1; margin: 0;">
                 <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
-                  <span>Phiên âm IPA</span>
+                  <span>Phiên âm IPA <span id="ipa-status-icon" class="status-icon" style="display: none;"></span></span>
                   <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử phát âm" style="display: none; width: 24px; height: 24px; font-size: 13px;">🔊</button>
                 </label>
                 <input type="text" id="word-ipa-input" class="form-input" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
@@ -297,7 +297,7 @@
             </div>
 
             <div class="form-group autocomplete-wrapper" style="position: relative; margin: 0;">
-              <label class="form-label" for="word-meaning-input">Định nghĩa / Nghĩa tiếng Việt <span style="color: #ff6b6b;">*</span></label>
+              <label class="form-label" for="word-meaning-input">Định nghĩa / Nghĩa tiếng Việt <span style="color: #ff6b6b;">*</span> <span id="meaning-status-icon" class="status-icon" style="display: none;"></span></label>
               <div class="input-with-icon-wrap">
                 <span class="input-lead-icon">💡</span>
                 <input type="text" id="word-meaning-input" class="form-input has-lead-icon" placeholder="Nhấn vào ô để xem danh sách gợi ý nghĩa tiếng Việt..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">

@@ -2554,3 +2554,104 @@ input:checked + .ios-slider:before {
     font-size: 16px !important;
   }
 }
+
+/* ==========================================================================
+   Autocomplete & Input Icons
+   ========================================================================== */
+.autocomplete-wrapper {
+  position: relative;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+}
+
+.autocomplete-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+  font-size: 0.95rem;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.autocomplete-icon {
+  font-size: 1.1rem;
+}
+
+.autocomplete-text {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.autocomplete-text strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.autocomplete-select-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.autocomplete-item:hover .autocomplete-select-hint,
+.autocomplete-item.active .autocomplete-select-hint {
+  opacity: 1;
+}
+
+.input-with-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-lead-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.form-input.has-lead-icon {
+  padding-left: 36px;
+}
+
+/* Status icon styling */
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  font-size: 0.9em;
+}
+
+.spinner-icon {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

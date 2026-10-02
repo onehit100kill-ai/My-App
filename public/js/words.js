@@ -601,8 +601,20 @@ class WordsManager {
     const audioUrlInput = document.getElementById('word-audio-url');
     const previewAudioBtn = document.getElementById('btn-preview-audio');
     const meaningInput = document.getElementById('word-meaning-input');
+    
+    const ipaStatusIcon = document.getElementById('ipa-status-icon');
+    const meaningStatusIcon = document.getElementById('meaning-status-icon');
 
     if (spinner) spinner.style.display = 'inline';
+    
+    if (ipaStatusIcon) {
+      ipaStatusIcon.style.display = 'inline-flex';
+      ipaStatusIcon.innerHTML = '<span class="spinner-icon">🔄</span>';
+    }
+    if (meaningStatusIcon) {
+      meaningStatusIcon.style.display = 'inline-flex';
+      meaningStatusIcon.innerHTML = '<span class="spinner-icon">🔄</span>';
+    }
 
     try {
       const data = await window.api.lookupDictionary(word.trim());
@@ -612,6 +624,15 @@ class WordsManager {
         // 1. Tự động điền phiên âm IPA nếu có
         if (data.ipa && ipaInput) {
           ipaInput.value = data.ipa;
+          if (ipaStatusIcon) {
+            ipaStatusIcon.innerHTML = '✅';
+            setTimeout(() => { ipaStatusIcon.style.display = 'none'; }, 2000);
+          }
+        } else {
+          if (ipaStatusIcon) {
+             ipaStatusIcon.innerHTML = '❌';
+             setTimeout(() => { ipaStatusIcon.style.display = 'none'; }, 2000);
+          }
         }
 
         // 2. Luôn hiển thị nút nghe thử phát âm
@@ -622,8 +643,16 @@ class WordsManager {
         // Chỉ dùng nghĩa tiếng Việt, không dùng định nghĩa tiếng Anh
         if (data.suggestedMeanings && data.suggestedMeanings.length > 0) {
           this.availableMeanings = data.suggestedMeanings;
+          if (meaningStatusIcon) {
+            meaningStatusIcon.innerHTML = '✅';
+            setTimeout(() => { meaningStatusIcon.style.display = 'none'; }, 2000);
+          }
         } else {
           this.availableMeanings = [];
+          if (meaningStatusIcon) {
+            meaningStatusIcon.innerHTML = '❌';
+            setTimeout(() => { meaningStatusIcon.style.display = 'none'; }, 2000);
+          }
         }
 
         // Nếu người dùng đang focus/nhấn ở ô định nghĩa thì hiển thị dropdown ngay
@@ -647,9 +676,26 @@ class WordsManager {
           // ...
         }
         */
+      } else {
+        if (ipaStatusIcon) {
+          ipaStatusIcon.innerHTML = '❌';
+          setTimeout(() => { ipaStatusIcon.style.display = 'none'; }, 2000);
+        }
+        if (meaningStatusIcon) {
+          meaningStatusIcon.innerHTML = '❌';
+          setTimeout(() => { meaningStatusIcon.style.display = 'none'; }, 2000);
+        }
       }
     } catch (err) {
       if (spinner) spinner.style.display = 'none';
+      if (ipaStatusIcon) {
+        ipaStatusIcon.innerHTML = '❌';
+        setTimeout(() => { ipaStatusIcon.style.display = 'none'; }, 2000);
+      }
+      if (meaningStatusIcon) {
+        meaningStatusIcon.innerHTML = '❌';
+        setTimeout(() => { meaningStatusIcon.style.display = 'none'; }, 2000);
+      }
       console.warn('Lỗi tra từ điển:', err);
     }
   }
