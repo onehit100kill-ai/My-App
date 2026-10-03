@@ -217,6 +217,30 @@ const api = {
       console.warn('Google Translate client fetch error:', e);
     }
 
+    // 3. Fallback: Lấy nghĩa tiếng Việt từ MyMemory nếu Google Translate bị lỗi CORS trên Render
+    if (suggestedMeanings.length === 0) {
+      try {
+        const mmRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanWord)}&langpair=en|vi`);
+        if (mmRes.ok) {
+          const data2 = await mmRes.json();
+          const txt = data2.responseData?.translatedText?.trim().toLowerCase();
+          if (txt && isValidMeaning(txt, cleanWord) && !suggestedMeanings.includes(txt)) {
+            suggestedMeanings.push(txt);
+          }
+          if (Array.isArray(data2.matches)) {
+            for (const m of data2.matches) {
+              const cleanM = m.translation?.trim().toLowerCase();
+              if (cleanM && isValidMeaning(cleanM, cleanWord) && !suggestedMeanings.includes(cleanM) && suggestedMeanings.length < 10) {
+                suggestedMeanings.push(cleanM);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('MyMemory client fetch error:', e);
+      }
+    }
+
     return {
       success: true,
       word: cleanWord,

@@ -639,6 +639,9 @@ class WordsManager {
         if (audioUrlInput) audioUrlInput.value = data.audioUrl || '';
         if (previewAudioBtn) previewAudioBtn.style.display = 'inline-flex';
 
+        // Tự động phát âm thanh ngay sau khi tra xong (điền xong từ)
+        this.playPronunciation(word.trim(), data.audioUrl);
+
         // 3. LƯU DANH SÁCH NGHĨA TIẾNG VIỆT (DÙNG CHO DROPDOWN GỢI Ý GOOGLE SUGGEST)
         // Chỉ dùng nghĩa tiếng Việt, không dùng định nghĩa tiếng Anh
         if (data.suggestedMeanings && data.suggestedMeanings.length > 0) {
@@ -744,9 +747,12 @@ class WordsManager {
       document.getElementById('modal-word').classList.remove('active');
       await this.loadWords(dayId);
 
+      // Đã tắt chức năng mở/tải lại cây thư mục sau khi thêm từ mới theo yêu cầu
+      /*
       if (window.treeViewManager) {
         window.treeViewManager.loadTree();
       }
+      */
     } catch (err) {
       alert('Lỗi lưu từ vựng: ' + err.message);
     }

@@ -422,6 +422,18 @@ class StudyManager {
       }
     }, { passive: false });
 
+    // Cấm cuộn thẻ khi đang học (Chống scroll/bounce trên iOS và Android)
+    document.addEventListener('touchmove', (e) => {
+      const modal = document.getElementById('modal-study-room');
+      if (modal && modal.classList.contains('active')) {
+        const congratsView = document.getElementById('view-congrats');
+        // Nếu đang ở màn hình chúc mừng có danh sách dài thì cho phép cuộn
+        if (congratsView && congratsView.style.display !== 'none') return;
+        
+        e.preventDefault();
+      }
+    }, { passive: false });
+
     // Restart Quiz
     document.getElementById('btn-restart-quiz')?.addEventListener('click', () => {
       this.initQuizState();
