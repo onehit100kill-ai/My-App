@@ -461,6 +461,7 @@ class StudyManager {
           typingQueue: this.typingQueue.map(w => w.id), // Tối ưu bộ nhớ
           choiceQueue: this.choiceQueue.map(w => w.id), // Tối ưu bộ nhớ
           wordProgressList: Array.from(this.wordProgressMap.entries()),
+          wrongWords: this.wrongWords ? Array.from(this.wrongWords) : [],
           timestamp: Date.now()
         };
         localStorage.setItem('english_study_session', JSON.stringify(state));
@@ -522,6 +523,7 @@ class StudyManager {
     this.choiceQueue = restoreQueue(saved.choiceQueue);
 
     this.wordProgressMap = new Map(saved.wordProgressList || []);
+    this.wrongWords = new Set(saved.wrongWords || []);
     
     this.setWaitingForTap(false);
     this._choiceAnswered = false;
@@ -807,6 +809,7 @@ class StudyManager {
 
   initQuizState() {
     this.wordProgressMap.clear();
+    this.wrongWords = new Set();
     this.words.forEach(w => {
       this.wordProgressMap.set(w.id, {
         listeningCount: 0,
@@ -1167,6 +1170,8 @@ class StudyManager {
       progress.listeningCount = 0;
       progress.typingCount = 0;
       progress.choiceCount = 0;
+      if (!this.wrongWords) this.wrongWords = new Set();
+      this.wrongWords.add(wordObj.id);
 
       feedbackBox.style.background = 'rgba(255, 69, 58, 0.15)';
       feedbackBox.style.color = '#ff6b6b';
@@ -1222,28 +1227,109 @@ class StudyManager {
 
       const tbody = document.getElementById('summary-words-tbody');
       
-      // Sử dụng mảng HTML tĩnh để update innerHTML nhanh nhất
-      let htmlStr = '';
-      for (let i = 0; i < this.words.length; i++) {
-        const w = this.words[i];
-        htmlStr += `
-          <tr>
-            <td style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
-            <td>
-              <div style="font-weight: 700; color: #ffffff; font-size: 1rem;">${this.escapeHtml(w.word)}</div>
-              ${w.ipa ? `<div style="font-size: 0.82rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
-            </td>
-            <td style="text-align: center;">
-              <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
-                <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
-                <span class="ios-slider"></span>
-              </label>
-            </td>
-          </tr>
-        `;
+      // Render các từ đúng
+      const correctList = this.words.filter(w => !this.wrongWords || !this.wrongWords.has(w.id));
+      let correctHtml = '';
+      if (correctList.length === 0) {
+        correctHtml = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">Không có từ nào đúng hoàn toàn. Cố lên nhé!</td></tr>`;
+      } else {
+        for (let i = 0; i < correctList.length; i++) {
+          const w = correctList[i];
+          correctHtml += `
+            <tr>
+              <td style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+              <td>
+                <div style="font-weight: 700; color: #ffffff; font-size: 1rem;">${this.escapeHtml(w.word)}</div>
+                ${w.ipa ? `<div style="font-size: 0.82rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
+              </td>
+              <td style="text-align: center;">
+                <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
+                  <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
+                  <span class="ios-slider"></span>
+                </label>
+              </td>
+              <td style="text-align: center;">
+                <button type="button" class="btn ${w.isIntensive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 12px; font-size: 1.2rem; border-radius: 4px; font-weight: bold; line-height: 1;" onclick="studyManager.toggleWordIntensiveSummary(${w.id}, this)">
+                  ${w.isIntensive ? '-' : '+'}
+                </button>
+              </td>
+            </tr>
+          `;
+        }
       }
-      tbody.innerHTML = htmlStr;
+      tbody.innerHTML = correctHtml;
+
+      // Render các từ sai
+      const wrongTbody = document.getElementById('summary-wrong-words-tbody');
+      if (wrongTbody) {
+        let wrongHtml = '';
+        const wrongList = this.words.filter(w => this.wrongWords && this.wrongWords.has(w.id));
+        
+        if (wrongList.length === 0) {
+          wrongHtml = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">Tuyệt vời! Bạn không sai từ nào.</td></tr>`;
+        } else {
+          for (let i = 0; i < wrongList.length; i++) {
+            const w = wrongList[i];
+            wrongHtml += `
+              <tr>
+                <td style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+                <td>
+                  <div style="font-weight: 700; color: #ffffff; font-size: 1rem;">${this.escapeHtml(w.word)}</div>
+                  ${w.ipa ? `<div style="font-size: 0.82rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
+                </td>
+                <td style="text-align: center;">
+                  <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
+                    <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
+                    <span class="ios-slider"></span>
+                  </label>
+                </td>
+                <td style="text-align: center;">
+                  <button type="button" class="btn ${w.isIntensive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 12px; font-size: 1.2rem; border-radius: 4px; font-weight: bold; line-height: 1;" onclick="studyManager.toggleWordIntensiveSummary(${w.id}, this)">
+                    ${w.isIntensive ? '-' : '+'}
+                  </button>
+                </td>
+              </tr>
+            `;
+          }
+        }
+        wrongTbody.innerHTML = wrongHtml;
+      }
     });
+  }
+
+  async toggleWordIntensiveSummary(wordId, buttonElement) {
+    try {
+      buttonElement.disabled = true;
+      const originalHtml = buttonElement.innerHTML;
+      buttonElement.innerHTML = '...';
+      const res = await window.api.toggleWordIntensive(wordId);
+      if (res.success) {
+        const isIntensive = res.data.isIntensive;
+        const w = this.words.find(x => x.id === wordId);
+        if (w) w.isIntensive = isIntensive;
+        
+        if (isIntensive) {
+          buttonElement.innerHTML = '-';
+          buttonElement.className = 'btn btn-primary';
+        } else {
+          buttonElement.innerHTML = '+';
+          buttonElement.className = 'btn btn-secondary';
+        }
+        
+        // Cập nhật lại UI ở bảng Học chuyên sâu ngoài màn hình nếu cần
+        if (window.loadIntensiveData) {
+          window.loadIntensiveData();
+        }
+      } else {
+        alert('Lỗi cập nhật chuyên sâu: ' + (res.message || ''));
+        buttonElement.innerHTML = originalHtml;
+      }
+    } catch (err) {
+      alert('Lỗi: ' + err.message);
+      buttonElement.innerHTML = '+';
+    } finally {
+      buttonElement.disabled = false;
+    }
   }
 
   async toggleWordLearnedSummary(wordId, newStatus, element = null) {

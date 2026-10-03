@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } finally {
         if (btnRemoveAllIntensive) {
           btnRemoveAllIntensive.disabled = false;
-          btnRemoveAllIntensive.innerText = '✕ Xóa tất cả';
+          btnRemoveAllIntensive.innerText = '- Xóa tất cả';
         }
       }
     });
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </td>
         <td style="color: var(--text-primary); font-size: 0.95rem;">${word.meaning}</td>
         <td style="text-align: center;">
-          <button class="icon-btn-mini btn-remove-intensive" data-id="${word.id}" style="color: #ff6b6b; font-size: 18px;" title="Bỏ khỏi chuyên sâu">✕</button>
+          <button class="icon-btn-mini btn-remove-intensive" data-id="${word.id}" style="color: #ff6b6b; font-size: 24px; font-weight: bold; line-height: 1;" title="Bỏ khỏi chuyên sâu">-</button>
         </td>
       </tr>
     `).join('');
