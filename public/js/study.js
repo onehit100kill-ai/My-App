@@ -1113,8 +1113,9 @@ class StudyManager {
     if (this.waitingForTap) return;
 
     const input = document.getElementById('quiz-typing-input');
-    const val = input.value.trim().toLowerCase();
-    const correctWord = this.currentQuizItem.word.word.trim().toLowerCase();
+    // Chuẩn hóa: trim và loại bỏ khoảng trắng thừa ở giữa các từ
+    const val = input.value.trim().replace(/\s+/g, ' ').toLowerCase();
+    const correctWord = this.currentQuizItem.word.word.trim().replace(/\s+/g, ' ').toLowerCase();
 
     const isCorrect = val === correctWord;
     this.processAnswerResult(isCorrect, this.currentQuizItem.type);
