@@ -170,16 +170,34 @@ const api = {
 
     try {
       // 1. Lấy phiên âm IPA từ Wiktionary (origin=* để tránh CORS)
-      const wiktionaryRes = await fetch(`https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(cleanWord)}&prop=wikitext&format=json&origin=*`);
-      if (wiktionaryRes.ok) {
-        const wData = await wiktionaryRes.json();
-        const text = wData.parse?.wikitext?.['*'] || '';
-        const m = text.match(/\{\{IPA\|en\|([^}]+)\}\}/);
-        if (m) {
-          let raw = m[1].split('|')[0].trim();
-          if (!raw.startsWith('/')) raw = '/' + raw + '/';
-          ipa = raw;
+      const fetchIpaForWord = async (w) => {
+        try {
+          const res = await fetch(`https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(w)}&prop=wikitext&format=json&origin=*`);
+          if (res.ok) {
+            const data = await res.json();
+            const text = data.parse?.wikitext?.['*'] || '';
+            const m = text.match(/\{\{IPA\|en\|([^}]+)\}\}/);
+            if (m) {
+              return m[1].split('|')[0].trim().replace(/\//g, '');
+            }
+          }
+        } catch(e) {}
+        return '';
+      };
+
+      let rawIpa = await fetchIpaForWord(cleanWord);
+      
+      // Nếu không tìm thấy IPA cho cả cụm, thử tìm cho từng từ đơn
+      if (!rawIpa && cleanWord.includes(' ')) {
+        const parts = cleanWord.split(' ');
+        const ipas = await Promise.all(parts.map(p => fetchIpaForWord(p)));
+        if (ipas.some(i => i)) {
+           rawIpa = ipas.map(i => i || '...').join(' ');
         }
+      }
+      
+      if (rawIpa) {
+        ipa = '/' + rawIpa + '/';
       }
     } catch (e) {
       console.warn('Wiktionary client fetch error:', e);
