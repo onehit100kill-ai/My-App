@@ -7,6 +7,7 @@ class WordsManager {
     this.currentFilter = 'all'; // Hiển thị toàn bộ từ của ngày
     this.lookupDebounceTimer = null;
     this.autocompleteTimer = null;
+    this.checkExistsTimer = null;
     this.currentSuggestions = [];
     this.activeSuggestionIndex = -1;
     this.previewAudioObj = null;
@@ -83,11 +84,34 @@ class WordsManager {
 
       clearTimeout(this.autocompleteTimer);
       clearTimeout(this.lookupDebounceTimer);
+      clearTimeout(this.checkExistsTimer);
 
       if (query.length < 1) {
         this.hideAutocomplete();
+        const warningEl = document.getElementById('word-exists-warning');
+        if (warningEl) warningEl.style.display = 'none';
         return;
       }
+
+      this.checkExistsTimer = setTimeout(async () => {
+        try {
+          const res = await window.api.searchGlobalWords(query);
+          if (res.success && res.data) {
+            const match = res.data.find(w => w.word.toLowerCase() === query.toLowerCase());
+            const warningEl = document.getElementById('word-exists-warning');
+            if (warningEl) {
+              const currentId = document.getElementById('word-id').value;
+              if (match && match.id != currentId) {
+                warningEl.style.display = 'block';
+              } else {
+                warningEl.style.display = 'none';
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Lỗi kiểm tra từ tồn tại:', e);
+        }
+      }, 400);
 
       // Debounce 160ms gọi API gợi ý autocomplete
       this.autocompleteTimer = setTimeout(async () => {
@@ -552,6 +576,9 @@ class WordsManager {
     if (meaningsWrap) meaningsWrap.style.display = 'none';
     if (definitionsWrap) definitionsWrap.style.display = 'none';
     if (examplesWrap) examplesWrap.style.display = 'none';
+    
+    const warningEl = document.getElementById('word-exists-warning');
+    if (warningEl) warningEl.style.display = 'none';
 
     if (wordId) {
       const w = this.words.find(x => x.id === wordId);

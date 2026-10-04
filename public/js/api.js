@@ -142,14 +142,14 @@ const api = {
   // === Dictionary Lookup & Suggestions (Client-Side để tránh lỗi IP block trên Render) ===
   async getWordSuggestions(query) {
     try {
-      const res = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(query)}`);
+      const res = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`);
       const data = await res.json();
       return {
         success: true,
-        suggestions: data.map(item => item.word)
+        suggestions: data[1] || []
       };
     } catch (err) {
-      console.error('Datamuse API error:', err);
+      console.error('Autocomplete API error:', err);
       return { success: false, suggestions: [] };
     }
   },
