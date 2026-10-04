@@ -497,6 +497,14 @@ class WordsManager {
 
   // Phát âm thanh: ưu tiên audio từ điển, fallback sang Web Speech API chuẩn
   playPronunciation(word, audioUrl) {
+    if (window._currentAudio && typeof window._currentAudio.pause === 'function') {
+      window._currentAudio.pause();
+      window._currentAudio.currentTime = 0;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
     if (audioUrl) {
       const audio = new Audio(audioUrl);
       window._currentAudio = audio; // Tránh lỗi GC trên iPhone xóa Audio khi đang phát
