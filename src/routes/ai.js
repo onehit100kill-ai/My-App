@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { keyPool, generateSentenceWithGroq } = require('../services/aiService');
+const { keyPool, generateSentenceWithGroq, generateAiLesson } = require('../services/aiService');
 
 /**
  * GET /api/ai/status
@@ -51,31 +51,57 @@ router.post('/add-key', (req, res) => {
 
 /**
  * POST /api/ai/generate
- * Sinh câu điền từ tiếng Anh bằng Groq LPU (tốc độ siêu nhanh, tự xoay key)
- * Body: { word: "confident", meaning: "tự tin" }
+ * Sinh bài học AI (Câu điền từ A2 + Đoạn văn bài đọc)
+ * Hỗ trợ cả { words: [{ word, meaning }] }, { words: ["word"] } và { word, meaning }
  */
 router.post('/generate', async (req, res) => {
   try {
-    const { word, meaning } = req.body;
-    if (!word || !word.trim()) {
+    let words = req.body.words;
+
+    // Tương thích ngược nếu client gửi dạng { word, meaning } đơn lẻ
+    if (!words && req.body.word) {
+      words = [{ word: req.body.word, meaning: req.body.meaning || '' }];
+    }
+
+    // Xử lý chuỗi JSON nếu gửi string
+    if (typeof words === 'string') {
+      try {
+        words = JSON.parse(words);
+      } catch (e) {
+        words = [{ word: words, meaning: '' }];
+      }
+    }
+
+    // Chuẩn hoá mảng words
+    if (Array.isArray(words)) {
+      words = words.map(w => {
+        if (typeof w === 'string') return { word: w.trim(), meaning: '' };
+        return { word: (w.word || '').trim(), meaning: (w.meaning || '').trim() };
+      }).filter(w => w.word.length > 0);
+    }
+
+    if (!words || !Array.isArray(words) || words.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Thiếu từ vựng cần sinh câu.'
       });
     }
 
-    const result = await generateSentenceWithGroq(word, meaning);
+    const dayId = req.body.dayId || '';
+    const result = await generateAiLesson(words, dayId);
 
-    return res.json({
-      success: true,
-      data: result
-    });
+    // Nếu cả Groq và Gemini đều lỗi hoặc hết lượt -> HTTP 503
+    if (result.isHttpError) {
+      return res.status(result.status || 503).json(result.payload);
+    }
+
+    return res.json(result);
 
   } catch (err) {
     console.error('Lỗi trong /api/ai/generate:', err);
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message || 'Lỗi server xử lý AI.'
     });
   }
 });

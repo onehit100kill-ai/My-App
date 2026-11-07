@@ -283,13 +283,17 @@ const api = {
     }
   },
 
-  async generateAiSentence(word, meaning) {
+  async aiGenerate(words, type = 'both', dayId = null) {
     const res = await fetch(`${API_BASE}/ai/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word, meaning })
+      body: JSON.stringify({ words, type, dayId })
     });
     return await res.json();
+  },
+
+  async generateAiSentence(word, meaning) {
+    return await this.aiGenerate([{ word, meaning }], 'both');
   }
 };
 

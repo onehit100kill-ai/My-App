@@ -61,16 +61,125 @@
     }
   };
 
+  // Định nghĩa 5 loại cây ăn quả thân gỗ (Group C)
+  const FRUIT_TREES = {
+    apple: {
+      id: 'apple',
+      name: 'Táo',
+      icon: '🍎',
+      rarity: 'Thường',
+      rarityColor: '#10b981',
+      unlockLevel: 1,
+      maxWords: 5,
+      maxHp: 5,
+      cooldownSec: 30,
+      costFood: 3,
+      yieldFood: 5,
+      rewardXp: 15,
+      sprites: [
+        'assets/farm/crop-apple-1.png',
+        'assets/farm/crop-apple-2.png',
+        'assets/farm/crop-apple-3.png'
+      ]
+    },
+    orange: {
+      id: 'orange',
+      name: 'Cam',
+      icon: '🍊',
+      rarity: 'Thường',
+      rarityColor: '#10b981',
+      unlockLevel: 2,
+      maxWords: 6,
+      maxHp: 5,
+      cooldownSec: 30,
+      costFood: 3,
+      yieldFood: 6,
+      rewardXp: 15,
+      sprites: [
+        'assets/farm/crop-orange-1.png',
+        'assets/farm/crop-orange-2.png',
+        'assets/farm/crop-orange-3.png'
+      ]
+    },
+    peach: {
+      id: 'peach',
+      name: 'Đào',
+      icon: '🍑',
+      rarity: 'Hiếm',
+      rarityColor: '#3b82f6',
+      unlockLevel: 4,
+      maxWords: 10,
+      maxHp: 8,
+      cooldownSec: 45,
+      costFood: 5,
+      yieldFood: 10,
+      rewardXp: 25,
+      sprites: [
+        'assets/farm/crop-peach-1.png',
+        'assets/farm/crop-peach-2.png',
+        'assets/farm/crop-peach-3.png'
+      ]
+    },
+    pear: {
+      id: 'pear',
+      name: 'Lê',
+      icon: '🍐',
+      rarity: 'Hiếm',
+      rarityColor: '#3b82f6',
+      unlockLevel: 6,
+      maxWords: 12,
+      maxHp: 8,
+      cooldownSec: 45,
+      costFood: 5,
+      yieldFood: 12,
+      rewardXp: 25,
+      sprites: [
+        'assets/farm/crop-pear-1.png',
+        'assets/farm/crop-pear-2.png',
+        'assets/farm/crop-pear-3.png'
+      ]
+    },
+    cherry: {
+      id: 'cherry',
+      name: 'Anh đào',
+      icon: '🍒',
+      rarity: 'Sử thi',
+      rarityColor: '#a855f7',
+      unlockLevel: 8,
+      maxWords: 15,
+      maxHp: 10,
+      cooldownSec: 60,
+      costFood: 8,
+      yieldFood: 15,
+      rewardXp: 40,
+      sprites: [
+        'assets/farm/crop-cherry-1.png',
+        'assets/farm/crop-cherry-2.png',
+        'assets/farm/crop-cherry-3.png'
+      ]
+    }
+  };
+
   // Trạng thái mặc định
   const DEFAULT_STATE = {
     coins: 30,
     xp: 0,
     level: 1,
+    food: 5, // Bắt đầu với 5 lương thực
+    foodStorage: {}, // Lưu số lượng nông sản & trái cây đã thu hoạch
     fertilizer: 0,
     soundEnabled: true,
     harvestedTodayCount: 0,
     lastHarvestDate: '',
     plots: [
+      { id: 1, state: 'empty' },
+      { id: 2, state: 'empty' },
+      { id: 3, state: 'empty' },
+      { id: 4, state: 'empty' },
+      { id: 5, state: 'empty' },
+      { id: 6, state: 'empty' }
+    ],
+    treePlots: [
       { id: 1, state: 'empty' },
       { id: 2, state: 'empty' },
       { id: 3, state: 'empty' },
@@ -95,7 +204,7 @@
       choice: true,
       typing: true,
       listening: true,
-      ai: false // Vô hiệu hoá nếu chưa có /api/ai/generate
+      ai: true // Đã kích hoạt API AI
     }
   };
 
@@ -104,6 +213,10 @@
     settings: null,
     tickInterval: null,
     activeQuiz: null, // { plotId, mode, word, failCount, isWormQuiz }
+    activeTreeQuiz: null, // { plotId, wordIndex, words, firstTryErrors }
+    activeTreePlanting: null, // { plotId, selectedTree, chosenWords }
+    zoom: 1.0,
+    pan: { x: 0, y: 0 },
     cachedWordsPool: [],
     isOpen: false,
 
@@ -133,6 +246,19 @@
       const expectedPlots = Math.min(20, 6 + (this.state.level - 1) * 2);
       while (this.state.plots.length < expectedPlots) {
         this.state.plots.push({ id: this.state.plots.length + 1, state: 'empty' });
+      }
+
+      if (this.state.food === undefined) this.state.food = 5;
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      if (!Array.isArray(this.state.treePlots) || this.state.treePlots.length < 6) {
+        this.state.treePlots = [
+          { id: 1, state: 'empty' },
+          { id: 2, state: 'empty' },
+          { id: 3, state: 'empty' },
+          { id: 4, state: 'empty' },
+          { id: 5, state: 'empty' },
+          { id: 6, state: 'empty' }
+        ];
       }
 
       this.checkDailyReset();
@@ -597,6 +723,7 @@
     renderHUD() {
       const levelEl = document.getElementById('farm-hud-level');
       const xpBarEl = document.getElementById('farm-hud-xp-bar');
+      const foodEl = document.getElementById('farm-hud-food');
       const coinsEl = document.getElementById('farm-hud-coins');
       const fertEl = document.getElementById('farm-hud-fert');
       const soundBtn = document.getElementById('farm-btn-sound');
@@ -607,17 +734,17 @@
       if (levelEl) levelEl.textContent = `🌱 Cấp ${this.state.level}`;
       if (xpBarEl) {
         xpBarEl.style.width = `${pct}%`;
-        xpBarEl.title = `${this.state.xp}/${nextXp} XP`;
+        xpBarEl.title = `${this.state.xp}/${nextXp} XP (Bấm để xem chi tiết)`;
       }
+      if (foodEl) foodEl.textContent = `🍞 ${this.state.food || 0}`;
       if (coinsEl) coinsEl.textContent = `🪙 ${this.state.coins}`;
-      if (fertEl) fertEl.textContent = `🌻 ×${this.state.fertilizer}`;
+      if (fertEl) fertEl.textContent = `🧪 ×${this.state.fertilizer}`;
       if (soundBtn) soundBtn.textContent = this.state.soundEnabled ? '🔊' : '🔇';
     },
 
     renderBottomBar() {
       const wordsLeftEl = document.getElementById('farm-bottom-words-left');
       const harvestedEl = document.getElementById('farm-bottom-harvested');
-      const buyFertBtn = document.getElementById('farm-btn-buy-fert');
 
       if (wordsLeftEl) {
         const count = this.getRemainingWordsCount();
@@ -629,12 +756,19 @@
     },
 
     renderField() {
+      this.renderCropGrid();
+      this.renderTreeGrid();
+    },
+
+    renderCropGrid() {
       const grid = document.getElementById('farm-grid');
       if (!grid) return;
 
       const now = Date.now();
+      const unlockedCount = Math.min(20, 6 + (this.state.level - 1) * 2);
+      const unlockedPlots = this.state.plots.slice(0, unlockedCount);
 
-      grid.innerHTML = this.state.plots.map(plot => {
+      const plotsHtml = unlockedPlots.map(plot => {
         if (plot.state === 'empty') {
           return `
             <div class="farm-plot farm-plot-empty" data-plot-id="${plot.id}">
@@ -695,9 +829,9 @@
               <div class="farm-water-badge" title="Tưới cây">💧</div>
             ` : ''}
 
-            <!-- Huy hiệu phân bón -->
+            <!-- Huy hiệu phân bón (Icon 🧪) -->
             ${plot.hasFertilizer && !isReady && !isWitheredDead ? `
-              <div class="farm-fertilized-badge" title="Đã bón phân: Lớn 2 giai đoạn">🌻</div>
+              <div class="farm-fertilized-badge" title="Đã bón phân: Lớn 2 giai đoạn">🧪</div>
             ` : ''}
 
             <!-- Huy hiệu giỏ thu hoạch -->
@@ -749,6 +883,158 @@
           </div>
         `;
       }).join('');
+
+      // Lưới luôn hiện thêm 4 ô khoá tiếp theo (Group B)
+      const maxLockedPlots = Math.min(20, unlockedCount + 4);
+      let lockedHtml = '';
+      for (let i = unlockedCount + 1; i <= maxLockedPlots; i++) {
+        const reqLevel = 1 + Math.ceil((i - 6) / 2);
+        lockedHtml += `
+          <div class="farm-plot farm-plot-locked" data-locked-req-level="${reqLevel}" data-locked-plot-idx="${i}" title="Cần Cấp ${reqLevel} để mở ô này">
+            <div class="farm-locked-icon">🔒</div>
+            <div class="farm-locked-label">Cấp ${reqLevel}</div>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = plotsHtml + lockedHtml;
+    },
+
+    // 5.10. RENDER KHU CÂY ĂN QUẢ (Group C)
+    renderTreeGrid() {
+      const grid = document.getElementById('farm-tree-grid');
+      if (!grid) return;
+
+      const now = Date.now();
+      const unlockedTrees = this.getUnlockedTreePlotsCount();
+
+      grid.innerHTML = this.state.treePlots.map((plot, idx) => {
+        const plotNum = idx + 1;
+        const reqLevel = this.getReqLevelForTreePlot(plotNum);
+        const isLocked = plotNum > unlockedTrees;
+
+        if (isLocked) {
+          return `
+            <div class="farm-tree-plot farm-plot-locked" data-tree-locked-level="${reqLevel}" title="Cần Cấp ${reqLevel} để mở ô cây ăn quả này">
+              <div class="farm-locked-icon">🔒</div>
+              <div class="farm-locked-label">Cấp ${reqLevel}</div>
+            </div>
+          `;
+        }
+
+        if (plot.state === 'empty') {
+          return `
+            <div class="farm-tree-plot farm-plot-empty" data-tree-plot-id="${plot.id}">
+              <img class="farm-plot-soil-bg" src="assets/farm/soil-empty.png" onerror="this.style.display='none'" alt="soil">
+              <span class="farm-empty-plus">🌳</span>
+              <span class="farm-empty-label">Trồng cây</span>
+            </div>
+          `;
+        }
+
+        const treeConf = FRUIT_TREES[plot.treeType] || FRUIT_TREES.apple;
+        const isCooldown = plot.cooldownUntil && plot.cooldownUntil > now;
+        const cooldownRemaining = isCooldown ? Math.ceil((plot.cooldownUntil - now) / 1000) : 0;
+        const isReady = plot.stage >= 3;
+        const isWithered = plot.state === 'withered' || plot.hp <= 0;
+
+        const classes = ['farm-tree-plot'];
+        if (isWithered) classes.push('farm-plot-withered');
+        else if (isReady) classes.push('farm-plot-ready');
+        else if (isCooldown) classes.push('farm-plot-cooling');
+
+        const stageIdx = Math.min(2, Math.max(0, (plot.stage || 1) - 1));
+        const spriteSrc = isWithered ? 'assets/farm/crop-withered.png' : treeConf.sprites[stageIdx];
+
+        let heartsHtml = '';
+        for (let i = 0; i < treeConf.maxHp; i++) {
+          heartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+        }
+
+        let dotsHtml = '';
+        for (let i = 0; i < 3; i++) {
+          dotsHtml += i < plot.stage ? '●' : '○';
+        }
+
+        return `
+          <div class="${classes.join(' ')}" data-tree-plot-id="${plot.id}">
+            <img class="farm-plot-soil-bg" src="assets/farm/soil-empty.png" onerror="this.style.display='none'" alt="soil">
+
+            ${!isWithered ? `
+              <div class="farm-plot-header-bar">
+                <div class="farm-plot-hearts">${heartsHtml}</div>
+                <div class="farm-plot-progress-dots">${dotsHtml}</div>
+              </div>
+            ` : ''}
+
+            ${!isCooldown && !isReady && !isWithered ? `
+              <div class="farm-water-badge" title="Tưới cây ăn quả">💧</div>
+            ` : ''}
+
+            ${isReady && !isWithered ? `
+              <div class="farm-basket-badge" title="Thu hoạch quả">🧺</div>
+            ` : ''}
+
+            <img class="farm-tree-sprite" src="${spriteSrc}" alt="${treeConf.name}">
+
+            <div class="farm-tree-word-count">🌳 ${plot.words ? plot.words.length : 0} từ</div>
+
+            ${isCooldown && !isReady && !isWithered ? `
+              <div class="farm-cooling-overlay">
+                <span class="farm-cooling-timer">${cooldownRemaining}s</span>
+              </div>
+            ` : ''}
+
+            ${isWithered ? `
+              <div class="farm-clean-overlay">
+                <span class="farm-withered-text">Cây đã héo</span>
+                <button type="button" class="btn btn-secondary farm-btn-clean" data-clean-tree-id="${plot.id}">Dọn</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    },
+
+    getUnlockedTreePlotsCount() {
+      const lvl = this.state.level || 1;
+      if (lvl < 2) return 2;
+      if (lvl < 4) return 3;
+      if (lvl < 6) return 4;
+      if (lvl < 8) return 5;
+      return 6;
+    },
+
+    getReqLevelForTreePlot(index) {
+      if (index <= 2) return 1;
+      if (index === 3) return 2;
+      if (index === 4) return 4;
+      if (index === 5) return 6;
+      return 8;
+    },
+
+    getMissingXpForLevel(targetLevel) {
+      if (targetLevel <= this.state.level) return 0;
+      let totalNeeded = 0;
+      totalNeeded += Math.max(0, (20 + this.state.level * 10) - this.state.xp);
+      for (let l = this.state.level + 1; l < targetLevel; l++) {
+        totalNeeded += 20 + l * 10;
+      }
+      return totalNeeded;
+    },
+
+    showLockedPlotToast(reqLevel) {
+      const missing = this.getMissingXpForLevel(reqLevel);
+      if (window.showToast) {
+        window.showToast(`Cần lên Cấp ${reqLevel} để mở ô này (còn thiếu ${missing} XP)`);
+      }
+    },
+
+    showLockedTreePlotToast(reqLevel) {
+      const missing = this.getMissingXpForLevel(reqLevel);
+      if (window.showToast) {
+        window.showToast(`Cần lên Cấp ${reqLevel} để mở ô cây ăn quả này (còn thiếu ${missing} XP)`);
+      }
     },
 
     // =========================================================================
@@ -767,6 +1053,17 @@
           }
         }
       });
+
+      if (this.state.treePlots) {
+        this.state.treePlots.forEach(plot => {
+          if (plot.cooldownUntil && plot.cooldownUntil > 0) {
+            if (now >= plot.cooldownUntil) {
+              plot.cooldownUntil = 0;
+              needsRerender = true;
+            }
+          }
+        });
+      }
 
       if (needsRerender) {
         this.saveState();
@@ -916,11 +1213,17 @@
       const cropType = sheet.getAttribute('data-selected-crop');
       const wordId = parseInt(sheet.getAttribute('data-selected-word-id'), 10);
 
+      if ((this.state.food || 0) < 1) {
+        if (window.showToast) window.showToast('Không đủ lương thực! Cần 1 🍞 để gieo hạt.');
+        return;
+      }
+
       const word = this.cachedWordsPool.find(w => w.id === wordId) || this.pickNextWord();
       const plot = this.state.plots.find(p => p.id === plotId);
       const crop = CROP_TYPES[cropType];
 
       if (plot && crop) {
+        this.state.food -= 1; // Gieo hạt tốn 1 lương thực
         plot.cropType = cropType;
         plot.wordId = word.id;
         plot.word = word.word;
@@ -942,7 +1245,7 @@
         this.playSound('pop');
 
         if (window.showToast) {
-          window.showToast(`Đã gieo ${crop.name} ("${word.word}") thành công!`);
+          window.showToast(`Đã gieo ${crop.name} (-1 🍞, "${word.word}") thành công!`);
         }
       }
 
@@ -1395,8 +1698,15 @@
 
       const crop = CROP_TYPES[plot.cropType];
 
-      // Thưởng vàng & XP
-      this.state.coins += crop.rewardCoins;
+      // Thu hoạch nông sản: KHÔNG CÒN CHO VÀNG! Nhận lương thực:
+      // Bắt đầu 2 lương thực, bonus tỉ lệ = cấp × 5% nhận 3 thay vì 2
+      const bonusChance = (this.state.level || 1) * 0.05;
+      const foodYield = Math.random() < bonusChance ? 3 : 2;
+
+      this.state.food = (this.state.food || 0) + foodYield;
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      this.state.foodStorage[plot.cropType] = (this.state.foodStorage[plot.cropType] || 0) + 1;
+
       this.gainXp(crop.rewardXp);
       this.state.harvestedTodayCount = (this.state.harvestedTodayCount || 0) + 1;
       this.state.quests.harvested += 1;
@@ -1417,7 +1727,7 @@
       const harvestedInfo = {
         word: plot.word,
         meaning: plot.meaning,
-        rewardCoins: crop.rewardCoins,
+        foodYield: foodYield,
         rewardXp: crop.rewardXp
       };
 
@@ -1460,7 +1770,7 @@
         <div class="harvest-title">✨ Đã thuộc lòng!</div>
         <div class="harvest-word">${info.word}</div>
         <div class="harvest-meaning">${info.meaning}</div>
-        <div class="harvest-rewards">+${info.rewardCoins} 🪙 | +${info.rewardXp} XP</div>
+        <div class="harvest-rewards">+${info.foodYield} 🍞 | +${info.rewardXp} XP</div>
       `;
 
       toast.classList.add('active');
@@ -1527,10 +1837,702 @@
       const descEl = document.getElementById('farm-levelup-desc');
       if (!overlay) return;
 
-      if (titleEl) titleEl.textContent = `🎉 Lên Cấp ${this.state.level}!`;
-      if (descEl) descEl.innerHTML = `Bạn nhận được:<br><b style="color:#fbbf24;">+20 vàng</b> và <b style="color:#34d399;">+2 ô đất mới</b>!`;
+      const lvl = this.state.level;
+      let treeBonus = '';
+      if (lvl === 2) treeBonus = '<br><b style="color:#38bdf8;">+1 ô cây ăn quả & Mở khóa Cam 🍊</b>';
+      else if (lvl === 4) treeBonus = '<br><b style="color:#38bdf8;">+1 ô cây ăn quả & Mở khóa Đào 🍑</b>';
+      else if (lvl === 6) treeBonus = '<br><b style="color:#38bdf8;">+1 ô cây ăn quả & Mở khóa Lê 🍐</b>';
+      else if (lvl === 8) treeBonus = '<br><b style="color:#38bdf8;">+1 ô cây ăn quả & Mở khóa Anh đào 🍒</b>';
+
+      if (titleEl) titleEl.textContent = `🎉 Lên Cấp ${lvl}!`;
+      if (descEl) descEl.innerHTML = `Bạn nhận được:<br><b style="color:#fbbf24;">+20 vàng</b> và <b style="color:#34d399;">+2 ô đất nông sản</b>!${treeBonus}`;
 
       overlay.classList.add('active');
+    },
+
+    // =========================================================================
+    // XEM THÔNG TIN CẤP ĐỘ & XP (Group A)
+    // =========================================================================
+    openLevelInfoModal() {
+      const modal = document.getElementById('farm-sheet-level-info');
+      const body = document.getElementById('farm-level-info-body');
+      if (!modal || !body) return;
+
+      const lvl = this.state.level || 1;
+      const curXp = this.state.xp || 0;
+      const nextXp = 20 + lvl * 10;
+      const missingXp = Math.max(0, nextXp - curXp);
+      const pct = Math.min(100, Math.round((curXp / nextXp) * 100));
+
+      let treeUnlockInfo = '';
+      const nextLvl = lvl + 1;
+      if (nextLvl === 2) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍊 Cam';
+      else if (nextLvl === 4) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍑 Đào';
+      else if (nextLvl === 6) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍐 Lê';
+      else if (nextLvl === 8) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍒 Anh đào';
+
+      body.innerHTML = `
+        <div class="farm-level-card-info">
+          <div class="farm-level-huge-badge">🌱 Cấp Hiện Tại: Cấp ${lvl}</div>
+          
+          <div style="margin: 12px 0 6px 0; font-size: 0.95rem; color: #94a3b8;">Tiến độ kinh nghiệm:</div>
+          <div class="farm-xp-track" style="height: 14px; margin: 0 auto 8px auto; max-width: 280px;">
+            <div class="farm-xp-bar" style="width: ${pct}%;"></div>
+          </div>
+          <div style="font-weight: 700; color: #a5b4fc; font-size: 0.9rem;">${curXp} / ${nextXp} XP (${pct}%)</div>
+
+          <div class="farm-level-xp-needed-callout">
+            Cần thêm <b style="color: #fbbf24;">${missingXp} XP</b> nữa để lên <b style="color: #34d399;">Cấp ${nextLvl}</b>
+          </div>
+
+          <div class="farm-level-rewards-list">
+            <div style="font-weight: 700; color: #fbbf24; margin-bottom: 8px;">🎁 Phần thưởng Cấp ${nextLvl}:</div>
+            <div class="farm-level-reward-item">🌱 +2 ô đất nông sản mới</div>
+            <div class="farm-level-reward-item">🪙 +20 vàng</div>
+            ${treeUnlockInfo ? `<div class="farm-level-reward-item" style="color:#38bdf8;">${treeUnlockInfo}</div>` : ''}
+          </div>
+        </div>
+      `;
+
+      modal.classList.add('active');
+    },
+
+    // =========================================================================
+    // KHO LƯƠNG THỰC & NÔNG SẢN (Group C)
+    // =========================================================================
+    openStorageModal() {
+      const modal = document.getElementById('farm-sheet-storage');
+      const body = document.getElementById('farm-storage-body');
+      if (!modal || !body) return;
+
+      const food = this.state.food || 0;
+      const storage = this.state.foodStorage || {};
+
+      const items = [
+        { id: 'radish', name: 'Củ cải', icon: '🥕' },
+        { id: 'strawberry', name: 'Dâu tây', icon: '🍓' },
+        { id: 'sunflower', name: 'Hướng dương', icon: '🌻' },
+        { id: 'apple', name: 'Táo', icon: '🍎' },
+        { id: 'orange', name: 'Cam', icon: '🍊' },
+        { id: 'peach', name: 'Đào', icon: '🍑' },
+        { id: 'pear', name: 'Lê', icon: '🍐' },
+        { id: 'cherry', name: 'Anh đào', icon: '🍒' }
+      ];
+
+      body.innerHTML = `
+        <div class="farm-storage-summary">
+          <div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Tổng Lương Thực Có Sẵn:</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">🍞 ${food}</div>
+          </div>
+          <button type="button" class="btn btn-primary" id="farm-storage-btn-go-shop" style="padding: 6px 12px; font-size: 0.85rem;">🛒 Mua thêm</button>
+        </div>
+
+        <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 10px; font-size: 0.9rem;">Kho Nông Sản & Trái Cây Đã Thu Hoạch:</div>
+        <div class="farm-storage-grid">
+          ${items.map(it => `
+            <div class="farm-storage-item">
+              <span class="farm-storage-item-icon">${it.icon}</span>
+              <span class="farm-storage-item-name">${it.name}</span>
+              <span class="farm-storage-item-count">×${storage[it.id] || 0}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      body.querySelector('#farm-storage-btn-go-shop')?.addEventListener('click', () => {
+        modal.classList.remove('active');
+        this.openShopModal();
+      });
+
+      modal.classList.add('active');
+    },
+
+    // =========================================================================
+    // CỬA HÀNG NÔNG TRẠI (Extra Shop Requirement)
+    // =========================================================================
+    openShopModal() {
+      const modal = document.getElementById('farm-sheet-shop');
+      if (!modal) return;
+      modal.classList.add('active');
+    },
+
+    buyFertilizerFromShop() {
+      if ((this.state.coins || 0) < 15) {
+        if (window.showToast) window.showToast('Không đủ vàng! Cần 15🪙 để mua phân bón.');
+        return;
+      }
+      this.state.coins -= 15;
+      this.state.fertilizer = (this.state.fertilizer || 0) + 1;
+      this.saveState();
+      this.renderHUD();
+      this.playSound('pop');
+      if (window.showToast) window.showToast('Đã mua 1 🧪 Phân bón tăng trưởng thành công!');
+    },
+
+    buyFoodFromShop() {
+      if ((this.state.coins || 0) < 10) {
+        if (window.showToast) window.showToast('Không đủ vàng! Cần 10🪙 để mua lương thực.');
+        return;
+      }
+      this.state.coins -= 10;
+      this.state.food = (this.state.food || 0) + 2;
+      this.saveState();
+      this.renderHUD();
+      this.playSound('pop');
+      if (window.showToast) window.showToast('Đã mua 2 🍞 Lương thực khẩn cấp thành công!');
+    },
+
+    // =========================================================================
+    // TRỒNG, TƯỚI & THU HOẠCH CÂY ĂN QUẢ (Group C)
+    // =========================================================================
+    cleanTreePlot(plotId) {
+      const plot = this.state.treePlots?.find(p => p.id === plotId);
+      if (!plot) return;
+
+      plot.treeType = null;
+      plot.words = [];
+      plot.stage = 0;
+      plot.hp = 0;
+      plot.cooldownUntil = 0;
+      plot.state = 'empty';
+
+      this.saveState();
+      this.render();
+      this.playSound('pop');
+
+      if (window.showToast) {
+        window.showToast('Đã dọn sạch ô cây ăn quả. Bạn có thể trồng cây mới!');
+      }
+    },
+
+    openFruitTreeModal(plotId) {
+      const sheet = document.getElementById('farm-sheet-fruit-tree');
+      const listEl = document.getElementById('farm-fruit-tree-list');
+      if (!sheet || !listEl) return;
+
+      this.activeTreePlanting = { plotId, selectedTree: null, chosenWords: [] };
+
+      document.getElementById('farm-fruit-step-select').style.display = 'block';
+      document.getElementById('farm-fruit-step-confirm').style.display = 'none';
+
+      const curLvl = this.state.level || 1;
+      const food = this.state.food || 0;
+
+      listEl.innerHTML = Object.values(FRUIT_TREES).map(tree => {
+        const isLocked = tree.unlockLevel > curLvl;
+
+        return `
+          <div class="farm-fruit-card ${isLocked ? 'locked' : ''}" data-tree-type="${tree.id}">
+            <span class="farm-fruit-card-icon">${tree.icon}</span>
+            <div class="farm-fruit-card-info">
+              <div class="farm-fruit-card-name">
+                ${tree.name}
+                <span class="farm-fruit-card-rarity" style="background:${tree.rarityColor}20; color:${tree.rarityColor}; border:1px solid ${tree.rarityColor}40;">${tree.rarity}</span>
+                ${isLocked ? `<span style="font-size:0.75rem; color:#f87171; margin-left:auto;">🔒 Cần Cấp ${tree.unlockLevel}</span>` : ''}
+              </div>
+              <div class="farm-fruit-card-meta">
+                ${isLocked ? `Mở ở Cấp ${tree.unlockLevel}` : `Trồng tốn ${tree.costFood} 🍞 • Thu ${tree.yieldFood} 🍞 + ${tree.rewardXp} XP • ${tree.maxWords} từ`}
+              </div>
+            </div>
+            ${!isLocked ? `<button type="button" class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem;">Chọn</button>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('.farm-fruit-card:not(.locked)').forEach(card => {
+        card.addEventListener('click', () => {
+          const treeType = card.getAttribute('data-tree-type');
+          this.selectFruitTreeType(treeType);
+        });
+      });
+
+      sheet.classList.add('active');
+    },
+
+    selectFruitTreeType(treeType) {
+      const tree = FRUIT_TREES[treeType];
+      if (!tree) return;
+
+      if ((this.state.food || 0) < tree.costFood) {
+        if (window.showToast) window.showToast(`Không đủ lương thực! Cần ${tree.costFood} 🍞 để trồng cây ${tree.name}.`);
+        return;
+      }
+
+      this.activeTreePlanting.selectedTree = treeType;
+      this.reshuffleFruitTreeWords();
+
+      document.getElementById('farm-fruit-step-select').style.display = 'none';
+      document.getElementById('farm-fruit-step-confirm').style.display = 'block';
+    },
+
+    reshuffleFruitTreeWords() {
+      if (!this.activeTreePlanting || !this.activeTreePlanting.selectedTree) return;
+      const tree = FRUIT_TREES[this.activeTreePlanting.selectedTree];
+      const count = tree.maxWords;
+
+      // Lấy từ pool theo cài đặt từ vựng
+      const words = this.pickMultipleRandomWords(count);
+      this.activeTreePlanting.chosenWords = words;
+
+      const confirmBody = document.getElementById('farm-fruit-confirm-body');
+      if (confirmBody) {
+        confirmBody.innerHTML = `
+          <div style="text-align: center; margin-bottom: 12px;">
+            <div style="font-size: 32px;">${tree.icon}</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">Cây ${tree.name} (${tree.rarity})</div>
+            <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">
+              Chi phí: <b style="color:#fbbf24;">${tree.costFood} 🍞</b> • Thu hoạch: <b style="color:#34d399;">${tree.yieldFood} 🍞</b> + <b style="color:#a5b4fc;">${tree.rewardXp} XP</b>
+            </div>
+          </div>
+          <div style="font-weight: 600; font-size: 0.85rem; color: #e2e8f0; margin-bottom: 6px;">
+            Bộ ${words.length} từ vựng trên cây này:
+          </div>
+          <div style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 8px;">
+            ${words.map((w, idx) => `
+              <div style="display:flex; justify-content:space-between; padding:4px 6px; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.85rem;">
+                <span style="font-weight:600; color:#38bdf8;">${idx + 1}. ${w.word}</span>
+                <span style="color:#cbd5e1;">${w.meaning}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    },
+
+    pickMultipleRandomWords(count) {
+      if (!this.cachedWordsPool || this.cachedWordsPool.length === 0) {
+        return [
+          { id: 9991, word: 'apple', meaning: 'quả táo' },
+          { id: 9992, word: 'orange', meaning: 'quả cam' },
+          { id: 9993, word: 'peach', meaning: 'quả đào' }
+        ];
+      }
+
+      // Xáo trộn ngẫu nhiên và lấy count từ
+      const shuffled = this.shuffle([...this.cachedWordsPool]);
+      return shuffled.slice(0, Math.min(count, shuffled.length));
+    },
+
+    confirmFruitTreePlant() {
+      if (!this.activeTreePlanting || !this.activeTreePlanting.selectedTree) return;
+      const { plotId, selectedTree, chosenWords } = this.activeTreePlanting;
+      const tree = FRUIT_TREES[selectedTree];
+
+      if ((this.state.food || 0) < tree.costFood) {
+        if (window.showToast) window.showToast('Không đủ lương thực để trồng cây này!');
+        return;
+      }
+
+      this.state.food -= tree.costFood;
+
+      const plotIndex = plotId - 1;
+      this.state.treePlots[plotIndex] = {
+        id: plotId,
+        state: 'growing',
+        treeType: selectedTree,
+        words: chosenWords,
+        stage: 1,
+        stagesNeeded: 3,
+        hp: tree.maxHp,
+        maxHp: tree.maxHp,
+        cooldownUntil: 0,
+        hasFertilizer: false
+      };
+
+      this.saveState();
+      this.render();
+      this.playSound('pop');
+
+      document.getElementById('farm-sheet-fruit-tree')?.classList.remove('active');
+      this.activeTreePlanting = null;
+
+      if (window.showToast) {
+        window.showToast(`Đã trồng cây ${tree.name} thành công (-${tree.costFood} 🍞)!`);
+      }
+    },
+
+    handleTreePlotClick(plotId) {
+      const plot = this.state.treePlots.find(p => p.id === plotId);
+      if (!plot) return;
+
+      if (plot.state === 'empty') {
+        this.openFruitTreeModal(plotId);
+        return;
+      }
+
+      if (plot.state === 'ready') {
+        this.harvestTree(plotId);
+        return;
+      }
+
+      if (plot.state === 'withered' || plot.hp <= 0) {
+        this.cleanTreePlot(plotId);
+        return;
+      }
+
+      const now = Date.now();
+      const isCooldown = plot.cooldownUntil && plot.cooldownUntil > now;
+      if (isCooldown) {
+        const remaining = Math.ceil((plot.cooldownUntil - now) / 1000);
+        if (this.state.fertilizer > 0) {
+          if (confirm(`Cây đang nghỉ ngơi (còn ${remaining}s). Bạn có muốn dùng 1 🧪 phân bón để tưới ngay không?`)) {
+            this.state.fertilizer -= 1;
+            plot.cooldownUntil = 0;
+            this.saveState();
+            this.render();
+            this.startFruitTreeQuiz(plotId);
+          }
+        } else {
+          if (window.showToast) window.showToast(`Cây đang nghỉ ngơi (còn ${remaining}s). Mua phân bón trong Shop để tưới ngay!`);
+        }
+        return;
+      }
+
+      // Tưới cây
+      this.startFruitTreeQuiz(plotId);
+    },
+
+    startFruitTreeQuiz(plotId) {
+      const plot = this.state.treePlots.find(p => p.id === plotId);
+      if (!plot || !plot.words || plot.words.length === 0) return;
+
+      const treeConf = FRUIT_TREES[plot.treeType];
+      this.activeTreeQuiz = {
+        plotId,
+        wordIndex: 0,
+        words: plot.words,
+        firstTryErrors: {}
+      };
+
+      this.renderFruitTreeQuizModal();
+    },
+
+    renderFruitTreeQuizModal() {
+      const sheet = document.getElementById('farm-sheet-fruit-quiz');
+      const titleEl = document.getElementById('farm-fruit-quiz-title');
+      const statusEl = document.getElementById('farm-fruit-quiz-status');
+      const bodyEl = document.getElementById('farm-fruit-quiz-body');
+      if (!sheet || !this.activeTreeQuiz) return;
+
+      const q = this.activeTreeQuiz;
+      const plot = this.state.treePlots.find(p => p.id === q.plotId);
+      const treeConf = FRUIT_TREES[plot.treeType];
+
+      if (titleEl) {
+        titleEl.textContent = `Tưới Cây ${treeConf.name} — Từ ${q.wordIndex + 1}/${q.words.length}`;
+      }
+
+      // Render hearts & progress
+      let plantHeartsHtml = '';
+      for (let i = 0; i < treeConf.maxHp; i++) {
+        plantHeartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+      }
+
+      statusEl.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml}</div>
+          <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
+            Giai đoạn: ${plot.stage}/3 • Từ ${q.wordIndex + 1}/${q.words.length}
+          </span>
+        </div>
+      `;
+
+      const currentWord = q.words[q.wordIndex];
+
+      // Chọn ngẫu nhiên 1 trong các chế độ học đang bật
+      const availableModes = [];
+      if (this.settings.modes.choice) availableModes.push('choice');
+      if (this.settings.modes.typing) availableModes.push('typing');
+      if (this.settings.modes.listening) availableModes.push('listening');
+      if (availableModes.length === 0) availableModes.push('choice');
+
+      const mode = availableModes[Math.floor(Math.random() * availableModes.length)];
+
+      let quizHtml = '';
+
+      if (mode === 'listening') {
+        quizHtml = `
+          <div style="text-align: center; padding: 20px 0;">
+            <button type="button" class="btn-audio" id="farm-fruit-audio-btn" style="width: 72px; height: 72px; font-size: 32px; border-radius: 50%;">🔊</button>
+            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 12px;">Nghe và gõ lại từ tiếng Anh:</div>
+            <div style="margin-top: 14px;">
+              <input type="text" id="farm-fruit-input" class="form-input" placeholder="Gõ từ tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+            </div>
+            <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
+          </div>
+        `;
+      } else if (mode === 'typing') {
+        quizHtml = `
+          <div class="farm-quiz-prompt-card">
+            <div class="farm-quiz-prompt-meaning">${this.escapeHtml(currentWord.meaning)}</div>
+            ${currentWord.example ? `<div class="farm-quiz-prompt-example">"${this.escapeHtml(currentWord.example)}"</div>` : ''}
+          </div>
+          <div style="margin-top: 14px;">
+            <input type="text" id="farm-fruit-input" class="form-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+          </div>
+          <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
+        `;
+      } else {
+        // Choice
+        const options = this.generateDistractors(currentWord, this.cachedWordsPool);
+        quizHtml = `
+          <div class="farm-quiz-prompt-card">
+            <div class="farm-quiz-prompt-word">${this.escapeHtml(currentWord.word)}</div>
+            ${currentWord.ipa ? `<div class="farm-quiz-prompt-ipa">${this.escapeHtml(currentWord.ipa)}</div>` : ''}
+          </div>
+          <div class="farm-quiz-options" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+            ${options.map((opt, idx) => `
+              <button type="button" class="farm-quiz-opt-btn" data-fruit-opt-correct="${opt.isCorrect}">
+                <span class="quiz-opt-letter">${String.fromCharCode(65 + idx)}</span>
+                <span class="quiz-opt-text">${this.escapeHtml(opt.meaning)}</span>
+              </button>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      bodyEl.innerHTML = quizHtml;
+      sheet.classList.add('active');
+
+      if (mode === 'listening') {
+        if (window.wordsManager) window.wordsManager.playPronunciation(currentWord.word, currentWord.audioUrl);
+        document.getElementById('farm-fruit-audio-btn')?.addEventListener('click', () => {
+          if (window.wordsManager) window.wordsManager.playPronunciation(currentWord.word, currentWord.audioUrl);
+        });
+      }
+
+      const inputEl = document.getElementById('farm-fruit-input');
+      const submitBtn = document.getElementById('farm-fruit-submit-btn');
+
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') this.handleFruitQuizAnswer(inputEl.value.trim().toLowerCase() === currentWord.word.trim().toLowerCase());
+        });
+      }
+
+      if (submitBtn) {
+        submitBtn.addEventListener('click', () => {
+          this.handleFruitQuizAnswer(inputEl.value.trim().toLowerCase() === currentWord.word.trim().toLowerCase());
+        });
+      }
+
+      bodyEl.querySelectorAll('.farm-quiz-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const isCorrect = btn.getAttribute('data-fruit-opt-correct') === 'true';
+          this.handleFruitQuizAnswer(isCorrect);
+        });
+      });
+    },
+
+    handleFruitQuizAnswer(isCorrect) {
+      if (!this.activeTreeQuiz) return;
+      const q = this.activeTreeQuiz;
+      const plot = this.state.treePlots.find(p => p.id === q.plotId);
+      const treeConf = FRUIT_TREES[plot.treeType];
+      const currentWord = q.words[q.wordIndex];
+
+      if (isCorrect) {
+        this.playSound('correct');
+        if (!q.firstTryErrors[currentWord.id]) {
+          this.gainXp(5);
+        }
+
+        q.wordIndex += 1;
+        if (q.wordIndex < q.words.length) {
+          this.renderFruitTreeQuizModal();
+        } else {
+          plot.stage += 1;
+          if (plot.stage >= 3) {
+            plot.state = 'ready';
+            plot.cooldownUntil = 0;
+          } else {
+            plot.cooldownUntil = Date.now() + treeConf.cooldownSec * 1000;
+          }
+
+          this.state.quests.watered += 1;
+          this.saveState();
+          this.render();
+          this.playSound('pop');
+
+          const sheet = document.getElementById('farm-sheet-fruit-quiz');
+          sheet?.classList.remove('active');
+          this.activeTreeQuiz = null;
+
+          if (window.showToast) {
+            window.showToast(plot.stage >= 3 ? `🎉 Cây ${treeConf.name} đã chín quả! Bạn có thể thu hoạch!` : `💧 Tưới xong câu đố! Cây ${treeConf.name} đã lớn lên giai đoạn ${plot.stage}!`);
+          }
+        }
+      } else {
+        this.playSound('wrong');
+        q.firstTryErrors[currentWord.id] = (q.firstTryErrors[currentWord.id] || 0) + 1;
+        plot.hp -= 1;
+
+        if (plot.hp <= 0) {
+          plot.hp = 0;
+          plot.state = 'withered';
+          this.saveState();
+          this.render();
+
+          const sheet = document.getElementById('farm-sheet-fruit-quiz');
+          sheet?.classList.remove('active');
+          this.activeTreeQuiz = null;
+
+          if (window.showToast) window.showToast(`🥀 Cây ${treeConf.name} đã bị héo do hết máu! Hãy dọn dẹp để trồng cây mới.`);
+          return;
+        }
+
+        this.saveState();
+        if (window.showToast) window.showToast(`Trả lời sai! Cây mất 1 máu (còn ${plot.hp}/${treeConf.maxHp} ❤️)`);
+        this.renderFruitTreeQuizModal();
+      }
+    },
+
+    harvestTree(plotId) {
+      const plot = this.state.treePlots.find(p => p.id === plotId);
+      if (!plot || plot.state !== 'ready') return;
+
+      const treeConf = FRUIT_TREES[plot.treeType];
+      const bonusChance = (this.state.level || 1) * 0.05;
+      const bonusFood = Math.random() < bonusChance ? 1 : 0;
+      const foodYield = treeConf.yieldFood + bonusFood;
+
+      this.state.food = (this.state.food || 0) + foodYield;
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      this.state.foodStorage[plot.treeType] = (this.state.foodStorage[plot.treeType] || 0) + 1;
+
+      this.gainXp(treeConf.rewardXp);
+      this.state.harvestedTodayCount = (this.state.harvestedTodayCount || 0) + 1;
+      this.state.quests.harvested += 1;
+
+      // Reset tree plot to empty
+      plot.state = 'empty';
+      plot.treeType = null;
+      plot.words = [];
+      plot.stage = 0;
+      plot.hp = 0;
+      plot.cooldownUntil = 0;
+
+      this.saveState();
+      this.render();
+      this.playSound('ting');
+
+      this.showHarvestToast({
+        word: `Trái ${treeConf.name}`,
+        meaning: `Độ hiếm: ${treeConf.rarity}`,
+        foodYield: foodYield,
+        rewardXp: treeConf.rewardXp
+      });
+    },
+
+    // =========================================================================
+    // ZOOM & PAN BẢN ĐỒ NÔNG TRẠI V2 (Group C)
+    // =========================================================================
+    initZoomAndPan() {
+      const viewport = document.getElementById('farm-canvas-viewport');
+      const canvas = document.getElementById('farm-canvas');
+      if (!viewport || !canvas || this._zoomPanInited) return;
+      this._zoomPanInited = true;
+
+      this.zoom = window.innerWidth < 640 ? 0.75 : 1.0;
+      this.pan = { x: 0, y: 0 };
+      this.updateCanvasTransform();
+
+      document.getElementById('farm-btn-zoom-in')?.addEventListener('click', () => {
+        this.zoom = Math.min(1.5, Math.round((this.zoom + 0.15) * 100) / 100);
+        this.updateCanvasTransform();
+      });
+
+      document.getElementById('farm-btn-zoom-out')?.addEventListener('click', () => {
+        this.zoom = Math.max(0.6, Math.round((this.zoom - 0.15) * 100) / 100);
+        this.updateCanvasTransform();
+      });
+
+      document.getElementById('farm-btn-zoom-reset')?.addEventListener('click', () => {
+        this.zoom = window.innerWidth < 640 ? 0.75 : 1.0;
+        this.pan = { x: 0, y: 0 };
+        this.updateCanvasTransform();
+      });
+
+      // Drag Pan & Pinch Zoom
+      let isPanning = false;
+      let startX = 0, startY = 0;
+      let initialPanX = 0, initialPanY = 0;
+      let startPinchDist = 0;
+      let startPinchZoom = 1.0;
+
+      const onPointerDown = (e) => {
+        if (e.target.closest('.farm-plot') || e.target.closest('.farm-tree-plot') || e.target.closest('button')) {
+          return;
+        }
+
+        if (e.pointerType === 'touch' && !e.isPrimary) return;
+
+        isPanning = true;
+        viewport.classList.add('panning');
+        startX = e.clientX;
+        startY = e.clientY;
+        initialPanX = this.pan.x;
+        initialPanY = this.pan.y;
+        viewport.setPointerCapture?.(e.pointerId);
+      };
+
+      const onPointerMove = (e) => {
+        if (!isPanning) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        this.pan.x = initialPanX + dx;
+        this.pan.y = initialPanY + dy;
+        this.updateCanvasTransform();
+      };
+
+      const onPointerUp = (e) => {
+        if (isPanning) {
+          isPanning = false;
+          viewport.classList.remove('panning');
+        }
+      };
+
+      viewport.addEventListener('pointerdown', onPointerDown);
+      viewport.addEventListener('pointermove', onPointerMove);
+      viewport.addEventListener('pointerup', onPointerUp);
+      viewport.addEventListener('pointercancel', onPointerUp);
+
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+          isPanning = false;
+          viewport.classList.remove('panning');
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          startPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          startPinchZoom = this.zoom;
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && startPinchDist > 0) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          const factor = dist / startPinchDist;
+          this.zoom = Math.min(1.5, Math.max(0.6, Math.round(startPinchZoom * factor * 100) / 100));
+          this.updateCanvasTransform();
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+          startPinchDist = 0;
+        }
+      }, { passive: true });
+    },
+
+    updateCanvasTransform() {
+      const canvas = document.getElementById('farm-canvas');
+      if (canvas) {
+        canvas.style.transform = `translate(${this.pan.x}px, ${this.pan.y}px) scale(${this.zoom})`;
+      }
     },
 
     // =========================================================================
@@ -1741,7 +2743,7 @@
     // KHỞI TẠO BẮT SỰ KIỆN GIAO DIỆN CHÍNH
     // =========================================================================
     initUIEvents() {
-      // 1. Chạm ô đất (Event Delegation)
+      // 1. Chạm ô đất nông sản (Event Delegation)
       document.getElementById('farm-grid')?.addEventListener('click', (e) => {
         const cleanBtn = e.target.closest('[data-clean-id]');
         if (cleanBtn) {
@@ -1750,10 +2752,40 @@
           return;
         }
 
+        const lockedPlot = e.target.closest('.farm-plot-locked');
+        if (lockedPlot) {
+          const reqLevel = parseInt(lockedPlot.getAttribute('data-locked-req-level'), 10);
+          this.showLockedPlotToast(reqLevel);
+          return;
+        }
+
         const plotEl = e.target.closest('.farm-plot');
         if (plotEl) {
           const id = parseInt(plotEl.getAttribute('data-plot-id'), 10);
           this.handlePlotClick(id);
+        }
+      });
+
+      // 1b. Chạm ô cây ăn quả (Event Delegation - Group C)
+      document.getElementById('farm-tree-grid')?.addEventListener('click', (e) => {
+        const cleanBtn = e.target.closest('[data-clean-tree-id]');
+        if (cleanBtn) {
+          const id = parseInt(cleanBtn.getAttribute('data-clean-tree-id'), 10);
+          this.cleanTreePlot(id);
+          return;
+        }
+
+        const lockedTree = e.target.closest('.farm-tree-plot.farm-plot-locked');
+        if (lockedTree) {
+          const reqLevel = parseInt(lockedTree.getAttribute('data-tree-locked-level'), 10);
+          this.showLockedTreePlotToast(reqLevel);
+          return;
+        }
+
+        const treePlotEl = e.target.closest('.farm-tree-plot');
+        if (treePlotEl) {
+          const id = parseInt(treePlotEl.getAttribute('data-tree-plot-id'), 10);
+          this.handleTreePlotClick(id);
         }
       });
 
@@ -1766,11 +2798,20 @@
         this.renderHUD();
       });
 
-      // 3. Nút dưới thanh đáy
-      document.getElementById('farm-btn-buy-fert')?.addEventListener('click', () => this.buyFertilizer());
-      document.getElementById('farm-btn-quests')?.addEventListener('click', () => this.openQuestsModal());
+      // Bấm huy hiệu cấp độ hoặc thanh XP mở thông tin Level & XP (Group A)
+      document.getElementById('farm-hud-level')?.addEventListener('click', () => this.openLevelInfoModal());
+      document.getElementById('farm-hud-xp-track')?.addEventListener('click', () => this.openLevelInfoModal());
 
-      // 4. Chọn hạt giống
+      // Bấm chip lương thực mở kho lưu trữ (Group C)
+      document.getElementById('farm-hud-food')?.addEventListener('click', () => this.openStorageModal());
+
+      // 3. Nút dưới thanh đáy
+      document.getElementById('farm-btn-shop')?.addEventListener('click', () => this.openShopModal());
+      document.getElementById('farm-btn-quests')?.addEventListener('click', () => this.openQuestsModal());
+      document.getElementById('farm-shop-buy-fert')?.addEventListener('click', () => this.buyFertilizerFromShop());
+      document.getElementById('farm-shop-buy-food')?.addEventListener('click', () => this.buyFoodFromShop());
+
+      // 4. Chọn hạt giống nông sản
       document.querySelectorAll('.farm-seed-card').forEach(card => {
         card.addEventListener('click', () => {
           const crop = card.getAttribute('data-crop');
@@ -1783,6 +2824,14 @@
       document.getElementById('farm-seed-btn-back')?.addEventListener('click', () => {
         document.getElementById('farm-seed-step-select').style.display = 'block';
         document.getElementById('farm-seed-step-confirm').style.display = 'none';
+      });
+
+      // 4b. Chọn cây ăn quả
+      document.getElementById('farm-fruit-btn-reshuffle')?.addEventListener('click', () => this.reshuffleFruitTreeWords());
+      document.getElementById('farm-fruit-btn-confirm-plant')?.addEventListener('click', () => this.confirmFruitTreePlant());
+      document.getElementById('farm-fruit-btn-back')?.addEventListener('click', () => {
+        document.getElementById('farm-fruit-step-select').style.display = 'block';
+        document.getElementById('farm-fruit-step-confirm').style.display = 'none';
       });
 
       // 5. Đóng các sheet khi click nút close hoặc backdrop
@@ -1818,7 +2867,10 @@
         document.getElementById('farm-levelup-overlay')?.classList.remove('active');
       });
 
-      // 8. Phím ESC để đóng sheet hoặc đóng farm
+      // 8. Khởi tạo Zoom & Pan
+      this.initZoomAndPan();
+
+      // 9. Phím ESC để đóng sheet hoặc đóng farm
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.isOpen) {
           const activeSheet = document.querySelector('.farm-sheet-backdrop.active');

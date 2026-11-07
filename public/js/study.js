@@ -15,24 +15,26 @@ class StudyManager {
   constructor() {
     this.words = [];
     this.scopeTitle = '';
-    this.wordProgressMap = new Map(); // wordId -> { listeningCount: number, typingCount: number, choiceCount: number }
+    this.wordProgressMap = new Map(); // wordId -> { listeningCount, typingCount, choiceCount, aiCount }
     this.listeningQueue = []; // Hàng đợi Nghe điền từ
     this.typingQueue = []; // Hàng đợi các từ cần gõ
     this.choiceQueue = []; // Hàng đợi các từ cần chọn trắc nghiệm
-    this.currentPhase = 'listening'; // 'listening', 'typing', 'choice'
+    this.aiQueue = []; // Hàng đợi các từ cần điền câu ngữ cảnh AI
+    this.currentPhase = 'listening'; // 'listening', 'typing', 'choice', 'ai'
     this.currentQuizItem = null;
     this.waitingForTap = false;
+    this.aiData = null; // Dữ liệu câu & bài đọc AI tải từ backend
 
-    // Cài đặt số lần ôn tập theo 3 loại
+    // Cài đặt số lần ôn tập theo 3 loại (mặc định ai = 1)
     this.studySettings = {
-      all: { listening: 0, typing: 1, choice: 1 },
-      unlearned: { listening: 1, typing: 1, choice: 1 },
-      learned: { listening: 0, typing: 1, choice: 1 }
+      all: { listening: 0, typing: 1, choice: 1, ai: 1 },
+      unlearned: { listening: 1, typing: 1, choice: 1, ai: 1 },
+      learned: { listening: 0, typing: 1, choice: 1, ai: 1 }
     };
     this.currentStudyProfile = 'all'; // Profile đang dùng cho phiên học
     this.currentConfigProfile = 'all'; // Profile đang được chọn để chỉnh sửa trong Cài đặt
 
-    this.intensiveSettings = { listening: 1, typing: 1, choice: 1 };
+    this.intensiveSettings = { listening: 1, typing: 1, choice: 1, ai: 1 };
 
     this.loadSettings();
     this.bindEvents();
@@ -71,9 +73,15 @@ class StudyManager {
       const raw = localStorage.getItem('study_settings_profiles');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.all) this.studySettings.all = parsed.all;
-        if (parsed.unlearned) this.studySettings.unlearned = parsed.unlearned;
-        if (parsed.learned) this.studySettings.learned = parsed.learned;
+        if (parsed.all) {
+          this.studySettings.all = Object.assign({ ai: 1 }, parsed.all);
+        }
+        if (parsed.unlearned) {
+          this.studySettings.unlearned = Object.assign({ ai: 1 }, parsed.unlearned);
+        }
+        if (parsed.learned) {
+          this.studySettings.learned = Object.assign({ ai: 1 }, parsed.learned);
+        }
       }
       
       const activeProfile = localStorage.getItem('study_settings_active_profile') || 'unlearned';
@@ -90,7 +98,7 @@ class StudyManager {
       // Lấy cài đặt chuyên sâu
       const rawInt = localStorage.getItem('intensive_study_settings');
       if (rawInt) {
-        this.intensiveSettings = JSON.parse(rawInt);
+        this.intensiveSettings = Object.assign({ ai: 1 }, JSON.parse(rawInt));
       }
 
     } catch (e) {
@@ -102,8 +110,9 @@ class StudyManager {
     const listeningVal = parseInt(document.getElementById('setting-target-listening')?.value || 0, 10);
     const typingVal = parseInt(document.getElementById('setting-target-typing')?.value || 0, 10);
     const choiceVal = parseInt(document.getElementById('setting-target-choice')?.value || 0, 10);
+    const aiVal = parseInt(document.getElementById('setting-target-ai')?.value || 0, 10);
     
-    if (listeningVal === 0 && typingVal === 0 && choiceVal === 0) {
+    if (listeningVal === 0 && typingVal === 0 && choiceVal === 0 && aiVal === 0) {
       if (window.showToast) window.showToast('Lỗi: Cần có ít nhất 1 phương pháp học > 0');
       return false; // Validation failed
     }
@@ -113,7 +122,8 @@ class StudyManager {
     this.studySettings[targetProfile] = {
       listening: Math.max(0, Math.min(10, listeningVal)),
       typing: Math.max(0, Math.min(10, typingVal)),
-      choice: Math.max(0, Math.min(10, choiceVal))
+      choice: Math.max(0, Math.min(10, choiceVal)),
+      ai: Math.max(0, Math.min(1, aiVal))
     };
 
     try {
@@ -136,11 +146,13 @@ class StudyManager {
     const listeningInput = document.getElementById('setting-target-listening');
     const typingInput = document.getElementById('setting-target-typing');
     const choiceInput = document.getElementById('setting-target-choice');
+    const aiInput = document.getElementById('setting-target-ai');
     
     const currentConf = this.studySettings[this.currentConfigProfile];
     if (listeningInput) listeningInput.value = currentConf.listening;
     if (typingInput) typingInput.value = currentConf.typing;
     if (choiceInput) choiceInput.value = currentConf.choice;
+    if (aiInput) aiInput.value = currentConf.ai !== undefined ? currentConf.ai : 1;
     
     // Đồng bộ UI radio button
     const radioSelected = document.querySelector(`input[name="setting-profile"][value="${this.currentConfigProfile}"]`);
@@ -151,8 +163,9 @@ class StudyManager {
     const listeningVal = parseInt(document.getElementById('setting-target-listening-int')?.value || 0, 10);
     const typingVal = parseInt(document.getElementById('setting-target-typing-int')?.value || 0, 10);
     const choiceVal = parseInt(document.getElementById('setting-target-choice-int')?.value || 0, 10);
+    const aiVal = parseInt(document.getElementById('setting-target-ai-int')?.value || 0, 10);
     
-    if (listeningVal === 0 && typingVal === 0 && choiceVal === 0) {
+    if (listeningVal === 0 && typingVal === 0 && choiceVal === 0 && aiVal === 0) {
       if (window.showToast) window.showToast('Lỗi: Cần có ít nhất 1 phương pháp học > 0');
       return false;
     }
@@ -160,7 +173,8 @@ class StudyManager {
     this.intensiveSettings = {
       listening: Math.max(0, Math.min(10, listeningVal)),
       typing: Math.max(0, Math.min(10, typingVal)),
-      choice: Math.max(0, Math.min(10, choiceVal))
+      choice: Math.max(0, Math.min(10, choiceVal)),
+      ai: Math.max(0, Math.min(1, aiVal))
     };
 
     try {
@@ -174,10 +188,12 @@ class StudyManager {
     const listeningInput = document.getElementById('setting-target-listening-int');
     const typingInput = document.getElementById('setting-target-typing-int');
     const choiceInput = document.getElementById('setting-target-choice-int');
+    const aiInput = document.getElementById('setting-target-ai-int');
     
     if (listeningInput) listeningInput.value = this.intensiveSettings.listening;
     if (typingInput) typingInput.value = this.intensiveSettings.typing;
     if (choiceInput) choiceInput.value = this.intensiveSettings.choice;
+    if (aiInput) aiInput.value = this.intensiveSettings.ai !== undefined ? this.intensiveSettings.ai : 1;
   }
 
   bindEvents() {
@@ -220,10 +236,32 @@ class StudyManager {
     setupStepper('listening', 0, 10);
     setupStepper('typing', 0, 10);
     setupStepper('choice', 0, 10);
+    setupStepper('ai', 0, 1);
     
     setupStepper('listening-int', 0, 10);
     setupStepper('typing-int', 0, 10);
     setupStepper('choice-int', 0, 10);
+    setupStepper('ai-int', 0, 1);
+
+    // Sự kiện mở modal Bài đọc AI
+    document.getElementById('btn-study-reading-passage')?.addEventListener('click', () => {
+      this.openReadingModal();
+    });
+
+    // Sự kiện tạo lại bài đọc AI
+    document.getElementById('btn-study-refresh-passage')?.addEventListener('click', async () => {
+      await this.regenerateReadingPassage();
+    });
+
+    // Bấm ra ngoài popup tra từ trong bài đọc để ẩn popup
+    document.addEventListener('click', (e) => {
+      const popup = document.getElementById('reading-word-popup');
+      if (popup && popup.style.display !== 'none') {
+        if (!popup.contains(e.target) && !e.target.classList.contains('reading-word')) {
+          popup.style.display = 'none';
+        }
+      }
+    });
 
     // Lưu cài đặt
     btnSaveSettings?.addEventListener('click', () => {
@@ -804,6 +842,7 @@ class StudyManager {
     modal.classList.add('active');
     modal.style.opacity = '1'; // Phục hồi độ mờ
     this.saveSessionState();
+    this.loadAiDataForSession(wordsList);
     this.nextQuizQuestion();
   }
 
@@ -814,7 +853,8 @@ class StudyManager {
       this.wordProgressMap.set(w.id, {
         listeningCount: 0,
         typingCount: 0,
-        choiceCount: 0
+        choiceCount: 0,
+        aiCount: 0
       });
     });
 
@@ -822,6 +862,8 @@ class StudyManager {
     this.listeningQueue = conf.listening > 0 ? this.shuffle([...this.words]) : [];
     this.typingQueue = conf.listening === 0 && conf.typing > 0 ? this.shuffle([...this.words]) : [];
     this.choiceQueue = conf.listening === 0 && conf.typing === 0 && conf.choice > 0 ? this.shuffle([...this.words]) : [];
+    const targetAi = conf.ai !== undefined ? conf.ai : 1;
+    this.aiQueue = conf.listening === 0 && conf.typing === 0 && conf.choice === 0 && targetAi > 0 ? this.shuffle([...this.words]) : [];
 
     this.currentPhase = null;
     this.setWaitingForTap(false);
@@ -834,16 +876,18 @@ class StudyManager {
   // Cập nhật thanh tiến độ theo số lần hoàn thành mục tiêu cài đặt
   updateProgressBar() {
     const conf = this.currentStudyProfile === 'intensive' ? this.intensiveSettings : this.studySettings[this.currentStudyProfile];
-    const totalTasks = this.words.length * (conf.listening + conf.typing + conf.choice);
+    const targetAi = conf.ai !== undefined ? conf.ai : 1;
+    const totalTasks = this.words.length * ((conf.listening || 0) + (conf.typing || 0) + (conf.choice || 0) + targetAi);
     if (totalTasks === 0) return;
 
     let completedTasks = 0;
     this.words.forEach(w => {
       const p = this.wordProgressMap.get(w.id);
       if (p) {
-        completedTasks += Math.min(conf.listening, p.listeningCount || 0);
-        completedTasks += Math.min(conf.typing, p.typingCount || 0);
-        completedTasks += Math.min(conf.choice, p.choiceCount || 0);
+        completedTasks += Math.min(conf.listening || 0, p.listeningCount || 0);
+        completedTasks += Math.min(conf.typing || 0, p.typingCount || 0);
+        completedTasks += Math.min(conf.choice || 0, p.choiceCount || 0);
+        completedTasks += Math.min(targetAi, p.aiCount || 0);
       }
     });
 
@@ -910,7 +954,26 @@ class StudyManager {
       return;
     }
 
-    // 4. Kiểm tra lại phòng hờ sai/rớt nhịp (Punishment loop fallback)
+    // 4. Hàng đợi Câu điền từ AI
+    const targetAi = conf.ai !== undefined ? conf.ai : 1;
+    if (this.aiQueue.length === 0 && targetAi > 0) {
+      const pendingAi = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && p.listeningCount >= conf.listening && p.typingCount >= conf.typing && p.choiceCount >= conf.choice && (p.aiCount || 0) < targetAi;
+      });
+      if (pendingAi.length > 0) this.aiQueue = this.shuffle([...pendingAi]);
+    }
+
+    if (this.aiQueue.length > 0) {
+      this.currentPhase = 'ai';
+      const word = this.aiQueue[0];
+      this.currentQuizItem = { word, type: 'ai' };
+      this.renderQuizQuestion();
+      this.saveSessionState();
+      return;
+    }
+
+    // 5. Kiểm tra lại phòng hờ sai/rớt nhịp (Punishment loop fallback)
     if (conf.listening > 0) {
       const unfinished = this.words.filter(w => {
         const p = this.wordProgressMap.get(w.id);
@@ -947,7 +1010,19 @@ class StudyManager {
       }
     }
 
-    // 5. Nếu toàn bộ từ đã pass cả 3 phần -> Kết thúc phiên ôn tập thành công!
+    if (targetAi > 0) {
+      const unfinished = this.words.filter(w => {
+        const p = this.wordProgressMap.get(w.id);
+        return p && (p.aiCount || 0) < targetAi;
+      });
+      if (unfinished.length > 0) {
+        this.aiQueue = this.shuffle([...unfinished]);
+        this.nextQuizQuestion();
+        return;
+      }
+    }
+
+    // 6. Nếu toàn bộ từ đã pass tất cả các phần -> Kết thúc phiên ôn tập thành công!
     this.clearSessionState();
     this.showCompletionScreen();
   }
@@ -1002,6 +1077,43 @@ class StudyManager {
         questionSubtext.textContent = '';
       }
       audioBtn.style.display = 'none'; // Ẩn audio trước khi trả lời
+
+      optionsContainer.style.display = 'none';
+      typingContainer.style.display = 'flex';
+
+      const input = document.getElementById('quiz-typing-input');
+      input.value = '';
+
+      input.focus({ preventScroll: true });
+      input.click();
+      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
+
+    } else if (item.type === 'ai') {
+      // Chế độ 4: Câu điền từ AI theo ngữ cảnh (Điền từ vào câu chứa _____)
+      if (promptContainer) promptContainer.style.display = 'flex';
+      if (listeningContainer) listeningContainer.style.display = 'none';
+
+      let sentenceText = 'Please complete the sentence: _____';
+      if (this.aiData && Array.isArray(this.aiData.sentences)) {
+        const found = this.aiData.sentences.find(s => 
+          (s.word && s.word.toLowerCase() === w.word.toLowerCase()) ||
+          (s.answer && s.answer.toLowerCase() === w.word.toLowerCase())
+        );
+        if (found && found.sentence) {
+          sentenceText = found.sentence;
+        }
+      }
+
+      questionText.innerHTML = sentenceText.replace(
+        /_____/g, 
+        '<span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>'
+      );
+      if (questionSubtext) {
+        questionSubtext.style.display = 'block';
+        questionSubtext.textContent = `💡 Nghĩa tiếng Việt: ${w.meaning}`;
+      }
+      audioBtn.style.display = 'none';
 
       optionsContainer.style.display = 'none';
       typingContainer.style.display = 'flex';
@@ -1156,11 +1268,18 @@ class StudyManager {
         if (progress.typingCount < conf.typing) {
           this.typingQueue.push(wordObj);
         }
-      } else {
+      } else if (type === 'choice') {
         progress.choiceCount = (progress.choiceCount || 0) + 1;
         this.choiceQueue.shift();
         if (progress.choiceCount < conf.choice) {
           this.choiceQueue.push(wordObj);
+        }
+      } else {
+        progress.aiCount = (progress.aiCount || 0) + 1;
+        this.aiQueue.shift();
+        const targetAi = conf.ai !== undefined ? conf.ai : 1;
+        if (progress.aiCount < targetAi) {
+          this.aiQueue.push(wordObj);
         }
       }
 
@@ -1171,12 +1290,15 @@ class StudyManager {
       progress.listeningCount = 0;
       progress.typingCount = 0;
       progress.choiceCount = 0;
+      progress.aiCount = 0;
       if (!this.wrongWords) this.wrongWords = new Set();
       this.wrongWords.add(wordObj.id);
 
       feedbackBox.style.background = 'rgba(255, 69, 58, 0.15)';
       feedbackBox.style.color = '#ff6b6b';
       feedbackBox.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+
+      const targetAi = conf.ai !== undefined ? conf.ai : 1;
 
       if (type === 'listening') {
         const failedWord = this.listeningQueue.shift();
@@ -1187,12 +1309,19 @@ class StudyManager {
         if (conf.listening > 0) this.listeningQueue.push(failedWord);
         else if (conf.typing > 0) this.typingQueue.push(failedWord);
         feedbackBox.textContent = `Sai, từ đúng: ${wordObj.word}`;
-      } else {
+      } else if (type === 'choice') {
         const failedWord = this.choiceQueue.shift();
         if (conf.listening > 0) this.listeningQueue.push(failedWord);
         else if (conf.typing > 0) this.typingQueue.push(failedWord);
         else if (conf.choice > 0) this.choiceQueue.push(failedWord);
         feedbackBox.textContent = `Sai, từ đúng: ${wordObj.meaning}`;
+      } else {
+        const failedWord = this.aiQueue.shift();
+        if (conf.listening > 0) this.listeningQueue.push(failedWord);
+        else if (conf.typing > 0) this.typingQueue.push(failedWord);
+        else if (conf.choice > 0) this.choiceQueue.push(failedWord);
+        else if (targetAi > 0) this.aiQueue.push(failedWord);
+        feedbackBox.textContent = `Sai, từ đúng: ${wordObj.word}`;
       }
     }
 
@@ -1352,6 +1481,125 @@ class StudyManager {
       alert('Lỗi cập nhật trạng thái: ' + err.message);
       if (element) element.checked = !newStatus;
     }
+  }
+
+  async loadAiDataForSession(wordsList) {
+    this.aiData = null;
+    const btnReading = document.getElementById('btn-study-reading-passage');
+    if (btnReading) btnReading.style.display = 'none';
+
+    if (!wordsList || wordsList.length === 0) return;
+
+    try {
+      const dayId = window.treeViewManager?.currentDayId || null;
+      const res = await window.api.aiGenerate(wordsList, 'both', dayId);
+      if (res && res.success) {
+        this.aiData = res;
+        if (btnReading && res.passage) {
+          btnReading.style.display = 'inline-flex';
+        }
+      }
+    } catch (err) {
+      console.warn('AI generate error (graceful fallback):', err);
+    }
+  }
+
+  async regenerateReadingPassage() {
+    if (!this.words || this.words.length === 0) return;
+    const btn = document.getElementById('btn-study-refresh-passage');
+    const content = document.getElementById('study-reading-content');
+    if (btn) btn.disabled = true;
+    if (content) content.innerHTML = '<div style="text-align:center; padding: 24px; color: var(--text-muted);">⏳ Đang dùng AI tạo bài đọc mới theo ngữ cảnh...</div>';
+
+    try {
+      const dayId = window.treeViewManager?.currentDayId || null;
+      const res = await window.api.aiGenerate(this.words, 'passage', dayId);
+      if (res && res.success && res.passage) {
+        if (!this.aiData) this.aiData = {};
+        this.aiData.passage = res.passage;
+        this.renderReadingContent(res.passage);
+        if (window.showToast) window.showToast('Đã tạo lại bài đọc AI thành công!');
+      } else {
+        if (window.showToast) window.showToast('Không thể tạo bài đọc AI.');
+        if (content && this.aiData?.passage) this.renderReadingContent(this.aiData.passage);
+      }
+    } catch (e) {
+      if (window.showToast) window.showToast('Lỗi khi gọi AI tạo bài đọc.');
+      if (content && this.aiData?.passage) this.renderReadingContent(this.aiData.passage);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  openReadingModal() {
+    if (!this.aiData || !this.aiData.passage) {
+      if (window.showToast) window.showToast('Chưa có bài đọc AI cho buổi học này.');
+      return;
+    }
+    const modal = document.getElementById('modal-study-reading');
+    this.renderReadingContent(this.aiData.passage);
+    modal?.classList.add('active');
+  }
+
+  renderReadingContent(passage) {
+    const content = document.getElementById('study-reading-content');
+    if (!content) return;
+
+    // Tách các từ tiếng Anh để người dùng bấm vào xem popup tra nghĩa
+    const tokens = passage.split(/(\b[a-zA-Z]+(?:'[a-zA-Z]+)?\b)/g);
+    content.innerHTML = tokens.map(token => {
+      if (/^[a-zA-Z]+(?:'[a-zA-Z]+)?$/.test(token)) {
+        return `<span class="reading-word" data-word="${this.escapeHtml(token)}">${this.escapeHtml(token)}</span>`;
+      }
+      return this.escapeHtml(token).replace(/\n/g, '<br>');
+    }).join('');
+
+    // Gắn sự kiện click cho từng từ
+    content.querySelectorAll('.reading-word').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showWordPopup(el, el.getAttribute('data-word'));
+      });
+    });
+  }
+
+  showWordPopup(targetEl, wordText) {
+    const popup = document.getElementById('reading-word-popup');
+    const wordTitle = document.getElementById('popup-word-text');
+    const wordIpa = document.getElementById('popup-word-ipa');
+    const wordMeaning = document.getElementById('popup-word-meaning');
+    const audioBtn = document.getElementById('popup-audio-btn');
+    if (!popup || !wordTitle) return;
+
+    const lower = wordText.toLowerCase();
+    // Tìm trong danh sách từ đang học
+    const matched = this.words.find(w => w.word.toLowerCase() === lower);
+
+    wordTitle.textContent = wordText;
+    if (matched) {
+      wordIpa.textContent = matched.ipa ? `/${matched.ipa}/` : '';
+      wordMeaning.textContent = matched.meaning || '';
+      audioBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (window.wordsManager) window.wordsManager.playPronunciation(matched.word, matched.audioUrl);
+      };
+    } else {
+      wordIpa.textContent = '';
+      wordMeaning.textContent = 'Từ bổ trợ trong ngữ cảnh';
+      audioBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (window.wordsManager) window.wordsManager.playPronunciation(wordText);
+      };
+    }
+
+    popup.style.display = 'block';
+
+    // Định vị popup tương đối với targetEl
+    const rect = targetEl.getBoundingClientRect();
+    const modalBody = targetEl.closest('.modal-body') || document.body;
+    const bodyRect = modalBody.getBoundingClientRect();
+    popup.style.left = Math.max(10, rect.left - bodyRect.left) + 'px';
+    popup.style.top = Math.max(10, rect.bottom - bodyRect.top + 6) + 'px';
   }
 
   shuffle(array) {
