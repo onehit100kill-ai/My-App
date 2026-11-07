@@ -1,9 +1,11 @@
 /**
  * ==========================================================================
- * VOCABMASTER - GAME GHÉP CẶP TỪ VỰNG (MATCHING GAME)
- * Lưới thẻ bài 4x4 (16 thẻ, 8 cặp từ - nghĩa).
- * Lật sai tự úp lại sau 800ms + khoá bàn.
- * Đồng hồ đếm giờ + số lượt lật + lưu kỷ lục localStorage.
+ * VOCABMASTER - GAME GHÉP TỪ VỚI NGHĨA (MATCHING GAME)
+ * Hiển thị trực tiếp 2 cột: Cột Từ Tiếng Anh ↔ Cột Nghĩa Tiếng Việt
+ * Người chơi chọn từ tiếng Anh và chọn nghĩa tương ứng để ghép cặp.
+ * Đúng: phát âm + xanh lá + mờ biến mất.
+ * Sai: rung lắc đỏ + bỏ chọn sau 600ms.
+ * Đồng hồ đếm giờ + số lượt thử + lưu kỷ lục localStorage.
  * Expose: window.MatchingGame
  * ==========================================================================
  */
@@ -17,8 +19,7 @@
     elapsedSec: 0,
     movesCount: 0,
     matchedPairsCount: 0,
-    firstCard: null,
-    secondCard: null,
+    selectedCard: null,
     isLocked: false,
     currentWords: [],
 
@@ -95,23 +96,17 @@
       this.elapsedSec = 0;
       this.movesCount = 0;
       this.matchedPairsCount = 0;
-      this.firstCard = null;
-      this.secondCard = null;
+      this.selectedCard = null;
       this.isLocked = false;
 
       this.updateTimerDisplay();
       this.updateMovesDisplay();
       this.hideVictoryModal();
 
-      const gridEl = document.getElementById('matching-grid');
-      if (gridEl) {
-        gridEl.innerHTML = `
-          <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#94a3b8;">
-            <div style="font-size:24px;">🔄</div>
-            <div>Đang tải 8 cặp từ vựng...</div>
-          </div>
-        `;
-      }
+      const listEn = document.getElementById('matching-list-en');
+      const listVi = document.getElementById('matching-list-vi');
+      if (listEn) listEn.innerHTML = '<div style="color:#94a3b8; font-size:13px; padding:10px;">Đang tải...</div>';
+      if (listVi) listVi.innerHTML = '<div style="color:#94a3b8; font-size:13px; padding:10px;">Đang tải...</div>';
 
       // Lấy 8 từ vựng phù hợp
       this.currentWords = await this.fetchWords();
@@ -130,12 +125,10 @@
       // 1. Nếu có Ngày đang chọn
       if (dayId && window.api) {
         try {
-          // Lấy từ chưa thuộc trước
           const resUnlearned = await window.api.getWords(dayId, 'unlearned');
           const unlearned = resUnlearned.data || [];
           words = words.concat(unlearned);
 
-          // Nếu chưa đủ 8 từ, lấy thêm từ đã thuộc cùng ngày
           if (words.length < 8) {
             const resLearned = await window.api.getWords(dayId, 'learned');
             const learned = resLearned.data || [];
@@ -187,7 +180,7 @@
         }
       }
 
-      // 4. Fallback mặc định phong phú nếu database chưa có từ nào
+      // 4. Fallback mặc định nếu database chưa có từ nào
       if (words.length < 8) {
         const fallbackList = [
           { id: 'fb_1', word: 'Achieve', ipa: '/əˈtʃiːv/', meaning: 'Đạt được' },
@@ -232,135 +225,179 @@
     },
 
     // =========================================================================
-    // RENDER LƯỚI 4X4 (16 THẺ)
+    // RENDER 2 CỘT TỪ VỰNG & NGHĨA
     // =========================================================================
     renderBoard() {
-      const gridEl = document.getElementById('matching-grid');
-      if (!gridEl) return;
+      const listEn = document.getElementById('matching-list-en');
+      const listVi = document.getElementById('matching-list-vi');
+      const countEn = document.getElementById('matching-count-en');
+      const countVi = document.getElementById('matching-count-vi');
+      if (!listEn || !listVi) return;
 
-      // Sinh 16 thẻ: 8 tiếng Anh + 8 tiếng Việt
-      const cards = [];
-      this.currentWords.forEach((item, idx) => {
-        const pairId = String(item.id || idx);
+      const total = this.currentWords.length;
+      if (countEn) countEn.textContent = `${total} từ`;
+      if (countVi) countVi.textContent = `${total} nghĩa`;
 
-        // Thẻ tiếng Anh
-        cards.push({
-          cardId: `c_${idx}_word`,
-          pairId: pairId,
-          type: 'word',
-          text: item.word,
-          sub: item.ipa || ''
-        });
+      // Tạo danh sách thẻ tiếng Anh và xáo trộn riêng
+      const enItems = this.currentWords.map((item, idx) => ({
+        pairId: String(item.id || idx),
+        word: item.word,
+        ipa: item.ipa || ''
+      }));
+      const shuffledEn = this.shuffle(enItems);
 
-        // Thẻ nghĩa tiếng Việt
-        cards.push({
-          cardId: `c_${idx}_meaning`,
-          pairId: pairId,
-          type: 'meaning',
-          text: item.meaning,
-          sub: ''
-        });
-      });
+      // Tạo danh sách thẻ tiếng Việt và xáo trộn riêng
+      const viItems = this.currentWords.map((item, idx) => ({
+        pairId: String(item.id || idx),
+        meaning: item.meaning
+      }));
+      const shuffledVi = this.shuffle(viItems);
 
-      // Xáo trộn 16 thẻ
-      const shuffledCards = this.shuffle(cards);
+      // Render Cột tiếng Anh
+      listEn.innerHTML = shuffledEn.map(item => `
+        <div class="matching-card matching-card-en" data-pair-id="${item.pairId}" data-type="en">
+          <div class="matching-card-main">
+            <span class="matching-word-text">${item.word}</span>
+            ${item.ipa ? `<span class="matching-word-ipa">${item.ipa}</span>` : ''}
+          </div>
+          <span class="matching-card-dot"></span>
+        </div>
+      `).join('');
 
-      // Render vào DOM
-      gridEl.innerHTML = shuffledCards.map(card => `
-        <div class="matching-card" data-card-id="${card.cardId}" data-pair-id="${card.pairId}" data-type="${card.type}">
-          <div class="matching-card-inner">
-            <div class="matching-card-front">
-              <span class="matching-card-back-icon">🎮</span>
-            </div>
-            <div class="matching-card-back">
-              <div class="matching-card-content">
-                <span class="matching-card-type-badge">${card.type === 'word' ? 'English' : 'Nghĩa'}</span>
-                <span class="matching-card-text">${card.text}</span>
-                ${card.sub ? `<small class="matching-card-sub">${card.sub}</small>` : ''}
-              </div>
-            </div>
+      // Render Cột tiếng Việt
+      listVi.innerHTML = shuffledVi.map(item => `
+        <div class="matching-card matching-card-vi" data-pair-id="${item.pairId}" data-type="vi">
+          <span class="matching-card-dot"></span>
+          <div class="matching-card-main">
+            <span class="matching-meaning-text">${item.meaning}</span>
           </div>
         </div>
       `).join('');
 
-      // Gắn sự kiện lật thẻ
-      gridEl.querySelectorAll('.matching-card').forEach(cardEl => {
-        cardEl.addEventListener('click', () => this.handleCardClick(cardEl));
+      // Bắt sự kiện chọn thẻ cho cả 2 cột
+      listEn.querySelectorAll('.matching-card').forEach(card => {
+        card.addEventListener('click', () => this.handleCardClick(card));
+      });
+      listVi.querySelectorAll('.matching-card').forEach(card => {
+        card.addEventListener('click', () => this.handleCardClick(card));
       });
     },
 
     // =========================================================================
-    // XỬ LÝ LẬT THẺ & SO SÁNH CẶP
+    // XỬ LÝ CHỌN VÀ GHÉP TỪ VỚI NGHĨA
     // =========================================================================
     handleCardClick(cardEl) {
-      // Đang khoá bàn hoặc đã lật/khớp -> bỏ qua
       if (this.isLocked) return;
-      if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+      if (cardEl.classList.contains('matched') || cardEl.classList.contains('cleared')) return;
 
-      // Lật thẻ
-      cardEl.classList.add('flipped');
-      this.playSound('flip');
+      this.playSound('select');
 
-      // Thẻ thứ nhất
-      if (!this.firstCard) {
-        this.firstCard = cardEl;
+      // 1. Chưa chọn thẻ nào trước đó -> Chọn thẻ này
+      if (!this.selectedCard) {
+        cardEl.classList.add('selected');
+        this.selectedCard = cardEl;
+
+        // Nếu chọn từ tiếng Anh, phát âm nhẹ
+        if (cardEl.getAttribute('data-type') === 'en') {
+          const wordText = cardEl.querySelector('.matching-word-text')?.textContent;
+          if (wordText && window.wordsManager?.playPronunciation) {
+            try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
+          }
+        }
         return;
       }
 
-      // Thẻ thứ hai
-      this.secondCard = cardEl;
+      // 2. Nhấp lại chính thẻ đang chọn -> Huỷ chọn (Deselect)
+      if (this.selectedCard === cardEl) {
+        cardEl.classList.remove('selected');
+        this.selectedCard = null;
+        return;
+      }
+
+      const prevType = this.selectedCard.getAttribute('data-type');
+      const currType = cardEl.getAttribute('data-type');
+
+      // 3. Nhấp vào thẻ cùng loại (ví dụ đang chọn từ Anh này, lại bấm từ Anh khác)
+      // -> Chuyển vùng chọn mượt mà sang thẻ mới
+      if (prevType === currType) {
+        this.selectedCard.classList.remove('selected');
+        cardEl.classList.add('selected');
+        this.selectedCard = cardEl;
+
+        if (currType === 'en') {
+          const wordText = cardEl.querySelector('.matching-word-text')?.textContent;
+          if (wordText && window.wordsManager?.playPronunciation) {
+            try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
+          }
+        }
+        return;
+      }
+
+      // 4. Khác loại (1 thẻ Tiếng Anh + 1 thẻ Tiếng Việt) -> Tiến hành so sánh ghép đôi!
+      const cardA = this.selectedCard;
+      const cardB = cardEl;
+      cardB.classList.add('selected');
+
       this.movesCount += 1;
       this.updateMovesDisplay();
 
-      const pair1 = this.firstCard.getAttribute('data-pair-id');
-      const type1 = this.firstCard.getAttribute('data-type');
-      const pair2 = this.secondCard.getAttribute('data-pair-id');
-      const type2 = this.secondCard.getAttribute('data-type');
-
-      // Điều kiện đúng: Cùng pairId và khác loại (1 Word + 1 Meaning)
-      const isMatch = (pair1 === pair2) && (type1 !== type2);
+      const pairA = cardA.getAttribute('data-pair-id');
+      const pairB = cardB.getAttribute('data-pair-id');
+      const isMatch = (pairA === pairB);
 
       if (isMatch) {
-        // ================= KHỚP ĐÚNG =================
+        // ================= GHÉP ĐÚNG =================
         this.playSound('match');
-        this.firstCard.classList.add('matched');
-        this.secondCard.classList.add('matched');
+
+        // Phát âm từ tiếng Anh vừa ghép đúng
+        const enCard = prevType === 'en' ? cardA : cardB;
+        const enWord = enCard.querySelector('.matching-word-text')?.textContent;
+        if (enWord && window.wordsManager?.playPronunciation) {
+          try { window.wordsManager.playPronunciation(enWord); } catch (e) {}
+        }
+
+        cardA.classList.remove('selected');
+        cardB.classList.remove('selected');
+        cardA.classList.add('matched');
+        cardB.classList.add('matched');
+
         this.matchedPairsCount += 1;
+        this.selectedCard = null;
 
-        // Phát âm thanh đọc từ nếu là thẻ tiếng Anh
-        const englishCard = type1 === 'word' ? this.firstCard : this.secondCard;
-        const wordText = englishCard.querySelector('.matching-card-text')?.textContent;
-        if (wordText && window.wordsManager?.playPronunciation) {
-          try {
-            window.wordsManager.playPronunciation(wordText);
-          } catch (e) {}
+        // Cập nhật số từ còn lại trên tiêu đề cột
+        const remaining = this.currentWords.length - this.matchedPairsCount;
+        const countEn = document.getElementById('matching-count-en');
+        const countVi = document.getElementById('matching-count-vi');
+        if (countEn) countEn.textContent = `${remaining} từ`;
+        if (countVi) countVi.textContent = `${remaining} nghĩa`;
+
+        // Ẩn nhẹ nhàng 2 thẻ vừa ghép đúng sau 350ms
+        setTimeout(() => {
+          cardA.classList.add('cleared');
+          cardB.classList.add('cleared');
+        }, 350);
+
+        // Nếu đã ghép hết 8 cặp -> CHIẾN THẮNG!
+        if (this.matchedPairsCount >= this.currentWords.length) {
+          setTimeout(() => this.handleVictory(), 600);
         }
 
-        this.firstCard = null;
-        this.secondCard = null;
-
-        // Đã ghép đủ 8 cặp -> CHIẾN THẮNG!
-        if (this.matchedPairsCount >= 8) {
-          this.handleVictory();
-        }
       } else {
         // ================= GHÉP SAI =================
-        // Khoá bàn + rung lắc thẻ + úp lại sau đúng 800ms
         this.isLocked = true;
         this.playSound('mismatch');
 
-        const cardA = this.firstCard;
-        const cardB = this.secondCard;
+        cardA.classList.remove('selected');
+        cardB.classList.remove('selected');
         cardA.classList.add('mismatch');
         cardB.classList.add('mismatch');
 
         setTimeout(() => {
-          cardA.classList.remove('flipped', 'mismatch');
-          cardB.classList.remove('flipped', 'mismatch');
-          this.firstCard = null;
-          this.secondCard = null;
+          cardA.classList.remove('mismatch');
+          cardB.classList.remove('mismatch');
+          this.selectedCard = null;
           this.isLocked = false;
-        }, 800);
+        }, 600);
       }
     },
 
@@ -392,10 +429,7 @@
         newRecordBadge.style.display = result.isNewRecord ? 'block' : 'none';
       }
 
-      // Hiện modal chiến thắng sau 400ms
-      setTimeout(() => {
-        this.showVictoryModal();
-      }, 400);
+      this.showVictoryModal();
     },
 
     showVictoryModal() {
@@ -423,7 +457,6 @@
       if (!current) {
         isNewRecord = true;
       } else {
-        // Tiêu chí: thời gian ngắn hơn, hoặc bằng thời gian nhưng số lượt ít hơn
         if (timeSec < current.timeSec || (timeSec === current.timeSec && moves < current.moves)) {
           isNewRecord = true;
         }
@@ -483,21 +516,21 @@
         if (!AudioCtx) return;
         const ctx = new AudioCtx();
 
-        if (type === 'flip') {
+        if (type === 'select') {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(340, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(560, ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.12, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+          osc.frequency.setValueAtTime(440, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.05);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start();
-          osc.stop(ctx.currentTime + 0.08);
+          osc.stop(ctx.currentTime + 0.05);
 
         } else if (type === 'match') {
-          // Double ding vui vẻ
+          // Double ding trong trẻo
           const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
           notes.forEach((freq, idx) => {
             const osc = ctx.createOscillator();

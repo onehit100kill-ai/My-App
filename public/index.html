@@ -998,8 +998,8 @@
         <button type="button" class="game-bubble-menu-item" id="game-menu-matching-btn">
           <span class="game-menu-item-icon">🎮</span>
           <div class="game-menu-item-text">
-            <span class="game-menu-item-name">Ghép cặp</span>
-            <span class="game-menu-item-desc">Lật thẻ 4×4 rèn trí nhớ & từ vựng</span>
+            <span class="game-menu-item-name">Ghép từ - nghĩa</span>
+            <span class="game-menu-item-desc">Nối từ vựng với nghĩa tiếng Việt tương ứng</span>
           </div>
         </button>
         <button type="button" class="game-bubble-menu-item" id="game-menu-farm-btn">
@@ -1013,11 +1013,11 @@
     </div>
   </div>
 
-  <!-- MÀN HÌNH GAME GHÉP CẶP TOÀN MÀN HÌNH -->
+  <!-- MÀN HÌNH GAME GHÉP TỪ VỚI NGHĨA TOÀN MÀN HÌNH -->
   <div id="matching-game-view" class="matching-game-view" hidden>
     <header class="matching-hud">
       <div class="matching-hud-left">
-        <div class="matching-title-badge">🎮 Ghép Cặp</div>
+        <div class="matching-title-badge">🎮 Ghép Từ - Nghĩa</div>
         <span class="matching-topic-label" id="matching-topic-label">Đang tải...</span>
       </div>
       <div class="matching-hud-center">
@@ -1031,8 +1031,28 @@
     </header>
 
     <main class="matching-board-container">
-      <div class="matching-grid" id="matching-grid">
-        <!-- 16 thẻ bài 4x4 sinh bởi game-matching.js -->
+      <div class="matching-board" id="matching-board">
+        <!-- Cột Từ Tiếng Anh -->
+        <div class="matching-column matching-col-en">
+          <div class="matching-col-header">
+            <span class="matching-col-badge">🇬🇧 Từ Tiếng Anh</span>
+            <span class="matching-col-count" id="matching-count-en">8 từ</span>
+          </div>
+          <div class="matching-col-list" id="matching-list-en">
+            <!-- 8 thẻ tiếng Anh -->
+          </div>
+        </div>
+
+        <!-- Cột Nghĩa Tiếng Việt -->
+        <div class="matching-column matching-col-vi">
+          <div class="matching-col-header">
+            <span class="matching-col-badge">🇻🇳 Nghĩa Tiếng Việt</span>
+            <span class="matching-col-count" id="matching-count-vi">8 nghĩa</span>
+          </div>
+          <div class="matching-col-list" id="matching-list-vi">
+            <!-- 8 thẻ nghĩa tiếng Việt -->
+          </div>
+        </div>
       </div>
     </main>
 
