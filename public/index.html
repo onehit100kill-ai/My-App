@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>VocabMaster - Ứng Dụng Học Từ Tiếng Anh</title>
-  <meta name="description" content="Học từ vựng tiếng Anh theo Phần và Ngày, tự động gợi ý phiên âm IPA, dịch nghĩa và chế độ ôn tập thông minh.">
-  
+  <meta name="description"
+    content="Học từ vựng tiếng Anh theo Phần và Ngày, tự động gợi ý phiên âm IPA, dịch nghĩa và chế độ ôn tập thông minh.">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
+
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css?v=3">
   <link rel="stylesheet" href="css/farm.css">
   <link rel="stylesheet" href="css/game-matching.css">
 </head>
+
 <body>
 
   <!-- App Header -->
@@ -61,7 +66,8 @@
     <div class="global-search-container">
       <div class="global-search-input-wrap">
         <span class="global-search-icon">🔍</span>
-        <input type="text" id="global-search-input" placeholder="Tìm kiếm từ tiếng Anh..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="global-search-input" placeholder="Tìm kiếm từ tiếng Anh..." autocomplete="off"
+          autocorrect="off" spellcheck="false">
         <button class="icon-btn-mini" id="btn-close-global-search" title="Đóng tìm kiếm">✕</button>
       </div>
       <div class="global-search-results" id="global-search-results">
@@ -72,7 +78,7 @@
 
   <!-- App Main Container -->
   <div class="app-container">
-    
+
     <!-- Sidebar: Folder Tree View (Phần -> Ngày) -->
     <aside class="app-sidebar">
       <div class="sidebar-header" id="sidebar-header-toggle" title="Nhấn để mở rộng hoặc thu nhỏ cây thư mục">
@@ -92,33 +98,49 @@
 
     <!-- Main Content Area -->
     <main class="app-main">
-      
+
       <!-- Top Action Toolbar -->
-      <div class="main-toolbar" style="display: flex; justify-content: space-between; align-items: center; padding-left: 15px; padding-right: 15px; flex-wrap: wrap;">
-        
+      <div class="main-toolbar"
+        style="display: flex; justify-content: space-between; align-items: center; padding-left: 15px; padding-right: 15px; flex-wrap: wrap;">
+
         <!-- Left: Previous Button -->
         <div class="toolbar-left" style="flex: 1; display: flex; justify-content: flex-start;">
-          <button class="btn btn-secondary nav-day-btn" id="btn-prev-day" title="Ngày trước" style="display: none; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-surface-elevated); align-items: center; justify-content: center; height: 38px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <button class="btn btn-secondary nav-day-btn" id="btn-prev-day" title="Ngày trước"
+            style="display: none; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-surface-elevated); align-items: center; justify-content: center; height: 38px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
         </div>
 
         <!-- Center: Day Info and Actions -->
         <div class="toolbar-center" style="flex: 4; display: flex; justify-content: center; align-items: center;">
-          
-          <div class="day-action-group" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; background: var(--bg-surface-elevated); padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 600px; flex: 1;">
-            
-            <div class="current-path" id="current-breadcrumb" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px; width: 100%; justify-content: center;"></div>
-            
-            <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
-              <h1 class="current-day-title" id="current-day-heading" style="margin: 0 0 0 20px; font-size: 1.15rem; font-weight: 600; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;">Ngày 1: Cảm xúc & Tính cách</h1>
-              
-              <div class="toolbar-controls" style="display: flex; gap: 8px; margin: 0; padding: 0; flex-shrink: 0; width: auto !important;">
-                <button class="btn btn-primary" id="btn-add-word" title="Thêm từ mới" style="padding: 6px 12px; min-height: 36px; border-radius: 8px;">
-                  <span class="btn-icon">➕</span><span class="btn-label mobile-hidden" style="font-size: 0.9rem;"> Thêm từ</span>
+
+          <div class="day-action-group"
+            style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; background: var(--bg-surface-elevated); padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-color); width: 100%; max-width: 600px; flex: 1;">
+
+            <div class="current-path" id="current-breadcrumb"
+              style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px; width: 100%; justify-content: center;">
+            </div>
+
+            <div
+              style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 12px;">
+              <h1 class="current-day-title" id="current-day-heading"
+                style="margin: 0 0 0 20px; font-size: 1.15rem; font-weight: 600; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;">
+                Ngày 1: Cảm xúc & Tính cách</h1>
+
+              <div class="toolbar-controls"
+                style="display: flex; gap: 8px; margin: 0; padding: 0; flex-shrink: 0; width: auto !important;">
+                <button class="btn btn-primary" id="btn-add-word" title="Thêm từ mới"
+                  style="padding: 6px 12px; min-height: 36px; border-radius: 8px;">
+                  <span class="btn-icon">➕</span><span class="btn-label mobile-hidden" style="font-size: 0.9rem;"> Thêm
+                    từ</span>
                 </button>
-                <button class="btn btn-study" id="btn-study-day" title="Ôn tập các từ của ngày này" style="padding: 6px 12px; min-height: 36px; border-radius: 8px;">
-                  <span class="btn-icon">🎯</span><span class="btn-label mobile-hidden" style="font-size: 0.9rem;"> Ôn tập</span>
+                <button class="btn btn-study" id="btn-study-day" title="Ôn tập các từ của ngày này"
+                  style="padding: 6px 12px; min-height: 36px; border-radius: 8px;">
+                  <span class="btn-icon">🎯</span><span class="btn-label mobile-hidden" style="font-size: 0.9rem;"> Ôn
+                    tập</span>
                 </button>
               </div>
             </div>
@@ -129,8 +151,12 @@
 
         <!-- Right: Next Button -->
         <div class="toolbar-right" style="flex: 1; display: flex; justify-content: flex-end;">
-          <button class="btn btn-secondary nav-day-btn" id="btn-next-day" title="Ngày sau" style="display: none; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-surface-elevated); align-items: center; justify-content: center; height: 38px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <button class="btn btn-secondary nav-day-btn" id="btn-next-day" title="Ngày sau"
+            style="display: none; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-surface-elevated); align-items: center; justify-content: center; height: 38px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
 
@@ -227,7 +253,8 @@
           </div>
           <div class="form-group">
             <label class="form-label">Tiêu đề ngày (Có thể tự đổi)</label>
-            <input type="text" id="day-title-input" class="form-input" placeholder="Ví dụ: Ngày 1: Động từ thông dụng" required>
+            <input type="text" id="day-title-input" class="form-input" placeholder="Ví dụ: Ngày 1: Động từ thông dụng"
+              required>
           </div>
         </div>
         <div class="modal-footer">
@@ -253,23 +280,28 @@
         <input type="hidden" id="word-audio-url">
 
         <div class="modal-body quizlet-modal-body">
-          
+
           <!-- THẺ 1: TỪ TIẾNG ANH & GỢI Ý GOOGLE SUGGEST -->
           <div class="quizlet-card-block">
             <div class="quizlet-block-header">
               <span class="quizlet-block-tag">1. THUẬT NGỮ</span>
               <span class="quizlet-block-desc">Từ tiếng Anh & Phát âm</span>
             </div>
-            
+
             <!-- Bỏ nút tra cứu, từ tiếng Anh hiển thị full width với gợi ý kiểu Google -->
             <div class="form-row form-row-english" style="display: block; width: 100%;">
               <div class="form-group autocomplete-wrapper" style="position: relative; margin: 0; width: 100%;">
-                <label class="form-label" for="word-english-input">Từ tiếng Anh <span style="color: #ff6b6b;">*</span></label>
+                <label class="form-label" for="word-english-input">Từ tiếng Anh <span
+                    style="color: #ff6b6b;">*</span></label>
                 <div class="input-with-icon-wrap">
                   <span class="input-lead-icon">🔍</span>
-                  <input type="text" id="word-english-input" class="form-input has-lead-icon" placeholder="Gõ từ tiếng Anh (ví dụ: confident, achievement...)" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                  <input type="text" id="word-english-input" class="form-input has-lead-icon"
+                    placeholder="Gõ từ tiếng Anh (ví dụ: confident, achievement...)" required autocomplete="off"
+                    autocorrect="off" autocapitalize="off" spellcheck="false">
                 </div>
-                <div id="word-exists-warning" style="display: none; color: #ff6b6b; font-size: 13px; margin-top: 6px; font-weight: 500;">⚠️ Từ này đã tồn tại trong danh sách!</div>
+                <div id="word-exists-warning"
+                  style="display: none; color: #ff6b6b; font-size: 13px; margin-top: 6px; font-weight: 500;">⚠️ Từ này
+                  đã tồn tại trong danh sách!</div>
                 <!-- Dropdown danh sách gợi ý lựa chọn kiểu Google -->
                 <div class="autocomplete-dropdown" id="word-autocomplete-dropdown" style="display: none;"></div>
               </div>
@@ -284,8 +316,10 @@
               </div>
               <div class="form-group" style="flex: 1; margin: 0;">
                 <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
-                  <span>Phiên âm IPA <span id="ipa-status-icon" class="status-icon" style="display: none;"></span></span>
-                  <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử phát âm" style="display: none; width: 24px; height: 24px; font-size: 13px;">🔊</button>
+                  <span>Phiên âm IPA <span id="ipa-status-icon" class="status-icon"
+                      style="display: none;"></span></span>
+                  <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử phát âm"
+                    style="display: none; width: 24px; height: 24px; font-size: 13px;">🔊</button>
                 </label>
                 <input type="text" id="word-ipa-input" class="form-input" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
               </div>
@@ -300,10 +334,14 @@
             </div>
 
             <div class="form-group autocomplete-wrapper" style="position: relative; margin: 0;">
-              <label class="form-label" for="word-meaning-input">Định nghĩa / Nghĩa tiếng Việt <span style="color: #ff6b6b;">*</span> <span id="meaning-status-icon" class="status-icon" style="display: none;"></span></label>
+              <label class="form-label" for="word-meaning-input">Định nghĩa / Nghĩa tiếng Việt <span
+                  style="color: #ff6b6b;">*</span> <span id="meaning-status-icon" class="status-icon"
+                  style="display: none;"></span></label>
               <div class="input-with-icon-wrap">
                 <span class="input-lead-icon">💡</span>
-                <input type="text" id="word-meaning-input" class="form-input has-lead-icon" placeholder="Nhấn vào ô để xem danh sách gợi ý nghĩa tiếng Việt..." required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                <input type="text" id="word-meaning-input" class="form-input has-lead-icon"
+                  placeholder="Nhấn vào ô để xem danh sách gợi ý nghĩa tiếng Việt..." required autocomplete="off"
+                  autocorrect="off" autocapitalize="off" spellcheck="false">
               </div>
               <!-- Dropdown danh sách gợi ý nghĩa tiếng Việt kiểu Google -->
               <div class="autocomplete-dropdown" id="meaning-autocomplete-dropdown" style="display: none;"></div>
@@ -382,7 +420,8 @@
         <span class="confirm-icon">🗑️</span>
       </div>
       <h3 class="confirm-title" id="confirm-modal-title">Xác nhận xóa</h3>
-      <p class="confirm-message" id="confirm-modal-message">Bạn có chắc chắn muốn xóa mục này không? Thao tác này không thể hoàn tác.</p>
+      <p class="confirm-message" id="confirm-modal-message">Bạn có chắc chắn muốn xóa mục này không? Thao tác này không
+        thể hoàn tác.</p>
       <div class="confirm-actions">
         <button type="button" class="btn btn-secondary confirm-btn-cancel" id="confirm-btn-cancel">Hủy</button>
         <button type="button" class="btn btn-danger confirm-btn-agree" id="confirm-btn-agree">Đồng ý Xóa</button>
@@ -405,10 +444,13 @@
         </p>
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;" id="section-study-total-words">Tổng số từ: 0 từ</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;"
+            id="section-study-total-words">Tổng số từ: 0 từ</span>
           <div>
-            <button type="button" class="btn-icon-only btn-secondary" id="btn-select-all-days" style="font-size: 0.78rem; padding: 3px 8px;">Chọn tất cả</button>
-            <button type="button" class="btn-icon-only btn-secondary" id="btn-deselect-all-days" style="font-size: 0.78rem; padding: 3px 8px;">Bỏ chọn</button>
+            <button type="button" class="btn-icon-only btn-secondary" id="btn-select-all-days"
+              style="font-size: 0.78rem; padding: 3px 8px;">Chọn tất cả</button>
+            <button type="button" class="btn-icon-only btn-secondary" id="btn-deselect-all-days"
+              style="font-size: 0.78rem; padding: 3px 8px;">Bỏ chọn</button>
           </div>
         </div>
 
@@ -417,16 +459,20 @@
         </div>
 
         <!-- Lọc từ đã thuộc / chưa thuộc bằng Radio List -->
-        <div style="display: flex; flex-direction: column; gap: 10px; background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div
+          style="display: flex; flex-direction: column; gap: 10px; background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
           <span class="form-label" style="margin: 0; margin-bottom: 4px;">Cấu hình học theo phần:</span>
           <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-            <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+            <label class="radio-label"
+              style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
               <input type="radio" name="section-study-profile" value="all" checked> Tất cả
             </label>
-            <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+            <label class="radio-label"
+              style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
               <input type="radio" name="section-study-profile" value="unlearned"> Chưa thuộc
             </label>
-            <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+            <label class="radio-label"
+              style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
               <input type="radio" name="section-study-profile" value="learned"> Đã thuộc
             </label>
           </div>
@@ -446,7 +492,8 @@
   <div class="modal-backdrop" id="modal-study-room">
     <div class="modal-card study-modal-card">
       <div class="modal-header">
-        <div class="study-header-bar" style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px;">
+        <div class="study-header-bar"
+          style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 16px;">
           <!-- Thanh tiến độ dài full-width sang trọng -->
           <div class="study-progress-bar-wrap" style="flex: 1; height: 10px; margin: 0;">
             <div class="study-progress-fill" id="study-progress-fill"></div>
@@ -456,14 +503,16 @@
       </div>
 
       <div class="modal-body" style="padding: 20px 28px;" id="study-interactive-area">
-        
+
         <!-- ================= UNIFIED SMART STUDY VIEW (Không cần tab, câu hỏi đảo đan xen) ================= -->
         <div id="view-quiz" class="study-view-panel">
           <div class="quiz-container">
-            
+
             <!-- Container riêng cho phần Nghe điền từ -->
-            <div id="quiz-listening-container" style="display: none; flex-direction: column; align-items: center; gap: 20px; padding: 30px 0;">
-              <button type="button" class="btn-audio" id="quiz-big-audio-btn" style="width: 80px; height: 80px; font-size: 36px; border-radius: 50%; box-shadow: 0 4px 15px rgba(56,139,253,0.3);">🔊</button>
+            <div id="quiz-listening-container"
+              style="display: none; flex-direction: column; align-items: center; gap: 20px; padding: 30px 0;">
+              <button type="button" class="btn-audio" id="quiz-big-audio-btn"
+                style="width: 80px; height: 80px; font-size: 36px; border-radius: 50%; box-shadow: 0 4px 15px rgba(56,139,253,0.3);">🔊</button>
               <div style="color: var(--text-secondary); font-size: 0.95rem;">Nghe và điền từ chính xác</div>
             </div>
 
@@ -472,9 +521,11 @@
               <span class="quiz-type-badge badge-choice" id="quiz-badge" style="display: none;"></span>
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div class="quiz-word-display" id="quiz-question-text">confident</div>
-                <button type="button" class="btn-audio" id="quiz-audio-btn" style="width: 36px; height: 36px; font-size: 16px;">🔊</button>
+                <button type="button" class="btn-audio" id="quiz-audio-btn"
+                  style="width: 36px; height: 36px; font-size: 16px;">🔊</button>
               </div>
-              <div style="font-size: 0.95rem; color: var(--accent-cyan); display: none;" id="quiz-question-subtext"></div>
+              <div style="font-size: 0.95rem; color: var(--accent-cyan); display: none;" id="quiz-question-subtext">
+              </div>
             </div>
 
             <!-- Phương án trắc nghiệm -->
@@ -484,24 +535,33 @@
 
             <!-- Khung gõ từ chính tả (Tự động focus ngay lập tức, nhấn Enter để kiểm tra) -->
             <div class="quiz-input-box" id="quiz-typing-container" style="display: none;">
-              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="go">
+              <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..."
+                autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false"
+                enterkeyhint="go">
             </div>
 
             <!-- Thông báo phản hồi kết quả câu hỏi -->
-            <div id="quiz-feedback-box" style="display: none; text-align: center; padding: 14px; border-radius: var(--radius-md); font-weight: 600;"></div>
+            <div id="quiz-feedback-box"
+              style="display: none; text-align: center; padding: 14px; border-radius: var(--radius-md); font-weight: 600;">
+            </div>
 
           </div>
         </div>
 
         <!-- ================= QUIZ CONGRATS & SUMMARY VIEW ================= -->
-        <div id="view-congrats" class="study-view-panel" style="display: none; padding: 0; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 140px);">
-          
-          <div class="summary-split-container" style="display: flex; flex: 1; overflow: hidden; gap: 20px; flex-direction: column; width: 100%; padding-right: 4px;">
-            
+        <div id="view-congrats" class="study-view-panel"
+          style="display: none; padding: 0; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 140px);">
+
+          <div class="summary-split-container"
+            style="display: flex; flex: 1; overflow: hidden; gap: 20px; flex-direction: column; width: 100%; padding-right: 4px;">
+
             <!-- Cột 2: Các từ sai -->
-            <div class="summary-wrong-words-container" style="display: flex; flex-direction: column; margin-bottom: 10px; flex: 1 1 50%; max-height: max-content; min-height: 0;">
-              <h4 style="text-align: center; margin-bottom: 10px; color: #ff6b6b; font-size: 0.95rem; flex-shrink: 0;">Các từ sai</h4>
-              <div style="border-radius: 8px; border: 1px solid rgba(255, 107, 107, 0.3); background: rgba(255, 107, 107, 0.05); flex: 1 1 auto; overflow-y: auto; min-height: 0;">
+            <div class="summary-wrong-words-container"
+              style="display: flex; flex-direction: column; margin-bottom: 10px; flex: 1 1 50%; max-height: max-content; min-height: 0;">
+              <h4 style="text-align: center; margin-bottom: 10px; color: #ff6b6b; font-size: 0.95rem; flex-shrink: 0;">
+                Các từ sai</h4>
+              <div
+                style="border-radius: 8px; border: 1px solid rgba(255, 107, 107, 0.3); background: rgba(255, 107, 107, 0.05); flex: 1 1 auto; overflow-y: auto; min-height: 0;">
                 <table class="summary-words-table" style="width: 100%; border-collapse: collapse;">
                   <thead style="background: rgba(255, 107, 107, 0.1); position: sticky; top: 0; z-index: 1;">
                     <tr>
@@ -519,9 +579,12 @@
             </div>
 
             <!-- Cột 1: Các từ đúng -->
-            <div class="summary-words-container" style="display: flex; flex-direction: column; margin-bottom: 20px; flex: 1 1 50%; max-height: max-content; min-height: 0;">
-              <h4 style="text-align: center; margin-bottom: 10px; color: #34c759; font-size: 0.95rem; flex-shrink: 0;">Các từ đúng</h4>
-              <div style="border-radius: 8px; border: 1px solid rgba(52, 199, 89, 0.3); background: rgba(52, 199, 89, 0.05); flex: 1 1 auto; overflow-y: auto; min-height: 0;">
+            <div class="summary-words-container"
+              style="display: flex; flex-direction: column; margin-bottom: 20px; flex: 1 1 50%; max-height: max-content; min-height: 0;">
+              <h4 style="text-align: center; margin-bottom: 10px; color: #34c759; font-size: 0.95rem; flex-shrink: 0;">
+                Các từ đúng</h4>
+              <div
+                style="border-radius: 8px; border: 1px solid rgba(52, 199, 89, 0.3); background: rgba(52, 199, 89, 0.05); flex: 1 1 auto; overflow-y: auto; min-height: 0;">
                 <table class="summary-words-table" style="width: 100%; border-collapse: collapse;">
                   <thead style="background: rgba(52, 199, 89, 0.1); position: sticky; top: 0; z-index: 1;">
                     <tr>
@@ -562,22 +625,28 @@
 
       <div class="modal-body" style="padding: 24px;">
         <!-- Giao diện Theme Toggle -->
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+        <div
+          style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
           <span style="font-size: 0.95rem; font-weight: 600;">Giao diện (Theme)</span>
-          <button type="button" class="btn btn-secondary btn-icon-only" id="btn-theme-toggle" style="border-radius: 50%; font-size: 18px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+          <button type="button" class="btn btn-secondary btn-icon-only" id="btn-theme-toggle"
+            style="border-radius: 50%; font-size: 18px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
             <span id="theme-icon">🌙</span>
           </button>
         </div>
 
         <!-- Lựa chọn cấu hình áp dụng -->
-        <div style="margin-bottom: 20px; display: flex; gap: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
-          <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+        <div
+          style="margin-bottom: 20px; display: flex; gap: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+          <label class="radio-label"
+            style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
             <input type="radio" name="setting-profile" value="all" checked> Tất cả
           </label>
-          <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+          <label class="radio-label"
+            style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
             <input type="radio" name="setting-profile" value="unlearned"> Chưa thuộc
           </label>
-          <label class="radio-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
+          <label class="radio-label"
+            style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.95rem;">
             <input type="radio" name="setting-profile" value="learned"> Đã thuộc
           </label>
         </div>
@@ -590,7 +659,8 @@
             </div>
             <div class="number-stepper">
               <button type="button" class="stepper-btn" id="btn-dec-listening" title="Giảm">−</button>
-              <input type="number" id="setting-target-listening" class="stepper-input" min="0" max="10" value="0" readonly>
+              <input type="number" id="setting-target-listening" class="stepper-input" min="0" max="10" value="0"
+                readonly>
               <button type="button" class="stepper-btn" id="btn-inc-listening" title="Tăng">+</button>
             </div>
           </div>
@@ -649,21 +719,28 @@
       <div class="modal-header">
         <h3 class="modal-title">🔥 Học Chuyên Sâu</h3>
         <div style="display: flex; gap: 10px;">
-          <button type="button" class="icon-btn-mini" id="btn-intensive-settings" title="Cài đặt chuyên sâu" style="font-size: 16px;">⚙️</button>
+          <button type="button" class="icon-btn-mini" id="btn-intensive-settings" title="Cài đặt chuyên sâu"
+            style="font-size: 16px;">⚙️</button>
           <button type="button" class="icon-btn-mini btn-close-modal" data-target="modal-intensive">✕</button>
         </div>
       </div>
-      
+
       <div class="modal-body" style="padding: 0; display: flex; flex-direction: column; flex: 1; overflow: hidden;">
         <!-- Tabs -->
         <div style="display: flex; border-bottom: 1px solid var(--border-color);">
-          <button class="intensive-tab active" data-tab="intensive" style="flex: 1; padding: 12px; background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--primary); font-size: 0.95rem;">Danh sách chuyên sâu</button>
-          <button class="intensive-tab" data-tab="unlearned" style="flex: 1; padding: 12px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.95rem;">Các từ chưa thuộc</button>
+          <button class="intensive-tab active" data-tab="intensive"
+            style="flex: 1; padding: 12px; background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--primary); font-size: 0.95rem;">Danh
+            sách chuyên sâu</button>
+          <button class="intensive-tab" data-tab="unlearned"
+            style="flex: 1; padding: 12px; background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.95rem;">Các
+            từ chưa thuộc</button>
         </div>
-        
+
         <!-- Tab Content: Intensive List -->
-        <div class="intensive-tab-content" id="tab-content-intensive" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px; min-height: 0;">
-          <div class="list-scroll-container" style="flex: 1; overflow-y: auto; background: var(--bg-surface-elevated); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; min-height: 0;">
+        <div class="intensive-tab-content" id="tab-content-intensive"
+          style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px; min-height: 0;">
+          <div class="list-scroll-container"
+            style="flex: 1; overflow-y: auto; background: var(--bg-surface-elevated); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; min-height: 0;">
             <table class="word-table" style="width: 100%;">
               <thead>
                 <tr>
@@ -678,16 +755,21 @@
             </table>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 10px;">
-            <button class="btn btn-secondary" id="btn-remove-all-intensive" style="flex: 1; justify-content: center; padding: 10px 16px; font-size: 0.95rem; color: #ff6b6b; border-color: #ff6b6b;">✕ Xóa tất cả</button>
-            <button class="btn btn-study" id="btn-start-intensive-study" style="flex: 1; justify-content: center; padding: 10px 16px; font-size: 0.95rem; display: inline-flex;">
+            <button class="btn btn-secondary" id="btn-remove-all-intensive"
+              style="flex: 1; justify-content: center; padding: 10px 16px; font-size: 0.95rem; color: #ff6b6b; border-color: #ff6b6b;">✕
+              Xóa tất cả</button>
+            <button class="btn btn-study" id="btn-start-intensive-study"
+              style="flex: 1; justify-content: center; padding: 10px 16px; font-size: 0.95rem; display: inline-flex;">
               <span class="btn-icon">🎯</span><span class="btn-label"> Ôn tập</span>
             </button>
           </div>
         </div>
 
         <!-- Tab Content: Unlearned List -->
-        <div class="intensive-tab-content" id="tab-content-unlearned" style="display: none; flex: 1; flex-direction: column; overflow: hidden; padding: 15px; min-height: 0;">
-          <div class="list-scroll-container" style="flex: 1; overflow-y: auto; background: var(--bg-surface-elevated); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; min-height: 0;">
+        <div class="intensive-tab-content" id="tab-content-unlearned"
+          style="display: none; flex: 1; flex-direction: column; overflow: hidden; padding: 15px; min-height: 0;">
+          <div class="list-scroll-container"
+            style="flex: 1; overflow-y: auto; background: var(--bg-surface-elevated); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; min-height: 0;">
             <table class="word-table" style="width: 100%;">
               <thead>
                 <tr>
@@ -702,7 +784,9 @@
             </table>
           </div>
           <div style="display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
-            <button class="btn btn-primary" id="btn-add-all-intensive" style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 0.95rem;">➕ Thêm tất cả</button>
+            <button class="btn btn-primary" id="btn-add-all-intensive"
+              style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 0.95rem;">➕ Thêm tất
+              cả</button>
           </div>
         </div>
       </div>
@@ -727,7 +811,8 @@
             </div>
             <div class="number-stepper">
               <button type="button" class="stepper-btn" id="btn-dec-listening-int" title="Giảm">−</button>
-              <input type="number" id="setting-target-listening-int" class="stepper-input" min="0" max="10" value="0" readonly>
+              <input type="number" id="setting-target-listening-int" class="stepper-input" min="0" max="10" value="0"
+                readonly>
               <button type="button" class="stepper-btn" id="btn-inc-listening-int" title="Tăng">+</button>
             </div>
           </div>
@@ -739,7 +824,8 @@
             </div>
             <div class="number-stepper">
               <button type="button" class="stepper-btn" id="btn-dec-typing-int" title="Giảm">−</button>
-              <input type="number" id="setting-target-typing-int" class="stepper-input" min="0" max="10" value="1" readonly>
+              <input type="number" id="setting-target-typing-int" class="stepper-input" min="0" max="10" value="1"
+                readonly>
               <button type="button" class="stepper-btn" id="btn-inc-typing-int" title="Tăng">+</button>
             </div>
           </div>
@@ -751,7 +837,8 @@
             </div>
             <div class="number-stepper">
               <button type="button" class="stepper-btn" id="btn-dec-choice-int" title="Giảm">−</button>
-              <input type="number" id="setting-target-choice-int" class="stepper-input" min="0" max="10" value="1" readonly>
+              <input type="number" id="setting-target-choice-int" class="stepper-input" min="0" max="10" value="1"
+                readonly>
               <button type="button" class="stepper-btn" id="btn-inc-choice-int" title="Tăng">+</button>
             </div>
           </div>
@@ -772,7 +859,8 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-close-modal" data-target="modal-settings-intensive">Hủy</button>
+        <button type="button" class="btn btn-secondary btn-close-modal"
+          data-target="modal-settings-intensive">Hủy</button>
         <button type="button" class="btn btn-primary" id="btn-save-settings-intensive">Lưu Cài Đặt</button>
       </div>
     </div>
@@ -840,7 +928,8 @@
           <div id="farm-seed-step-select">
             <div class="farm-seed-list">
               <div class="farm-seed-card" data-crop="radish">
-                <img class="farm-seed-thumb" src="assets/farm/seed-radish.png" onerror="this.style.display='none'" alt="Củ cải">
+                <img class="farm-seed-thumb" src="assets/farm/seed-radish.png" onerror="this.style.display='none'"
+                  alt="Củ cải">
                 <span class="farm-crop-emoji" style="display:none; font-size:32px;">🥕</span>
                 <div class="farm-seed-info">
                   <div class="farm-seed-name">🥕 Củ cải (Rau)</div>
@@ -849,7 +938,8 @@
               </div>
 
               <div class="farm-seed-card" data-crop="strawberry">
-                <img class="farm-seed-thumb" src="assets/farm/seed-strawberry.png" onerror="this.style.display='none'" alt="Dâu tây">
+                <img class="farm-seed-thumb" src="assets/farm/seed-strawberry.png" onerror="this.style.display='none'"
+                  alt="Dâu tây">
                 <span class="farm-crop-emoji" style="display:none; font-size:32px;">🍓</span>
                 <div class="farm-seed-info">
                   <div class="farm-seed-name">🍓 Dâu tây (Cây ăn quả)</div>
@@ -858,7 +948,8 @@
               </div>
 
               <div class="farm-seed-card" data-crop="sunflower">
-                <img class="farm-seed-thumb" src="assets/farm/seed-sunflower.png" onerror="this.style.display='none'" alt="Hướng dương">
+                <img class="farm-seed-thumb" src="assets/farm/seed-sunflower.png" onerror="this.style.display='none'"
+                  alt="Hướng dương">
                 <span class="farm-crop-emoji" style="display:none; font-size:32px;">🌻</span>
                 <div class="farm-seed-info">
                   <div class="farm-seed-name">🌻 Hướng dương (Hoa)</div>
@@ -872,11 +963,14 @@
           <div id="farm-seed-step-confirm" style="display: none;">
             <div id="farm-seed-confirm-body"></div>
             <div style="display: flex; gap: 10px; margin-top: 14px;">
-              <button type="button" class="btn btn-secondary" id="farm-seed-btn-change-word" style="flex: 1;">🔄 Đổi từ khác</button>
-              <button type="button" class="btn btn-primary" id="farm-seed-btn-confirm-plant" style="flex: 1;">🌱 Gieo Hạt</button>
+              <button type="button" class="btn btn-secondary" id="farm-seed-btn-change-word" style="flex: 1;">🔄 Đổi từ
+                khác</button>
+              <button type="button" class="btn btn-primary" id="farm-seed-btn-confirm-plant" style="flex: 1;">🌱 Gieo
+                Hạt</button>
             </div>
             <div style="text-align: center; margin-top: 10px;">
-              <button type="button" class="btn btn-secondary" id="farm-seed-btn-back" style="font-size: 0.8rem; padding: 4px 10px;">← Chọn cây khác</button>
+              <button type="button" class="btn btn-secondary" id="farm-seed-btn-back"
+                style="font-size: 0.8rem; padding: 4px 10px;">← Chọn cây khác</button>
             </div>
           </div>
         </div>
@@ -982,7 +1076,8 @@
         <div class="farm-levelup-icon">🌟</div>
         <div class="farm-levelup-title" id="farm-levelup-title">🎉 Lên Cấp!</div>
         <div class="farm-levelup-desc" id="farm-levelup-desc">+2 ô đất mới, +20 vàng</div>
-        <button type="button" class="btn btn-primary" id="farm-levelup-btn-continue" style="width: 100%; min-height: 44px;">Tiếp tục chăm sóc</button>
+        <button type="button" class="btn btn-primary" id="farm-levelup-btn-continue"
+          style="width: 100%; min-height: 44px;">Tiếp tục chăm sóc</button>
       </div>
     </div>
   </div>
@@ -1026,33 +1121,14 @@
       </div>
       <div class="matching-hud-right">
         <button type="button" class="matching-btn-icon" id="matching-btn-restart" title="Chơi lại">🔄</button>
-        <button type="button" class="matching-btn-icon matching-btn-close" id="matching-btn-close" title="Đóng game">✕</button>
+        <button type="button" class="matching-btn-icon matching-btn-close" id="matching-btn-close"
+          title="Đóng game">✕</button>
       </div>
     </header>
 
     <main class="matching-board-container">
-      <div class="matching-board" id="matching-board">
-        <!-- Cột Từ Tiếng Anh -->
-        <div class="matching-column matching-col-en">
-          <div class="matching-col-header">
-            <span class="matching-col-badge">🇬🇧 Từ Tiếng Anh</span>
-            <span class="matching-col-count" id="matching-count-en">8 từ</span>
-          </div>
-          <div class="matching-col-list" id="matching-list-en">
-            <!-- 8 thẻ tiếng Anh -->
-          </div>
-        </div>
-
-        <!-- Cột Nghĩa Tiếng Việt -->
-        <div class="matching-column matching-col-vi">
-          <div class="matching-col-header">
-            <span class="matching-col-badge">🇻🇳 Nghĩa Tiếng Việt</span>
-            <span class="matching-col-count" id="matching-count-vi">8 nghĩa</span>
-          </div>
-          <div class="matching-col-list" id="matching-list-vi">
-            <!-- 8 thẻ nghĩa tiếng Việt -->
-          </div>
-        </div>
+      <div class="matching-grid" id="matching-grid">
+        <!-- 16 ô lưới 4x4 hiển thị từ & nghĩa trực tiếp sinh bởi game-matching.js -->
       </div>
     </main>
 
@@ -1062,7 +1138,7 @@
         <div class="matching-victory-confetti">🎉</div>
         <h2 class="matching-victory-title">Xuất Sắc!</h2>
         <p class="matching-victory-subtitle">Bạn đã ghép thành công tất cả 8 cặp từ vựng!</p>
-        
+
         <div class="matching-record-stats">
           <div class="matching-record-row">
             <span>⏱️ Thời gian:</span>
@@ -1099,4 +1175,5 @@
   <script src="js/game-matching.js"></script>
 
 </body>
+
 </html>

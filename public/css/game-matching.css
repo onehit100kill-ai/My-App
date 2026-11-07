@@ -1,7 +1,7 @@
 /* ==========================================================================
    VOCABMASTER - GAME GHÉP TỪ VỚI NGHĨA (MATCHING GAME) CSS
-   2 Cột trực quan: Cột Từ Tiếng Anh ↔ Cột Nghĩa Tiếng Việt
-   Từ và nghĩa hiển thị trực tiếp (không phải game lật thẻ úp mặt).
+   Lưới 4x4 (16 ô: 8 từ tiếng Anh + 8 nghĩa tiếng Việt) hiển thị trực tiếp.
+   Người học nhìn thấy từ và nghĩa, chọn cặp tương ứng để ghép.
    ========================================================================== */
 
 /* 1. MÀN HÌNH CHÍNH (FULLSCREEN VIEW) */
@@ -119,216 +119,167 @@
   border-color: #ef4444;
 }
 
-/* 3. KHU VỰC BÀN GHÉP CẶP (BOARD CONTAINER) */
+/* 3. KHU VỰC BÀN LƯỚI 4X4 (BOARD CONTAINER) */
 .matching-board-container {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
+  padding: 10px 12px;
   box-sizing: border-box;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 
-.matching-board {
+.matching-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px;
   width: 100%;
-  max-width: 620px;
+  max-width: 480px;
+  height: 100%;
+  max-height: 560px;
   box-sizing: border-box;
 }
 
-/* 4. CÁC CỘT (COLUMNS) */
-.matching-column {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.matching-col-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 2px;
-}
-
-.matching-col-badge {
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.matching-col-en .matching-col-badge {
-  background: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.35);
-}
-
-.matching-col-vi .matching-col-badge {
-  background: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-}
-
-.matching-col-count {
-  font-size: 0.72rem;
-  color: #94a3b8;
-  font-weight: 600;
-}
-
-.matching-col-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* 5. THẺ TỪ / THẺ NGHĨA (CARDS) */
+/* 4. THẺ Ô CHỮ (CARDS) */
 .matching-card {
   position: relative;
-  min-height: 48px;
-  padding: 8px 12px;
+  width: 100%;
+  height: 100%;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  padding: 6px 4px;
+  box-sizing: border-box;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, opacity 0.35s ease;
-  box-sizing: border-box;
+  text-align: center;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, opacity 0.3s ease;
 }
 
 .matching-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  transform: translateY(-1px);
+  border-color: rgba(99, 102, 241, 0.6);
+  transform: translateY(-2px);
 }
 
-.matching-card-main {
+.matching-card-en {
+  border-color: rgba(99, 102, 241, 0.32);
+}
+
+.matching-card-vi {
+  border-color: rgba(16, 185, 129, 0.32);
+}
+
+.matching-card-content {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   gap: 2px;
-  flex: 1;
-  min-width: 0;
 }
 
-/* Thẻ tiếng Anh */
-.matching-card-en .matching-word-text {
-  font-size: clamp(0.85rem, 2.5vw, 0.98rem);
+.matching-card-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+}
+
+.matching-card-en .matching-card-tag {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+}
+
+.matching-card-vi .matching-card-tag {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+.matching-card-text {
+  font-size: clamp(0.72rem, 2.4vw, 0.95rem);
   font-weight: 700;
+  line-height: 1.22;
   color: #ffffff;
   word-break: break-word;
-}
-
-.matching-card-en .matching-word-ipa {
-  font-size: clamp(0.68rem, 1.8vw, 0.75rem);
-  color: #94a3b8;
-  font-style: italic;
-}
-
-/* Thẻ nghĩa tiếng Việt */
-.matching-card-vi .matching-meaning-text {
-  font-size: clamp(0.8rem, 2.3vw, 0.92rem);
-  font-weight: 600;
-  color: #f1f5f9;
-  line-height: 1.28;
-  word-break: break-word;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  max-width: 100%;
 }
 
-/* Chấm kết nối trực quan (Connector dot) */
-.matching-card-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  flex-shrink: 0;
-  transition: all 0.2s ease;
+.matching-card-vi .matching-card-text {
+  color: #f1f5f9;
+  font-weight: 600;
+  font-size: clamp(0.68rem, 2.1vw, 0.88rem);
 }
 
-.matching-card-en .matching-card-dot {
-  margin-left: 8px;
+.matching-card-sub {
+  font-size: clamp(0.6rem, 1.7vw, 0.7rem);
+  color: #94a3b8;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.matching-card-vi .matching-card-dot {
-  margin-right: 8px;
-}
-
-/* 6. TRẠNG THÁI CHỌN (SELECTED) */
+/* 5. TRẠNG THÁI CHỌN (SELECTED) */
 .matching-card.selected {
-  transform: scale(1.02);
+  transform: scale(1.04);
 }
 
 .matching-card-en.selected {
-  border-color: #38bdf8;
-  background: rgba(14, 116, 144, 0.35);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
-}
-
-.matching-card-en.selected .matching-card-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
+  border-color: #38bdf8 !important;
+  background: rgba(14, 116, 144, 0.38) !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.55);
 }
 
 .matching-card-vi.selected {
-  border-color: #34d399;
-  background: rgba(6, 95, 70, 0.35);
-  box-shadow: 0 0 16px rgba(52, 211, 153, 0.5);
+  border-color: #34d399 !important;
+  background: rgba(6, 95, 70, 0.38) !important;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.55);
 }
 
-.matching-card-vi.selected .matching-card-dot {
-  background: #34d399;
-  box-shadow: 0 0 8px #34d399;
-}
-
-/* 7. TRẠNG THÁI GHÉP ĐÚNG (MATCHED) */
+/* 6. TRẠNG THÁI GHÉP ĐÚNG (MATCHED) */
 .matching-card.matched {
   border-color: #10b981 !important;
   background: linear-gradient(135deg, #064e3b 0%, #022c22 100%) !important;
   box-shadow: 0 0 18px rgba(16, 185, 129, 0.6) !important;
-  animation: matchPulse 0.35s ease;
+  animation: matchBounce 0.35s ease;
 }
 
-.matching-card.matched .matching-word-text,
-.matching-card.matched .matching-meaning-text {
+.matching-card.matched .matching-card-text {
   color: #a7f3d0 !important;
 }
 
-.matching-card.matched .matching-card-dot {
-  background: #10b981;
-  box-shadow: 0 0 10px #10b981;
-}
-
-@keyframes matchPulse {
+@keyframes matchBounce {
   0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 
-/* Biến mất nhẹ nhàng sau khi ghép đúng */
 .matching-card.cleared {
   opacity: 0;
-  transform: scale(0.85);
+  transform: scale(0.8);
   pointer-events: none;
   visibility: hidden;
   transition: opacity 0.35s ease, transform 0.35s ease, visibility 0.35s;
 }
 
-/* 8. TRẠNG THÁI GHÉP SAI (MISMATCH) */
+/* 7. TRẠNG THÁI GHÉP SAI (MISMATCH) */
 .matching-card.mismatch {
   border-color: #ef4444 !important;
   background: linear-gradient(135deg, #451a1a 0%, #290808 100%) !important;
@@ -336,18 +287,13 @@
   animation: cardShake 0.45s ease;
 }
 
-.matching-card.mismatch .matching-card-dot {
-  background: #ef4444;
-  box-shadow: 0 0 8px #ef4444;
-}
-
 @keyframes cardShake {
   0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
 }
 
-/* 9. OVERLAY CHIẾN THẮNG (VICTORY MODAL) */
+/* 8. OVERLAY CHIẾN THẮNG (VICTORY MODAL) */
 .matching-victory-overlay {
   position: absolute;
   inset: 0;
@@ -473,23 +419,18 @@
   min-height: 42px;
 }
 
-/* 10. ĐIỀU CHỈNH RESPONSIVE CHO MÀN HÌNH NHỎ (MOBILE) */
-@media (max-width: 440px) {
+/* 9. ĐIỀU CHỈNH RESPONSIVE CHO MÀN HÌNH NHỎ (MOBILE <= 420px) */
+@media (max-width: 420px) {
   .matching-hud {
     padding: 8px 10px;
   }
   .matching-topic-label {
     display: none;
   }
-  .matching-board {
-    gap: 8px;
+  .matching-grid {
+    gap: 6px;
   }
   .matching-card {
-    min-height: 44px;
-    padding: 6px 8px;
-  }
-  .matching-card-dot {
-    width: 6px;
-    height: 6px;
+    padding: 4px 3px;
   }
 }

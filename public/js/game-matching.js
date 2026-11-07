@@ -1,8 +1,8 @@
 /**
  * ==========================================================================
  * VOCABMASTER - GAME GHÉP TỪ VỚI NGHĨA (MATCHING GAME)
- * Hiển thị trực tiếp 2 cột: Cột Từ Tiếng Anh ↔ Cột Nghĩa Tiếng Việt
- * Người chơi chọn từ tiếng Anh và chọn nghĩa tương ứng để ghép cặp.
+ * Lưới 4x4 (16 ô: 8 từ tiếng Anh + 8 nghĩa tiếng Việt) hiển thị trực tiếp.
+ * Không úp thẻ, không phải game lật thẻ trí nhớ.
  * Đúng: phát âm + xanh lá + mờ biến mất.
  * Sai: rung lắc đỏ + bỏ chọn sau 600ms.
  * Đồng hồ đếm giờ + số lượt thử + lưu kỷ lục localStorage.
@@ -103,10 +103,15 @@
       this.updateMovesDisplay();
       this.hideVictoryModal();
 
-      const listEn = document.getElementById('matching-list-en');
-      const listVi = document.getElementById('matching-list-vi');
-      if (listEn) listEn.innerHTML = '<div style="color:#94a3b8; font-size:13px; padding:10px;">Đang tải...</div>';
-      if (listVi) listVi.innerHTML = '<div style="color:#94a3b8; font-size:13px; padding:10px;">Đang tải...</div>';
+      const gridEl = document.getElementById('matching-grid');
+      if (gridEl) {
+        gridEl.innerHTML = `
+          <div style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#94a3b8;">
+            <div style="font-size:24px;">🔄</div>
+            <div>Đang tải 8 cặp từ vựng...</div>
+          </div>
+        `;
+      }
 
       // Lấy 8 từ vựng phù hợp
       this.currentWords = await this.fetchWords();
@@ -225,66 +230,58 @@
     },
 
     // =========================================================================
-    // RENDER 2 CỘT TỪ VỰNG & NGHĨA
+    // RENDER LƯỚI 4X4 (16 Ô: 8 TỪ TIẾNG ANH + 8 NGHĨA TIẾNG VIỆT)
     // =========================================================================
     renderBoard() {
-      const listEn = document.getElementById('matching-list-en');
-      const listVi = document.getElementById('matching-list-vi');
-      const countEn = document.getElementById('matching-count-en');
-      const countVi = document.getElementById('matching-count-vi');
-      if (!listEn || !listVi) return;
+      const gridEl = document.getElementById('matching-grid');
+      if (!gridEl) return;
 
-      const total = this.currentWords.length;
-      if (countEn) countEn.textContent = `${total} từ`;
-      if (countVi) countVi.textContent = `${total} nghĩa`;
+      // Sinh 16 thẻ mở sẵn: 8 từ tiếng Anh + 8 nghĩa tiếng Việt
+      const cards = [];
+      this.currentWords.forEach((item, idx) => {
+        const pairId = String(item.id || idx);
 
-      // Tạo danh sách thẻ tiếng Anh và xáo trộn riêng
-      const enItems = this.currentWords.map((item, idx) => ({
-        pairId: String(item.id || idx),
-        word: item.word,
-        ipa: item.ipa || ''
-      }));
-      const shuffledEn = this.shuffle(enItems);
+        // Thẻ tiếng Anh
+        cards.push({
+          cardId: `c_${idx}_en`,
+          pairId: pairId,
+          type: 'en',
+          text: item.word,
+          sub: item.ipa || ''
+        });
 
-      // Tạo danh sách thẻ tiếng Việt và xáo trộn riêng
-      const viItems = this.currentWords.map((item, idx) => ({
-        pairId: String(item.id || idx),
-        meaning: item.meaning
-      }));
-      const shuffledVi = this.shuffle(viItems);
-
-      // Render Cột tiếng Anh
-      listEn.innerHTML = shuffledEn.map(item => `
-        <div class="matching-card matching-card-en" data-pair-id="${item.pairId}" data-type="en">
-          <div class="matching-card-main">
-            <span class="matching-word-text">${item.word}</span>
-            ${item.ipa ? `<span class="matching-word-ipa">${item.ipa}</span>` : ''}
-          </div>
-          <span class="matching-card-dot"></span>
-        </div>
-      `).join('');
-
-      // Render Cột tiếng Việt
-      listVi.innerHTML = shuffledVi.map(item => `
-        <div class="matching-card matching-card-vi" data-pair-id="${item.pairId}" data-type="vi">
-          <span class="matching-card-dot"></span>
-          <div class="matching-card-main">
-            <span class="matching-meaning-text">${item.meaning}</span>
-          </div>
-        </div>
-      `).join('');
-
-      // Bắt sự kiện chọn thẻ cho cả 2 cột
-      listEn.querySelectorAll('.matching-card').forEach(card => {
-        card.addEventListener('click', () => this.handleCardClick(card));
+        // Thẻ nghĩa tiếng Việt
+        cards.push({
+          cardId: `c_${idx}_vi`,
+          pairId: pairId,
+          type: 'vi',
+          text: item.meaning,
+          sub: ''
+        });
       });
-      listVi.querySelectorAll('.matching-card').forEach(card => {
-        card.addEventListener('click', () => this.handleCardClick(card));
+
+      // Xáo trộn 16 thẻ trên lưới 4x4
+      const shuffledCards = this.shuffle(cards);
+
+      // Render vào DOM dạng lưới 4x4, mặt mở sẵn (không úp thẻ)
+      gridEl.innerHTML = shuffledCards.map(card => `
+        <div class="matching-card ${card.type === 'en' ? 'matching-card-en' : 'matching-card-vi'}" data-card-id="${card.cardId}" data-pair-id="${card.pairId}" data-type="${card.type}">
+          <div class="matching-card-content">
+            <span class="matching-card-tag">${card.type === 'en' ? 'EN' : 'VI'}</span>
+            <span class="matching-card-text">${card.text}</span>
+            ${card.sub ? `<span class="matching-card-sub">${card.sub}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      // Bắt sự kiện nhấp chọn thẻ
+      gridEl.querySelectorAll('.matching-card').forEach(cardEl => {
+        cardEl.addEventListener('click', () => this.handleCardClick(cardEl));
       });
     },
 
     // =========================================================================
-    // XỬ LÝ CHỌN VÀ GHÉP TỪ VỚI NGHĨA
+    // XỬ LÝ CHỌN VÀ GHÉP TỪ VỚI NGHĨA TRÊN LƯỚI 4X4
     // =========================================================================
     handleCardClick(cardEl) {
       if (this.isLocked) return;
@@ -292,14 +289,14 @@
 
       this.playSound('select');
 
-      // 1. Chưa chọn thẻ nào trước đó -> Chọn thẻ này
+      // 1. Chưa chọn thẻ nào -> Chọn thẻ này
       if (!this.selectedCard) {
         cardEl.classList.add('selected');
         this.selectedCard = cardEl;
 
         // Nếu chọn từ tiếng Anh, phát âm nhẹ
         if (cardEl.getAttribute('data-type') === 'en') {
-          const wordText = cardEl.querySelector('.matching-word-text')?.textContent;
+          const wordText = cardEl.querySelector('.matching-card-text')?.textContent;
           if (wordText && window.wordsManager?.playPronunciation) {
             try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
           }
@@ -307,7 +304,7 @@
         return;
       }
 
-      // 2. Nhấp lại chính thẻ đang chọn -> Huỷ chọn (Deselect)
+      // 2. Nhấp lại chính thẻ đang chọn -> Huỷ chọn
       if (this.selectedCard === cardEl) {
         cardEl.classList.remove('selected');
         this.selectedCard = null;
@@ -317,7 +314,7 @@
       const prevType = this.selectedCard.getAttribute('data-type');
       const currType = cardEl.getAttribute('data-type');
 
-      // 3. Nhấp vào thẻ cùng loại (ví dụ đang chọn từ Anh này, lại bấm từ Anh khác)
+      // 3. Nhấp vào thẻ cùng loại (ví dụ đang chọn từ tiếng Anh này, nhấp từ tiếng Anh khác)
       // -> Chuyển vùng chọn mượt mà sang thẻ mới
       if (prevType === currType) {
         this.selectedCard.classList.remove('selected');
@@ -325,7 +322,7 @@
         this.selectedCard = cardEl;
 
         if (currType === 'en') {
-          const wordText = cardEl.querySelector('.matching-word-text')?.textContent;
+          const wordText = cardEl.querySelector('.matching-card-text')?.textContent;
           if (wordText && window.wordsManager?.playPronunciation) {
             try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
           }
@@ -333,7 +330,7 @@
         return;
       }
 
-      // 4. Khác loại (1 thẻ Tiếng Anh + 1 thẻ Tiếng Việt) -> Tiến hành so sánh ghép đôi!
+      // 4. Khác loại (1 thẻ Từ Tiếng Anh + 1 thẻ Nghĩa Tiếng Việt) -> So sánh ghép đôi!
       const cardA = this.selectedCard;
       const cardB = cardEl;
       cardB.classList.add('selected');
@@ -349,7 +346,7 @@
         // ================= GHÉP ĐÚNG =================
         this.playSound('match');
 
-        // Phát âm từ tiếng Anh vừa ghép đúng
+        // Đọc từ tiếng Anh vừa ghép đúng
         const enCard = prevType === 'en' ? cardA : cardB;
         const enWord = enCard.querySelector('.matching-word-text')?.textContent;
         if (enWord && window.wordsManager?.playPronunciation) {
@@ -364,20 +361,13 @@
         this.matchedPairsCount += 1;
         this.selectedCard = null;
 
-        // Cập nhật số từ còn lại trên tiêu đề cột
-        const remaining = this.currentWords.length - this.matchedPairsCount;
-        const countEn = document.getElementById('matching-count-en');
-        const countVi = document.getElementById('matching-count-vi');
-        if (countEn) countEn.textContent = `${remaining} từ`;
-        if (countVi) countVi.textContent = `${remaining} nghĩa`;
-
-        // Ẩn nhẹ nhàng 2 thẻ vừa ghép đúng sau 350ms
+        // Ẩn nhẹ nhàng 2 ô vừa ghép đúng sau 350ms
         setTimeout(() => {
           cardA.classList.add('cleared');
           cardB.classList.add('cleared');
         }, 350);
 
-        // Nếu đã ghép hết 8 cặp -> CHIẾN THẮNG!
+        // Ghép đủ 8 cặp -> CHIẾN THẮNG!
         if (this.matchedPairsCount >= this.currentWords.length) {
           setTimeout(() => this.handleVictory(), 600);
         }
@@ -530,7 +520,6 @@
           osc.stop(ctx.currentTime + 0.05);
 
         } else if (type === 'match') {
-          // Double ding trong trẻo
           const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
           notes.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
@@ -546,7 +535,6 @@
           });
 
         } else if (type === 'mismatch') {
-          // Buzz trầm báo sai
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sawtooth';
@@ -560,7 +548,6 @@
           osc.stop(ctx.currentTime + 0.2);
 
         } else if (type === 'victory') {
-          // Hợp âm chiến thắng rộn rã
           const fanfare = [523.25, 659.25, 783.99, 1046.50];
           fanfare.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
