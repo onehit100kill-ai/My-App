@@ -899,7 +899,7 @@
       this.renderQuizModal();
     },
 
-    renderQuizModal() {
+    async renderQuizModal() {
       const sheet = document.getElementById('farm-sheet-quiz');
       if (!sheet || !this.activeQuiz) return;
 
@@ -948,7 +948,48 @@
       // Chuẩn bị nội dung câu hỏi
       let contentHtml = '';
 
-      if (q.mode === 'listening') {
+      if (q.mode === 'ai') {
+        // Chế độ 4: Câu điền từ AI
+        bodyEl.innerHTML = `
+          <div class="farm-quiz-prompt-card" style="padding: 24px 16px;">
+            <div style="font-size: 28px; margin-bottom: 6px;">✨</div>
+            <div style="font-size: 0.95rem; color: #a78bfa; font-weight: 700;">Gemini Pro đang tạo câu đố...</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Tạo ngữ cảnh cho từ "${q.word.word}"</div>
+          </div>
+        `;
+        sheet.classList.add('active');
+
+        try {
+          const aiRes = await window.api.generateAiSentence(q.word.word, q.word.meaning);
+          if (aiRes && aiRes.success && aiRes.data && aiRes.data.sentence) {
+            const aiData = aiRes.data;
+            contentHtml = `
+              <div class="farm-quiz-prompt-card">
+                <span style="font-size: 0.8rem; color: #a78bfa; font-weight: 700;">🤖 Câu đố từ Gemini Pro:</span>
+                <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
+                  "${aiData.sentence}"
+                </div>
+                ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
+              </div>
+              <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+              <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
+            `;
+          } else {
+            throw new Error(aiRes?.message || 'Không sinh được câu');
+          }
+        } catch (e) {
+          console.warn('Lỗi gọi Gemini AI, chuyển về điền từ cơ bản:', e);
+          // Fallback về điền từ nếu AI lỗi
+          contentHtml = `
+            <div class="farm-quiz-prompt-card">
+              <span style="font-size: 0.82rem; color: var(--text-secondary);">Gõ từ tiếng Anh có nghĩa:</span>
+              <div class="farm-quiz-question-word" style="color: #38bdf8;">"${q.word.meaning}"</div>
+            </div>
+            <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+            <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
+          `;
+        }
+      } else if (q.mode === 'listening') {
         // 1. Nghe điền từ
         contentHtml = `
           <div class="farm-quiz-prompt-card">
@@ -1395,9 +1436,28 @@
       if (choiceToggle) choiceToggle.checked = !!this.settings.modes.choice;
       if (typingToggle) typingToggle.checked = !!this.settings.modes.typing;
       if (listeningToggle) listeningToggle.checked = !!this.settings.modes.listening;
+
+      // Kiểm tra trạng thái Gemini AI backend
+      let aiEnabled = false;
+      try {
+        const aiStatus = await window.api.getAiStatus();
+        aiEnabled = !!aiStatus?.enabled;
+      } catch (e) {}
+
       if (aiToggle) {
-        aiToggle.checked = false;
-        aiToggle.disabled = true; // Vô hiệu hoá vì chưa có /api/ai/generate
+        if (aiEnabled) {
+          aiToggle.disabled = false;
+          aiToggle.closest('.farm-toggle-item')?.classList.remove('disabled');
+          const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
+          if (subText) subText.textContent = 'Gemini Pro đã sẵn sàng';
+          aiToggle.checked = !!this.settings.modes.ai;
+        } else {
+          aiToggle.checked = false;
+          aiToggle.disabled = true;
+          aiToggle.closest('.farm-toggle-item')?.classList.add('disabled');
+          const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
+          if (subText) subText.textContent = 'Cần cấu hình GEMINI_API_KEY trong .env';
+        }
       }
 
       // Tải danh sách ngày nếu chọn chế độ Tuỳ chọn
@@ -1448,13 +1508,15 @@
       const choiceToggle = document.getElementById('farm-setting-mode-choice');
       const typingToggle = document.getElementById('farm-setting-mode-typing');
       const listeningToggle = document.getElementById('farm-setting-mode-listening');
+      const aiToggle = document.getElementById('farm-setting-mode-ai');
 
       // Kiểm tra ít nhất 1 phương thức học bật
       const choice = choiceToggle ? choiceToggle.checked : true;
       const typing = typingToggle ? typingToggle.checked : false;
       const listening = listeningToggle ? listeningToggle.checked : false;
+      const ai = aiToggle && !aiToggle.disabled ? aiToggle.checked : false;
 
-      if (!choice && !typing && !listening) {
+      if (!choice && !typing && !listening && !ai) {
         if (window.showToast) window.showToast('Cần bật ít nhất 1 cách học!');
         return;
       }
@@ -1476,6 +1538,7 @@
       this.settings.modes.choice = choice;
       this.settings.modes.typing = typing;
       this.settings.modes.listening = listening;
+      this.settings.modes.ai = ai;
 
       this.saveSettings();
       this.refreshWordsPool().then(() => this.render());

@@ -409,3 +409,4 @@ if __name__ == "__main__":
     gen_heart()
     gen_basket()
     print("ALL 21 ASSETS GENERATED SUCCESSFULLY!")
+

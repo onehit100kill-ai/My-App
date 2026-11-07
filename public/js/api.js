@@ -271,6 +271,25 @@ const api = {
   async searchGlobalWords(query) {
     const res = await fetch(`${API_BASE}/words/search?q=${encodeURIComponent(query)}`);
     return await res.json();
+  },
+
+  // === AI Service ===
+  async getAiStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/ai/status`);
+      return await res.json();
+    } catch (e) {
+      return { success: false, enabled: false };
+    }
+  },
+
+  async generateAiSentence(word, meaning) {
+    const res = await fetch(`${API_BASE}/ai/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, meaning })
+    });
+    return await res.json();
   }
 };
 

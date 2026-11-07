@@ -8,6 +8,7 @@ const sectionRoutes = require('./src/routes/sections');
 const dayRoutes = require('./src/routes/days');
 const wordRoutes = require('./src/routes/words');
 const dictionaryRoutes = require('./src/routes/dictionary');
+const aiRoutes = require('./src/routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +24,7 @@ app.use('/api/sections', sectionRoutes);
 app.use('/api/days', dayRoutes);
 app.use('/api/words', wordRoutes);
 app.use('/api/dictionary', dictionaryRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Phục vụ Single Page Application
 app.get('*', (req, res) => {
