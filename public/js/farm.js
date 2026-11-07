@@ -1452,9 +1452,9 @@
           aiToggle.closest('.farm-toggle-item')?.classList.remove('disabled');
           const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
           if (subText) {
-            const providerName = aiStatus.provider || 'Groq';
-            const countStr = aiStatus.activeKeys > 1 ? ` (${aiStatus.activeKeys} keys xoay vòng)` : '';
-            subText.textContent = `${providerName} AI siêu tốc đã sẵn sàng${countStr}`;
+            const primary = aiStatus.primaryProvider || 'Groq LPU';
+            const backup = aiStatus.backupProvider ? ` (Kèm ${aiStatus.backupProvider})` : '';
+            subText.textContent = `${primary} siêu tốc sẵn sàng${backup}`;
           }
           aiToggle.checked = !!this.settings.modes.ai;
         } else {

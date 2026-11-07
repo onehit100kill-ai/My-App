@@ -189,48 +189,85 @@ async function generateSentenceWithGroq(word, meaning) {
     }
   }
 
-  // Nếu tất cả key Groq tạm thời không gọi được, fallback sang Gemini nếu có
+  // Nếu tất cả key Groq tạm thời không gọi được, chuyển ngay sang API Phụ 1: Gemini Flash-Lite
   if (process.env.GEMINI_API_KEY) {
     try {
-      console.log('[AI Fallback] Đang chuyển sang dự phòng Gemini API...');
+      console.log('[AI Phụ 1] Chuyển sang API Phụ Thứ Nhất: Gemini Flash-Lite...');
       return await fallbackToGemini(cleanWord, cleanMeaning);
     } catch (geminiErr) {
-      console.error('[AI Fallback] Gemini cũng gặp lỗi:', geminiErr.message);
+      console.error('[AI Phụ 1] Gemini Flash-Lite gặp lỗi:', geminiErr.message);
     }
   }
 
-  throw new Error('Tất cả API Key Groq đều đang bận hoặc hết hạn token: ' + (lastError || ''));
+  throw new Error('Tất cả API Key Groq và API Phụ Gemini đều đang bận: ' + (lastError || ''));
 }
 
 /**
- * Fallback dự phòng sang Gemini nếu Groq bận
+ * API Phụ Thứ Nhất: Gemini Flash-Lite
+ * Tự động chọn gemini-2.5-flash-lite theo yêu cầu và fallback sang gemini-3.5-flash-lite
  */
 async function fallbackToGemini(word, meaning) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const promptText = `You are an English teacher. Create ONE fill-in-the-blank sentence replacing "${word}" (${meaning}) with "_____". Return strictly JSON: {"sentence": "...", "missingWord": "${word}", "hint": "Vietnamese translation"}`;
+  if (!apiKey) throw new Error('Chưa có GEMINI_API_KEY');
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: promptText }] }],
-      generationConfig: { responseMimeType: 'application/json' }
-    })
-  });
+  const promptText = `You are an expert English language teacher. Given a vocabulary word and its Vietnamese meaning, create ONE natural, high quality English fill-in-the-blank sentence where the vocabulary word is replaced with "_____". Return strictly a valid JSON object with no markdown formatting:
+{
+  "sentence": "The full sentence with _____ in place of the target word",
+  "missingWord": "${word}",
+  "hint": "Bản dịch nghĩa tiếng Việt của cả câu để làm gợi ý"
+}`;
 
-  const data = await res.json();
-  const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  const parsed = JSON.parse(txt);
-  return {
-    sentence: parsed.sentence,
-    missingWord: parsed.missingWord || word,
-    hint: parsed.hint || meaning,
-    provider: 'Gemini (Backup)',
-    model: 'gemini-3.5-flash'
-  };
+  const candidateModels = Array.from(new Set([
+    process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash'
+  ]));
+
+  let lastErr = null;
+  for (const m of candidateModels) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            temperature: 0.7,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        lastErr = `${m}: ${errText}`;
+        continue;
+      }
+
+      const data = await res.json();
+      const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (txt) {
+        const clean = txt.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        return {
+          sentence: parsed.sentence || `Fill in the blank: _____ (${word})`,
+          missingWord: parsed.missingWord || word,
+          hint: parsed.hint || meaning,
+          provider: 'Gemini Flash-Lite (API Phụ 1)',
+          model: m
+        };
+      }
+    } catch (e) {
+      lastErr = e.message;
+    }
+  }
+
+  throw new Error('API Phụ Gemini Flash-Lite không thể tạo câu: ' + lastErr);
 }
 
 module.exports = {
   keyPool,
-  generateSentenceWithGroq
+  generateSentenceWithGroq,
+  fallbackToGemini
 };
+

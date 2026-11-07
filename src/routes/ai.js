@@ -8,16 +8,17 @@ const { keyPool, generateSentenceWithGroq } = require('../services/aiService');
  */
 router.get('/status', (req, res) => {
   const status = keyPool.getStatus();
-  const hasKey = status.totalKeys > 0 || !!process.env.GEMINI_API_KEY;
+  const hasGroq = status.totalKeys > 0;
+  const hasGemini = !!process.env.GEMINI_API_KEY;
 
   res.json({
     success: true,
-    enabled: hasKey,
-    provider: status.totalKeys > 0 ? 'Groq' : 'Gemini',
-    model: 'openai/gpt-oss-120b',
-    totalKeys: status.totalKeys,
-    activeKeys: status.activeKeysCount,
-    coolingKeys: status.coolingKeysCount
+    enabled: hasGroq || hasGemini,
+    primaryProvider: hasGroq ? 'Groq LPU' : 'Gemini Flash-Lite',
+    backupProvider: hasGemini ? 'Gemini Flash-Lite (API Phụ 1)' : null,
+    totalGroqKeys: status.totalKeys,
+    activeGroqKeys: status.activeKeysCount,
+    coolingGroqKeys: status.coolingKeysCount
   });
 });
 
