@@ -281,8 +281,9 @@ Return STRICTLY a valid JSON object with no markdown fences:
   // 3. Fallback sang Gemini nếu Groq lỗi hoặc hết key
   if (!parsedData && process.env.GEMINI_API_KEY) {
     const geminiModels = [
-      'gemini-2.5-flash-lite',
+      process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
       'gemini-3.5-flash-lite',
+      'gemini-2.5-flash',
       'gemini-3.5-flash'
     ];
 
@@ -323,7 +324,45 @@ Return STRICTLY a valid JSON object with no markdown fences:
     }
   }
 
-  // 4. Nếu cả 2 đều lỗi -> HTTP 503
+  // 3b. Fallback sang API Phụ 2 (OpenRouter) nếu cả Groq và Gemini đều bận
+  if (!parsedData && process.env.OPENROUTER_API_KEY) {
+    const openRouterModel = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct';
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: openRouterModel,
+          messages: [
+            { role: 'system', content: promptSystem },
+            { role: 'user', content: promptUser }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.7
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content || '';
+        if (content) {
+          const clean = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+          parsedData = JSON.parse(clean);
+          activeProvider = 'openrouter';
+        }
+      } else {
+        const errText = await res.text();
+        lastErrorMsg = `OpenRouter (${res.status}): ${errText}`;
+      }
+    } catch (e) {
+      lastErrorMsg = e.message;
+    }
+  }
+
+  // 4. Nếu cả 3 đều lỗi -> HTTP 503
   if (!parsedData) {
     return {
       isHttpError: true,
@@ -485,8 +524,9 @@ async function fallbackToGemini(word, meaning) {
 }`;
 
   const candidateModels = Array.from(new Set([
-    process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite',
+    process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     'gemini-3.5-flash-lite',
+    'gemini-2.5-flash',
     'gemini-3.5-flash'
   ]));
 

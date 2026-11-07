@@ -1396,8 +1396,13 @@
 
         try {
           const aiRes = await window.api.generateAiSentence(q.word.word, q.word.meaning);
-          if (aiRes && aiRes.success && aiRes.data && aiRes.data.sentence) {
-            const aiData = aiRes.data;
+          const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
+          if (aiRes && aiRes.success && sentence) {
+            const aiData = {
+              sentence: sentence,
+              hint: aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || q.word.meaning,
+              provider: aiRes?.provider || aiRes?.data?.provider || 'Groq'
+            };
             const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
             contentHtml = `
               <div class="farm-quiz-prompt-card">
@@ -2297,8 +2302,13 @@
 
         try {
           const aiRes = await window.api.generateAiSentence(currentWord.word, currentWord.meaning);
-          if (aiRes && aiRes.success && aiRes.data && aiRes.data.sentence) {
-            const aiData = aiRes.data;
+          const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
+          if (aiRes && aiRes.success && sentence) {
+            const aiData = {
+              sentence: sentence,
+              hint: aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || currentWord.meaning,
+              provider: aiRes?.provider || aiRes?.data?.provider || 'Groq'
+            };
             const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
             quizHtml = `
               <div class="farm-quiz-prompt-card">

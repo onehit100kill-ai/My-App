@@ -293,7 +293,7 @@ const api = {
   },
 
   async generateAiSentence(word, meaning) {
-    return await this.aiGenerate([{ word, meaning }], 'both');
+    return await this.aiGenerate([{ word, meaning }], 'sentence');
   }
 };
 

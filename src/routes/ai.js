@@ -57,6 +57,7 @@ router.post('/add-key', (req, res) => {
 router.post('/generate', async (req, res) => {
   try {
     let words = req.body.words;
+    const type = req.body.type || 'both';
 
     // Tương thích ngược nếu client gửi dạng { word, meaning } đơn lẻ
     if (!words && req.body.word) {
@@ -87,12 +88,54 @@ router.post('/generate', async (req, res) => {
       });
     }
 
+    // 1. Nếu yêu cầu câu đơn lẻ (thường dùng trong Nông trại hoặc quiz 1 từ)
+    if (type === 'sentence' || (words.length === 1 && type !== 'passage' && type !== 'both')) {
+      const target = words[0];
+      const sentRes = await generateSentenceWithGroq(target.word, target.meaning);
+      return res.json({
+        success: true,
+        provider: sentRes.provider,
+        model: sentRes.model,
+        sentence: sentRes.sentence,
+        missingWord: sentRes.missingWord,
+        hint: sentRes.hint,
+        data: {
+          sentence: sentRes.sentence,
+          missingWord: sentRes.missingWord,
+          hint: sentRes.hint,
+          provider: sentRes.provider,
+          model: sentRes.model
+        },
+        sentences: [
+          {
+            word: sentRes.missingWord,
+            sentence: sentRes.sentence,
+            answer: sentRes.missingWord,
+            hint: sentRes.hint
+          }
+        ]
+      });
+    }
+
+    // 2. Sinh bài học đầy đủ (Sentences + Reading Passage cho Phòng học)
     const dayId = req.body.dayId || '';
     const result = await generateAiLesson(words, dayId);
 
-    // Nếu cả Groq và Gemini đều lỗi hoặc hết lượt -> HTTP 503
+    // Nếu cả Groq, Gemini và OpenRouter đều lỗi hoặc hết lượt -> HTTP 503
     if (result.isHttpError) {
       return res.status(result.status || 503).json(result.payload);
+    }
+
+    // Đảm bảo data.sentence luôn có sẵn cho mọi client
+    if (result.sentences && result.sentences.length > 0) {
+      result.data = {
+        sentence: result.sentences[0].sentence,
+        missingWord: result.sentences[0].answer || result.sentences[0].word,
+        hint: result.sentences[0].hint || result.sentences[0].word,
+        provider: result.provider
+      };
+      result.sentence = result.sentences[0].sentence;
+      result.hint = result.sentences[0].hint;
     }
 
     return res.json(result);
@@ -103,6 +146,37 @@ router.post('/generate', async (req, res) => {
       success: false,
       message: err.message || 'Lỗi server xử lý AI.'
     });
+  }
+});
+
+/**
+ * POST /api/ai/sentence
+ * Endpoint chuyên biệt sinh 1 câu điền từ ngữ cảnh
+ */
+router.post('/sentence', async (req, res) => {
+  try {
+    const word = req.body.word || (Array.isArray(req.body.words) ? req.body.words[0]?.word : '');
+    const meaning = req.body.meaning || (Array.isArray(req.body.words) ? req.body.words[0]?.meaning : '');
+    if (!word) {
+      return res.status(400).json({ success: false, message: 'Thiếu từ vựng' });
+    }
+    const sentRes = await generateSentenceWithGroq(word, meaning);
+    return res.json({
+      success: true,
+      provider: sentRes.provider,
+      model: sentRes.model,
+      sentence: sentRes.sentence,
+      missingWord: sentRes.missingWord,
+      hint: sentRes.hint,
+      data: {
+        sentence: sentRes.sentence,
+        missingWord: sentRes.missingWord,
+        hint: sentRes.hint,
+        provider: sentRes.provider
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 });
 
