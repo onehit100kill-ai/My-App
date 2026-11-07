@@ -952,9 +952,9 @@
         // Chế độ 4: Câu điền từ AI
         bodyEl.innerHTML = `
           <div class="farm-quiz-prompt-card" style="padding: 24px 16px;">
-            <div style="font-size: 28px; margin-bottom: 6px;">✨</div>
-            <div style="font-size: 0.95rem; color: #a78bfa; font-weight: 700;">Gemini Pro đang tạo câu đố...</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Tạo ngữ cảnh cho từ "${q.word.word}"</div>
+            <div style="font-size: 28px; margin-bottom: 6px;">⚡</div>
+            <div style="font-size: 0.95rem; color: #f59e0b; font-weight: 700;">Groq AI đang tạo câu đố...</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Tạo ngữ cảnh siêu tốc cho từ "${q.word.word}"</div>
           </div>
         `;
         sheet.classList.add('active');
@@ -963,9 +963,10 @@
           const aiRes = await window.api.generateAiSentence(q.word.word, q.word.meaning);
           if (aiRes && aiRes.success && aiRes.data && aiRes.data.sentence) {
             const aiData = aiRes.data;
+            const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
             contentHtml = `
               <div class="farm-quiz-prompt-card">
-                <span style="font-size: 0.8rem; color: #a78bfa; font-weight: 700;">🤖 Câu đố từ Gemini Pro:</span>
+                <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 700;">${providerTag}:</span>
                 <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
                   "${aiData.sentence}"
                 </div>
@@ -978,7 +979,7 @@
             throw new Error(aiRes?.message || 'Không sinh được câu');
           }
         } catch (e) {
-          console.warn('Lỗi gọi Gemini AI, chuyển về điền từ cơ bản:', e);
+          console.warn('Lỗi gọi AI, chuyển về điền từ cơ bản:', e);
           // Fallback về điền từ nếu AI lỗi
           contentHtml = `
             <div class="farm-quiz-prompt-card">
@@ -1437,10 +1438,11 @@
       if (typingToggle) typingToggle.checked = !!this.settings.modes.typing;
       if (listeningToggle) listeningToggle.checked = !!this.settings.modes.listening;
 
-      // Kiểm tra trạng thái Gemini AI backend
+      // Kiểm tra trạng thái AI backend
       let aiEnabled = false;
+      let aiStatus = null;
       try {
-        const aiStatus = await window.api.getAiStatus();
+        aiStatus = await window.api.getAiStatus();
         aiEnabled = !!aiStatus?.enabled;
       } catch (e) {}
 
@@ -1449,14 +1451,18 @@
           aiToggle.disabled = false;
           aiToggle.closest('.farm-toggle-item')?.classList.remove('disabled');
           const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
-          if (subText) subText.textContent = 'Gemini Pro đã sẵn sàng';
+          if (subText) {
+            const providerName = aiStatus.provider || 'Groq';
+            const countStr = aiStatus.activeKeys > 1 ? ` (${aiStatus.activeKeys} keys xoay vòng)` : '';
+            subText.textContent = `${providerName} AI siêu tốc đã sẵn sàng${countStr}`;
+          }
           aiToggle.checked = !!this.settings.modes.ai;
         } else {
           aiToggle.checked = false;
           aiToggle.disabled = true;
           aiToggle.closest('.farm-toggle-item')?.classList.add('disabled');
           const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
-          if (subText) subText.textContent = 'Cần cấu hình GEMINI_API_KEY trong .env';
+          if (subText) subText.textContent = 'Cần cấu hình GROQ_API_KEYS trong .env';
         }
       }
 
