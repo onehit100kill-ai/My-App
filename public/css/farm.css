@@ -217,17 +217,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 12px;
   padding-top: env(safe-area-inset-top, 0);
-  gap: 8px;
+  gap: 6px;
   z-index: 10;
 }
 
 .farm-hud-left {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 90px;
+  min-width: 85px;
 }
 
 .farm-level-badge {
@@ -242,7 +243,7 @@
 
 .farm-xp-track {
   width: 100%;
-  max-width: 110px;
+  max-width: 100px;
   height: 6px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
@@ -258,23 +259,82 @@
   transition: width 0.3s ease;
 }
 
+/* TOOLTIP NHỎ HIỂN THỊ EXP & VẬT PHẨM MỞ TIẾP THEO (2 dòng) */
+.farm-level-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 250px;
+  max-width: 320px;
+  background: #1e293b;
+  border: 1.5px solid #38bdf8;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #f1f5f9;
+  animation: farmTooltipPop 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.farm-level-tooltip[hidden] {
+  display: none !important;
+}
+
+.farm-level-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 20px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent #38bdf8 transparent;
+}
+
+.farm-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.farm-tooltip-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.farm-tooltip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes farmTooltipPop {
+  0% { opacity: 0; transform: translateY(-4px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .farm-hud-center {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .farm-stat-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 4px;
+  padding: 3px 8px;
   background: var(--bg-surface-elevated, #21262d);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 999px;
   font-weight: 700;
-  font-size: 0.9rem;
-  min-height: 32px;
+  font-size: 0.82rem;
+  min-height: 28px;
+  white-space: nowrap;
 }
 
 .farm-stat-chip.farm-gold-chip {
@@ -283,6 +343,12 @@
 
 .farm-stat-chip.farm-fertilizer-chip {
   color: #a78bfa;
+}
+
+.farm-stat-chip.farm-food-chip {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.35);
 }
 
 .farm-bump-anim {
@@ -296,9 +362,9 @@
 }
 
 .farm-btn-icon {
-  width: 38px;
-  height: 38px;
-  min-height: 38px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
   border-radius: 50%;
   background: var(--bg-surface-elevated, #21262d);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
@@ -306,7 +372,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 16px;
   cursor: pointer;
   touch-action: manipulation;
   transition: transform 0.15s ease, background-color 0.15s ease;
@@ -321,99 +387,42 @@
   font-weight: 700;
 }
 
-/* 4. KHU VƯỜN CHÍNH & BẢN ĐỒ V2 (FARM FIELD & CANVAS) */
+/* 4. KHU VƯỜN CHÍNH: GIAO DIỆN CỐ ĐỊNH CUỘN DỌC ĐIỆN THOẠI */
 .farm-field {
   flex: 1;
   position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background-color: #1e3a17;
-}
-
-/* 4.1. ĐIỀU KHIỂN ZOOM */
-.farm-zoom-controls {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: rgba(22, 27, 34, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 6px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.farm-zoom-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.farm-zoom-btn:active {
-  transform: scale(0.92);
-  background: rgba(99, 102, 241, 0.4);
-}
-
-/* 4.2. VIEWPORT & CANVAS NÔNG TRẠI (~1200x900) */
-.farm-canvas-viewport {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-  touch-action: none;
-  user-select: none;
-  cursor: grab;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background-color: #1a3a14;
   background-image: url('../assets/farm/grass-tile.png');
   background-repeat: repeat;
   background-size: 64px 64px;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-}
-
-.farm-canvas-viewport.panning {
-  cursor: grabbing;
-}
-
-.farm-canvas {
-  width: 1200px;
-  min-height: 900px;
-  padding: 28px;
+  padding: 12px 10px 24px 10px;
   box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 560px 560px;
-  grid-template-rows: auto auto;
-  gap: 28px;
-  transform-origin: 0 0;
-  will-change: transform;
+}
+
+.farm-scroll-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
 }
 
 /* 4.3. KHU VỰC TRÊN BẢN ĐỒ (ZONES) */
 .farm-zone {
-  background: rgba(22, 27, 34, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  padding: 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(22, 27, 34, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  padding: 14px 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   box-sizing: border-box;
 }
 
@@ -421,39 +430,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .farm-zone-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #fbbf24;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .farm-zone-badge {
-  font-size: 0.75rem;
-  padding: 3px 8px;
+  font-size: 0.72rem;
+  padding: 2px 7px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  border-radius: 10px;
   color: #94a3b8;
+  font-weight: 600;
 }
 
-/* Lưới ô đất nông sản (Group B: điện thoại 4 cột ~78-84px, màn >=480px 5 cột) */
+/* Lưới ô đất nông sản: 16 Ô CỐ ĐỊNH (4 HÀNG x 4 CỘT) MỞ THEO CẤP */
 .farm-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   width: 100%;
-}
-
-@media (min-width: 480px) {
-  .farm-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-  }
+  box-sizing: border-box;
 }
 
 /* 5. TỪNG Ô ĐẤT (PLOT) */
@@ -805,7 +809,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 8px 12px;
   padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
   gap: 8px;
   z-index: 10;
@@ -817,51 +821,74 @@
   flex-direction: column;
   gap: 2px;
   color: var(--text-secondary, #8b949e);
-  font-size: 0.82rem;
-}
-
-.farm-bottom-center {
-  display: flex;
-  align-items: center;
-}
-
-.farm-btn-buy-fert {
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  touch-action: manipulation;
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.35);
-  transition: transform 0.15s ease;
-}
-
-.farm-btn-buy-fert:active {
-  transform: scale(0.95);
+  font-size: 0.8rem;
 }
 
 .farm-bottom-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.farm-btn-quests {
+.farm-btn-action {
   background: var(--bg-surface, #21262d);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
   color: #f1f5f9;
-  border-radius: var(--radius-md, 8px);
+  border-radius: 10px;
   padding: 7px 11px;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.farm-btn-action:active {
+  transform: scale(0.94);
+}
+
+.farm-btn-storage {
+  background: #1e293b;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+.farm-btn-quests {
+  color: #fbbf24;
+}
+
+/* NÚT SHOP: TO CHÚT, ICON MÀU NÂU VÀ NỀN VÀNG */
+.farm-btn-shop {
+  background: linear-gradient(135deg, #fef08a 0%, #facc15 50%, #eab308 100%);
+  color: #713f12; /* Màu nâu đậm */
+  border: 2px solid #ca8a04;
+  border-radius: 12px;
+  padding: 8px 16px;
+  min-height: 42px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(202, 138, 4, 0.45);
+  transition: transform 0.15s ease, filter 0.15s ease;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.farm-btn-shop:active {
+  transform: scale(0.94);
+}
+
+.farm-shop-icon {
+  font-size: 1.25rem;
+  color: #713f12;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.5));
 }
 
 /* 7. BOTTOM SHEET & MODAL REUSE */
@@ -1424,38 +1451,113 @@
   width: 100%;
 }
 
-.farm-tree-plot {
-  aspect-ratio: 1 / 1;
-  min-height: 105px;
-  background: rgba(22, 27, 34, 0.85);
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+/* 4.3. KHU CÂY ĂN QUẢ (CÓ SẴN TRÊN SÂN) */
+.farm-tree-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.farm-tree-card {
+  aspect-ratio: 1 / 1.15;
+  background: rgba(22, 27, 34, 0.9);
+  border-radius: 14px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 8px 6px;
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
   overflow: hidden;
-  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.15s ease, border-color 0.2s ease, opacity 0.2s ease;
+  box-sizing: border-box;
 }
 
-.farm-tree-plot:active {
+.farm-tree-card:active {
   transform: scale(0.96);
 }
 
-.farm-tree-plot.farm-plot-locked {
-  background: rgba(15, 23, 42, 0.75);
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  opacity: 0.75;
+/* CÂY ĂN QUẢ BỊ MỜ NẾU KO ĐỦ CẤP ĐỘ */
+.farm-tree-card.farm-tree-locked {
+  opacity: 0.42;
+  filter: grayscale(0.85);
+  background: rgba(15, 23, 42, 0.65);
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.farm-tree-card.farm-tree-locked:hover {
+  opacity: 0.6;
+}
+
+.farm-tree-card.farm-tree-ready {
+  border-color: #fbbf24;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.45);
+  animation: farmReadyPulse 2s infinite ease-in-out;
+}
+
+@keyframes farmReadyPulse {
+  0%, 100% { border-color: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
+  50% { border-color: #f59e0b; box-shadow: 0 0 18px rgba(245, 158, 11, 0.6); }
+}
+
+.farm-tree-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.farm-tree-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.farm-tree-lock-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.farm-tree-stage-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.farm-tree-visual {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
 }
 
 .farm-tree-sprite {
-  width: 68px;
-  height: 68px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -1463,25 +1565,49 @@
   transition: transform 0.2s ease;
 }
 
-.farm-tree-plot:hover .farm-tree-sprite {
+.farm-tree-card:not(.farm-tree-locked):hover .farm-tree-sprite {
   transform: scale(1.06);
 }
 
-.farm-tree-word-count {
-  position: absolute;
-  bottom: 5px;
-  left: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.75);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 10px;
-  color: #a5b4fc;
+.farm-tree-btn {
+  width: 100%;
+  padding: 5px 6px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  touch-action: manipulation;
+}
+
+.farm-tree-btn.btn-water {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+}
+
+.farm-tree-btn.btn-harvest {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.45);
+  animation: farm-bounce-soft 1.5s infinite alternate;
+}
+
+.farm-tree-cooldown {
+  font-size: 0.72rem;
+  color: #94a3b8;
   font-weight: 600;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.farm-tree-locked-hint {
+  font-size: 0.72rem;
+  color: #ef4444;
+  font-weight: 600;
 }
 
 /* 4.4. KHU CHĂN NUÔI (POULTRY PLACEHOLDER) */

@@ -171,21 +171,15 @@
     soundEnabled: true,
     harvestedTodayCount: 0,
     lastHarvestDate: '',
-    plots: [
-      { id: 1, state: 'empty' },
-      { id: 2, state: 'empty' },
-      { id: 3, state: 'empty' },
-      { id: 4, state: 'empty' },
-      { id: 5, state: 'empty' },
-      { id: 6, state: 'empty' }
-    ],
+    // 16 ô luống cây trồng tương ứng 4 hàng
+    plots: Array.from({ length: 16 }, (_, i) => ({ id: i + 1, state: 'empty' })),
+    // 5 cây ăn quả có sẵn trên sân
     treePlots: [
-      { id: 1, state: 'empty' },
-      { id: 2, state: 'empty' },
-      { id: 3, state: 'empty' },
-      { id: 4, state: 'empty' },
-      { id: 5, state: 'empty' },
-      { id: 6, state: 'empty' }
+      { id: 1, type: 'apple', stage: 1, cooldown: 0, hearts: 5, words: [] },
+      { id: 2, type: 'orange', stage: 1, cooldown: 0, hearts: 5, words: [] },
+      { id: 3, type: 'peach', stage: 1, cooldown: 0, hearts: 8, words: [] },
+      { id: 4, type: 'pear', stage: 1, cooldown: 0, hearts: 8, words: [] },
+      { id: 5, type: 'cherry', stage: 1, cooldown: 0, hearts: 10, words: [] }
     ],
     regrow: {},
     quests: {
@@ -213,10 +207,7 @@
     settings: null,
     tickInterval: null,
     activeQuiz: null, // { plotId, mode, word, failCount, isWormQuiz }
-    activeTreeQuiz: null, // { plotId, wordIndex, words, firstTryErrors }
-    activeTreePlanting: null, // { plotId, selectedTree, chosenWords }
-    zoom: 1.0,
-    pan: { x: 0, y: 0 },
+    activeTreeQuiz: null, // { treeType, wordIndex, words, firstTryErrors }
     cachedWordsPool: [],
     isOpen: false,
 
@@ -242,22 +233,30 @@
         this.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
       }
 
-      // Đảm bảo số lượng ô đất phù hợp level (tối thiểu 6, tối đa 20)
-      const expectedPlots = Math.min(20, 6 + (this.state.level - 1) * 2);
-      while (this.state.plots.length < expectedPlots) {
-        this.state.plots.push({ id: this.state.plots.length + 1, state: 'empty' });
+      // Đảm bảo đúng 16 ô đất nông sản (4 hàng x 4 cột)
+      if (!Array.isArray(this.state.plots)) {
+        this.state.plots = Array.from({ length: 16 }, (_, i) => ({ id: i + 1, state: 'empty' }));
+      } else {
+        while (this.state.plots.length < 16) {
+          this.state.plots.push({ id: this.state.plots.length + 1, state: 'empty' });
+        }
+        if (this.state.plots.length > 16) {
+          this.state.plots = this.state.plots.slice(0, 16);
+        }
       }
 
       if (this.state.food === undefined) this.state.food = 5;
       if (!this.state.foodStorage) this.state.foodStorage = {};
-      if (!Array.isArray(this.state.treePlots) || this.state.treePlots.length < 6) {
+
+      // Đảm bảo 5 cây ăn quả có sẵn trên sân
+      const validTypes = ['apple', 'orange', 'peach', 'pear', 'cherry'];
+      if (!Array.isArray(this.state.treePlots) || this.state.treePlots.length !== 5 || !this.state.treePlots.every(t => validTypes.includes(t.type))) {
         this.state.treePlots = [
-          { id: 1, state: 'empty' },
-          { id: 2, state: 'empty' },
-          { id: 3, state: 'empty' },
-          { id: 4, state: 'empty' },
-          { id: 5, state: 'empty' },
-          { id: 6, state: 'empty' }
+          { id: 1, type: 'apple', stage: 1, cooldown: 0, hearts: 5, words: [] },
+          { id: 2, type: 'orange', stage: 1, cooldown: 0, hearts: 5, words: [] },
+          { id: 3, type: 'peach', stage: 1, cooldown: 0, hearts: 8, words: [] },
+          { id: 4, type: 'pear', stage: 1, cooldown: 0, hearts: 8, words: [] },
+          { id: 5, type: 'cherry', stage: 1, cooldown: 0, hearts: 10, words: [] }
         ];
       }
 
@@ -760,23 +759,42 @@
       this.renderTreeGrid();
     },
 
+    // =========================================================================
+    // 5. RENDER CÁC KHU ĐẤT TRÊN NÔNG TRẠI
+    // =========================================================================
     renderCropGrid() {
       const grid = document.getElementById('farm-grid');
       if (!grid) return;
 
       const now = Date.now();
-      const unlockedCount = Math.min(20, 6 + (this.state.level - 1) * 2);
-      const unlockedPlots = this.state.plots.slice(0, unlockedCount);
+      let html = '';
 
-      const plotsHtml = unlockedPlots.map(plot => {
+      for (let i = 0; i < 16; i++) {
+        const row = Math.floor(i / 4);
+        const reqLevel = row + 1; // Hàng 1: Cấp 1, Hàng 2: Cấp 2, Hàng 3: Cấp 3, Hàng 4: Cấp 4
+        const isLocked = (this.state.level || 1) < reqLevel;
+
+        if (isLocked) {
+          html += `
+            <div class="farm-plot farm-plot-locked" data-locked-req-level="${reqLevel}" data-locked-plot-idx="${i + 1}" title="Cần Cấp ${reqLevel} để mở ô này">
+              <div class="farm-locked-icon">🔒</div>
+              <div class="farm-locked-label">Cấp ${reqLevel}</div>
+            </div>
+          `;
+          continue;
+        }
+
+        const plot = this.state.plots[i] || { id: i + 1, state: 'empty' };
+
         if (plot.state === 'empty') {
-          return `
+          html += `
             <div class="farm-plot farm-plot-empty" data-plot-id="${plot.id}">
               <img class="farm-plot-soil-bg" src="assets/farm/soil-empty.png" onerror="this.style.display='none'" alt="soil">
               <span class="farm-empty-plus">+</span>
-              <span class="farm-empty-label">Chạm để gieo</span>
+              <span class="farm-empty-label">Chạm gieo</span>
             </div>
           `;
+          continue;
         }
 
         const crop = CROP_TYPES[plot.cropType] || CROP_TYPES.radish;
@@ -801,17 +819,17 @@
 
         // Tim máu cây
         let heartsHtml = '';
-        for (let i = 0; i < plot.maxHp; i++) {
-          heartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+        for (let h = 0; h < plot.maxHp; h++) {
+          heartsHtml += h < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
         }
 
         // Chấm tiến độ giai đoạn
         let dotsHtml = '';
-        for (let i = 0; i < plot.stagesNeeded; i++) {
-          dotsHtml += i < plot.stage ? '●' : '○';
+        for (let d = 0; d < plot.stagesNeeded; d++) {
+          dotsHtml += d < plot.stage ? '●' : '○';
         }
 
-        return `
+        html += `
           <div class="${classes.join(' ')}" data-plot-id="${plot.id}">
             <!-- Nền đất -->
             <img class="farm-plot-soil-bg" src="assets/farm/soil-empty.png" onerror="this.style.display='none'" alt="soil">
@@ -882,135 +900,70 @@
             ` : ''}
           </div>
         `;
-      }).join('');
-
-      // Lưới luôn hiện thêm 4 ô khoá tiếp theo (Group B)
-      const maxLockedPlots = Math.min(20, unlockedCount + 4);
-      let lockedHtml = '';
-      for (let i = unlockedCount + 1; i <= maxLockedPlots; i++) {
-        const reqLevel = 1 + Math.ceil((i - 6) / 2);
-        lockedHtml += `
-          <div class="farm-plot farm-plot-locked" data-locked-req-level="${reqLevel}" data-locked-plot-idx="${i}" title="Cần Cấp ${reqLevel} để mở ô này">
-            <div class="farm-locked-icon">🔒</div>
-            <div class="farm-locked-label">Cấp ${reqLevel}</div>
-          </div>
-        `;
       }
 
-      grid.innerHTML = plotsHtml + lockedHtml;
+      grid.innerHTML = html;
     },
 
-    // 5.10. RENDER KHU CÂY ĂN QUẢ (Group C)
+    // 5.10. RENDER KHU CÂY ĂN QUẢ (CÓ SẴN TRÊN SÂN, BỊ MỜ NẾU CHƯA ĐỦ CẤP)
     renderTreeGrid() {
       const grid = document.getElementById('farm-tree-grid');
       if (!grid) return;
 
-      const now = Date.now();
-      const unlockedTrees = this.getUnlockedTreePlotsCount();
+      const treeTypes = ['apple', 'orange', 'peach', 'pear', 'cherry'];
+      const currentLevel = this.state.level || 1;
 
-      grid.innerHTML = this.state.treePlots.map((plot, idx) => {
-        const plotNum = idx + 1;
-        const reqLevel = this.getReqLevelForTreePlot(plotNum);
-        const isLocked = plotNum > unlockedTrees;
+      grid.innerHTML = treeTypes.map(type => {
+        const def = FRUIT_TREES[type];
+        if (!def) return '';
 
-        if (isLocked) {
-          return `
-            <div class="farm-tree-plot farm-plot-locked" data-tree-locked-level="${reqLevel}" title="Cần Cấp ${reqLevel} để mở ô cây ăn quả này">
-              <div class="farm-locked-icon">🔒</div>
-              <div class="farm-locked-label">Cấp ${reqLevel}</div>
-            </div>
-          `;
+        let treeState = this.state.treePlots.find(t => t.type === type);
+        if (!treeState) {
+          treeState = { type, stage: 1, cooldown: 0, hearts: def.maxHp, words: [] };
+          this.state.treePlots.push(treeState);
         }
 
-        if (plot.state === 'empty') {
-          return `
-            <div class="farm-tree-plot farm-plot-empty" data-tree-plot-id="${plot.id}">
-              <img class="farm-plot-soil-bg" src="assets/farm/soil-empty.png" onerror="this.style.display='none'" alt="soil">
-              <span class="farm-empty-plus">🌳</span>
-              <span class="farm-empty-label">Trồng cây</span>
-            </div>
-          `;
-        }
+        const isLocked = currentLevel < def.unlockLevel;
+        const isReady = !isLocked && (treeState.stage || 1) >= 3;
+        const isCooldown = !isLocked && (treeState.cooldown || 0) > 0;
+        const stageIdx = Math.min(2, Math.max(0, (treeState.stage || 1) - 1));
+        const spriteSrc = def.sprites[stageIdx];
 
-        const treeConf = FRUIT_TREES[plot.treeType] || FRUIT_TREES.apple;
-        const isCooldown = plot.cooldownUntil && plot.cooldownUntil > now;
-        const cooldownRemaining = isCooldown ? Math.ceil((plot.cooldownUntil - now) / 1000) : 0;
-        const isReady = plot.stage >= 3;
-        const isWithered = plot.state === 'withered' || plot.hp <= 0;
-
-        const classes = ['farm-tree-plot'];
-        if (isWithered) classes.push('farm-plot-withered');
-        else if (isReady) classes.push('farm-plot-ready');
-        else if (isCooldown) classes.push('farm-plot-cooling');
-
-        const stageIdx = Math.min(2, Math.max(0, (plot.stage || 1) - 1));
-        const spriteSrc = isWithered ? 'assets/farm/crop-withered.png' : treeConf.sprites[stageIdx];
-
-        let heartsHtml = '';
-        for (let i = 0; i < treeConf.maxHp; i++) {
-          heartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
-        }
-
-        let dotsHtml = '';
-        for (let i = 0; i < 3; i++) {
-          dotsHtml += i < plot.stage ? '●' : '○';
-        }
+        const cardClasses = ['farm-tree-card'];
+        if (isLocked) cardClasses.push('farm-tree-locked');
+        if (isReady) cardClasses.push('farm-tree-ready');
 
         return `
-          <div class="${classes.join(' ')}" data-tree-plot-id="${plot.id}">
-            <img class="farm-plot-soil-bg" src="assets/farm/soil-empty.png" onerror="this.style.display='none'" alt="soil">
+          <div class="${cardClasses.join(' ')}" data-tree-type="${type}" title="${isLocked ? `Cần Cấp ${def.unlockLevel} để mở Cây ${def.name}` : `Cây ${def.name}`}">
+            <div class="farm-tree-header">
+              <span class="farm-tree-name">${def.icon} Cây ${def.name}</span>
+              ${isLocked 
+                ? `<span class="farm-tree-lock-badge">🔒 Cấp ${def.unlockLevel}</span>`
+                : isReady 
+                  ? `<span class="farm-tree-stage-badge" style="background:rgba(245,158,11,0.25); color:#fde047;">🧺 Chín rộ</span>`
+                  : isCooldown 
+                    ? `<span class="farm-tree-stage-badge" style="background:rgba(148,163,184,0.2); color:#cbd5e1;">⏳ ${treeState.cooldown}s</span>`
+                    : `<span class="farm-tree-stage-badge">🌱 Giai đoạn ${treeState.stage}/3</span>`
+              }
+            </div>
 
-            ${!isWithered ? `
-              <div class="farm-plot-header-bar">
-                <div class="farm-plot-hearts">${heartsHtml}</div>
-                <div class="farm-plot-progress-dots">${dotsHtml}</div>
-              </div>
-            ` : ''}
+            <div class="farm-tree-visual">
+              <img class="farm-tree-sprite" src="${spriteSrc}" alt="${def.name}">
+            </div>
 
-            ${!isCooldown && !isReady && !isWithered ? `
-              <div class="farm-water-badge" title="Tưới cây ăn quả">💧</div>
-            ` : ''}
-
-            ${isReady && !isWithered ? `
-              <div class="farm-basket-badge" title="Thu hoạch quả">🧺</div>
-            ` : ''}
-
-            <img class="farm-tree-sprite" src="${spriteSrc}" alt="${treeConf.name}">
-
-            <div class="farm-tree-word-count">🌳 ${plot.words ? plot.words.length : 0} từ</div>
-
-            ${isCooldown && !isReady && !isWithered ? `
-              <div class="farm-cooling-overlay">
-                <span class="farm-cooling-timer">${cooldownRemaining}s</span>
-              </div>
-            ` : ''}
-
-            ${isWithered ? `
-              <div class="farm-clean-overlay">
-                <span class="farm-withered-text">Cây đã héo</span>
-                <button type="button" class="btn btn-secondary farm-btn-clean" data-clean-tree-id="${plot.id}">Dọn</button>
-              </div>
-            ` : ''}
+            <div style="width:100%; text-align:center;">
+              ${isLocked 
+                ? `<div class="farm-tree-locked-hint">Mở ở Cấp ${def.unlockLevel}</div>`
+                : isReady 
+                  ? `<button type="button" class="farm-tree-btn btn-harvest" data-harvest-tree="${type}">🧺 Thu hoạch (+${def.yieldFood} 🍞)</button>`
+                  : isCooldown 
+                    ? `<div class="farm-tree-cooldown">Đang hồi sức (${treeState.cooldown}s)</div>`
+                    : `<button type="button" class="farm-tree-btn btn-water" data-water-tree="${type}">💧 Tưới (${(treeState.words && treeState.words.length) ? treeState.words.length : def.maxWords} từ)</button>`
+              }
+            </div>
           </div>
         `;
       }).join('');
-    },
-
-    getUnlockedTreePlotsCount() {
-      const lvl = this.state.level || 1;
-      if (lvl < 2) return 2;
-      if (lvl < 4) return 3;
-      if (lvl < 6) return 4;
-      if (lvl < 8) return 5;
-      return 6;
-    },
-
-    getReqLevelForTreePlot(index) {
-      if (index <= 2) return 1;
-      if (index === 3) return 2;
-      if (index === 4) return 4;
-      if (index === 5) return 6;
-      return 8;
     },
 
     getMissingXpForLevel(targetLevel) {
@@ -1055,10 +1008,11 @@
       });
 
       if (this.state.treePlots) {
-        this.state.treePlots.forEach(plot => {
-          if (plot.cooldownUntil && plot.cooldownUntil > 0) {
-            if (now >= plot.cooldownUntil) {
-              plot.cooldownUntil = 0;
+        this.state.treePlots.forEach(tree => {
+          if (tree.cooldown && tree.cooldown > 0) {
+            tree.cooldown -= 1;
+            if (tree.cooldown <= 0) {
+              tree.cooldown = 0;
               needsRerender = true;
             }
           }
@@ -1080,6 +1034,15 @@
             const barEl = plotEl.querySelector('.farm-cooling-bar');
             if (timerEl) timerEl.textContent = `${remaining}s`;
             if (barEl) barEl.style.width = `${(remaining / crop.cooldownSec) * 100}%`;
+          }
+        });
+
+        document.querySelectorAll('.farm-tree-cooldown').forEach(cdEl => {
+          const card = cdEl.closest('.farm-tree-card');
+          const type = card?.getAttribute('data-tree-type');
+          const tree = this.state.treePlots.find(t => t.type === type);
+          if (tree && tree.cooldown > 0) {
+            cdEl.textContent = `Đang hồi sức (${tree.cooldown}s)`;
           }
         });
       }
@@ -1851,50 +1814,63 @@
     },
 
     // =========================================================================
-    // XEM THÔNG TIN CẤP ĐỘ & XP (Group A)
+    // XEM THÔNG TIN CẤP ĐỘ & XP (Tooltip nhỏ 2 dòng: EXP 1 dòng, Vật phẩm 1 dòng)
     // =========================================================================
-    openLevelInfoModal() {
-      const modal = document.getElementById('farm-sheet-level-info');
-      const body = document.getElementById('farm-level-info-body');
-      if (!modal || !body) return;
+    toggleLevelTooltip() {
+      const tooltip = document.getElementById('farm-level-tooltip');
+      if (!tooltip) return;
+
+      if (!tooltip.hasAttribute('hidden')) {
+        tooltip.setAttribute('hidden', '');
+        return;
+      }
 
       const lvl = this.state.level || 1;
       const curXp = this.state.xp || 0;
       const nextXp = 20 + lvl * 10;
       const missingXp = Math.max(0, nextXp - curXp);
-      const pct = Math.min(100, Math.round((curXp / nextXp) * 100));
 
-      let treeUnlockInfo = '';
       const nextLvl = lvl + 1;
-      if (nextLvl === 2) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍊 Cam';
-      else if (nextLvl === 4) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍑 Đào';
-      else if (nextLvl === 6) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍐 Lê';
-      else if (nextLvl === 8) treeUnlockInfo = '• 🌳 +1 ô cây ăn quả & Mở khóa giống cây 🍒 Anh đào';
+      let rewardIcon = '🎁';
+      let rewardText = '';
+      if (nextLvl === 2) {
+        rewardIcon = '🪴';
+        rewardText = '+4 Ô đất Hàng 2 & 🍊 Cây Cam';
+      } else if (nextLvl === 3) {
+        rewardIcon = '🪴';
+        rewardText = '+4 Ô đất Hàng 3';
+      } else if (nextLvl === 4) {
+        rewardIcon = '🪴';
+        rewardText = '+4 Ô đất Hàng 4 & 🍑 Cây Đào';
+      } else if (nextLvl === 5) {
+        rewardIcon = '🪙';
+        rewardText = '+50 Vàng & Tăng sản lượng';
+      } else if (nextLvl === 6) {
+        rewardIcon = '🍐';
+        rewardText = 'Cây Lê (12 từ, Siêu cấp)';
+      } else if (nextLvl === 7) {
+        rewardIcon = '🪙';
+        rewardText = '+100 Vàng & Tăng bonus';
+      } else if (nextLvl === 8) {
+        rewardIcon = '🍒';
+        rewardText = 'Cây Anh Đào (Sử thi 15 từ)';
+      } else {
+        rewardIcon = '👑';
+        rewardText = 'Đạt cấp độ tối đa!';
+      }
 
-      body.innerHTML = `
-        <div class="farm-level-card-info">
-          <div class="farm-level-huge-badge">🌱 Cấp Hiện Tại: Cấp ${lvl}</div>
-          
-          <div style="margin: 12px 0 6px 0; font-size: 0.95rem; color: #94a3b8;">Tiến độ kinh nghiệm:</div>
-          <div class="farm-xp-track" style="height: 14px; margin: 0 auto 8px auto; max-width: 280px;">
-            <div class="farm-xp-bar" style="width: ${pct}%;"></div>
-          </div>
-          <div style="font-weight: 700; color: #a5b4fc; font-size: 0.9rem;">${curXp} / ${nextXp} XP (${pct}%)</div>
+      const xpEl = document.getElementById('farm-tooltip-xp-line');
+      const rewardEl = document.getElementById('farm-tooltip-reward-line');
+      const rewardIconEl = document.getElementById('farm-tooltip-reward-icon');
+      if (xpEl) xpEl.textContent = `EXP: ${curXp} / ${nextXp} XP (còn thiếu ${missingXp} XP)`;
+      if (rewardEl) rewardEl.textContent = `Cấp ${nextLvl} mở: ${rewardText}`;
+      if (rewardIconEl) rewardIconEl.textContent = rewardIcon;
 
-          <div class="farm-level-xp-needed-callout">
-            Cần thêm <b style="color: #fbbf24;">${missingXp} XP</b> nữa để lên <b style="color: #34d399;">Cấp ${nextLvl}</b>
-          </div>
+      tooltip.removeAttribute('hidden');
+    },
 
-          <div class="farm-level-rewards-list">
-            <div style="font-weight: 700; color: #fbbf24; margin-bottom: 8px;">🎁 Phần thưởng Cấp ${nextLvl}:</div>
-            <div class="farm-level-reward-item">🌱 +2 ô đất nông sản mới</div>
-            <div class="farm-level-reward-item">🪙 +20 vàng</div>
-            ${treeUnlockInfo ? `<div class="farm-level-reward-item" style="color:#38bdf8;">${treeUnlockInfo}</div>` : ''}
-          </div>
-        </div>
-      `;
-
-      modal.classList.add('active');
+    openLevelInfoModal() {
+      this.toggleLevelTooltip();
     },
 
     // =========================================================================
@@ -2152,56 +2128,64 @@
       }
     },
 
-    handleTreePlotClick(plotId) {
-      const plot = this.state.treePlots.find(p => p.id === plotId);
-      if (!plot) return;
+    handleFruitTreeClick(treeType) {
+      const def = FRUIT_TREES[treeType];
+      if (!def) return;
 
-      if (plot.state === 'empty') {
-        this.openFruitTreeModal(plotId);
+      const isLocked = (this.state.level || 1) < def.unlockLevel;
+      if (isLocked) {
+        this.showLockedTreeToast(def);
         return;
       }
 
-      if (plot.state === 'ready') {
-        this.harvestTree(plotId);
+      let tree = this.state.treePlots.find(t => t.type === treeType);
+      if (!tree) {
+        tree = { type: treeType, stage: 1, cooldown: 0, hearts: def.maxHp, words: [] };
+        this.state.treePlots.push(tree);
+      }
+
+      if ((tree.stage || 1) >= 3) {
+        this.harvestFruitTree(treeType);
         return;
       }
 
-      if (plot.state === 'withered' || plot.hp <= 0) {
-        this.cleanTreePlot(plotId);
-        return;
-      }
-
-      const now = Date.now();
-      const isCooldown = plot.cooldownUntil && plot.cooldownUntil > now;
-      if (isCooldown) {
-        const remaining = Math.ceil((plot.cooldownUntil - now) / 1000);
+      if ((tree.cooldown || 0) > 0) {
         if (this.state.fertilizer > 0) {
-          if (confirm(`Cây đang nghỉ ngơi (còn ${remaining}s). Bạn có muốn dùng 1 🧪 phân bón để tưới ngay không?`)) {
+          if (confirm(`Cây ${def.name} đang hồi sức (còn ${tree.cooldown}s). Bạn có muốn dùng 1 🧪 phân bón để tưới ngay không?`)) {
             this.state.fertilizer -= 1;
-            plot.cooldownUntil = 0;
+            tree.cooldown = 0;
             this.saveState();
             this.render();
-            this.startFruitTreeQuiz(plotId);
+            this.startFruitTreeQuiz(treeType);
           }
         } else {
-          if (window.showToast) window.showToast(`Cây đang nghỉ ngơi (còn ${remaining}s). Mua phân bón trong Shop để tưới ngay!`);
+          if (window.showToast) {
+            window.showToast(`Cây ${def.name} đang hồi sức (${tree.cooldown}s). Mua phân bón trong Shop để tưới ngay!`);
+          }
         }
         return;
       }
 
       // Tưới cây
-      this.startFruitTreeQuiz(plotId);
+      this.startFruitTreeQuiz(treeType);
     },
 
-    startFruitTreeQuiz(plotId) {
-      const plot = this.state.treePlots.find(p => p.id === plotId);
-      if (!plot || !plot.words || plot.words.length === 0) return;
+    startFruitTreeQuiz(treeType) {
+      let tree = this.state.treePlots.find(t => t.type === treeType);
+      const def = FRUIT_TREES[treeType];
+      if (!tree) {
+        tree = { type: treeType, stage: 1, cooldown: 0, hearts: def.maxHp, words: [] };
+        this.state.treePlots.push(tree);
+      }
 
-      const treeConf = FRUIT_TREES[plot.treeType];
+      if (!tree.words || tree.words.length === 0) {
+        tree.words = this.pickMultipleRandomWords(def.maxWords);
+      }
+
       this.activeTreeQuiz = {
-        plotId,
+        treeType,
         wordIndex: 0,
-        words: plot.words,
+        words: tree.words,
         firstTryErrors: {}
       };
 
@@ -2216,31 +2200,29 @@
       if (!sheet || !this.activeTreeQuiz) return;
 
       const q = this.activeTreeQuiz;
-      const plot = this.state.treePlots.find(p => p.id === q.plotId);
-      const treeConf = FRUIT_TREES[plot.treeType];
+      const def = FRUIT_TREES[q.treeType];
+      const tree = this.state.treePlots.find(t => t.type === q.treeType) || {};
 
       if (titleEl) {
-        titleEl.textContent = `Tưới Cây ${treeConf.name} — Từ ${q.wordIndex + 1}/${q.words.length}`;
+        titleEl.textContent = `Tưới Cây ${def.name} — Câu ${q.wordIndex + 1}/${q.words.length}`;
       }
 
-      // Render hearts & progress
       let plantHeartsHtml = '';
-      for (let i = 0; i < treeConf.maxHp; i++) {
-        plantHeartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+      for (let i = 0; i < def.maxHp; i++) {
+        plantHeartsHtml += i < (tree.hearts || def.maxHp) ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
       }
 
       statusEl.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
           <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml}</div>
           <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
-            Giai đoạn: ${plot.stage}/3 • Từ ${q.wordIndex + 1}/${q.words.length}
+            Giai đoạn: ${tree.stage || 1}/3 • Câu ${q.wordIndex + 1}/${q.words.length}
           </span>
         </div>
       `;
 
       const currentWord = q.words[q.wordIndex];
 
-      // Chọn ngẫu nhiên 1 trong các chế độ học đang bật
       const availableModes = [];
       if (this.settings.modes.choice) availableModes.push('choice');
       if (this.settings.modes.typing) availableModes.push('typing');
@@ -2274,7 +2256,6 @@
           <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
         `;
       } else {
-        // Choice
         const options = this.generateDistractors(currentWord, this.cachedWordsPool);
         quizHtml = `
           <div class="farm-quiz-prompt-card">
@@ -2329,13 +2310,13 @@
     handleFruitQuizAnswer(isCorrect) {
       if (!this.activeTreeQuiz) return;
       const q = this.activeTreeQuiz;
-      const plot = this.state.treePlots.find(p => p.id === q.plotId);
-      const treeConf = FRUIT_TREES[plot.treeType];
+      const def = FRUIT_TREES[q.treeType];
+      const tree = this.state.treePlots.find(t => t.type === q.treeType);
       const currentWord = q.words[q.wordIndex];
 
       if (isCorrect) {
         this.playSound('correct');
-        if (!q.firstTryErrors[currentWord.id]) {
+        if (!q.firstTryErrors[currentWord.id || currentWord.word]) {
           this.gainXp(5);
         }
 
@@ -2343,195 +2324,84 @@
         if (q.wordIndex < q.words.length) {
           this.renderFruitTreeQuizModal();
         } else {
-          plot.stage += 1;
-          if (plot.stage >= 3) {
-            plot.state = 'ready';
-            plot.cooldownUntil = 0;
-          } else {
-            plot.cooldownUntil = Date.now() + treeConf.cooldownSec * 1000;
-          }
-
-          this.state.quests.watered += 1;
-          this.saveState();
-          this.render();
-          this.playSound('pop');
-
+          // Hoàn thành tưới đủ từ của giai đoạn này
+          tree.stage = (tree.stage || 1) + 1;
           const sheet = document.getElementById('farm-sheet-fruit-quiz');
-          sheet?.classList.remove('active');
+          if (sheet) sheet.classList.remove('active');
           this.activeTreeQuiz = null;
 
-          if (window.showToast) {
-            window.showToast(plot.stage >= 3 ? `🎉 Cây ${treeConf.name} đã chín quả! Bạn có thể thu hoạch!` : `💧 Tưới xong câu đố! Cây ${treeConf.name} đã lớn lên giai đoạn ${plot.stage}!`);
+          this.playSound('pop');
+          this.state.quests.watered = (this.state.quests.watered || 0) + 1;
+
+          if (tree.stage >= 3) {
+            tree.stage = 3;
+            tree.cooldown = 0;
+            if (window.showToast) {
+              window.showToast(`🎉 Trái ${def.name} đã chín rộ! Hãy chạm vào cây để thu hoạch!`);
+            }
+          } else {
+            tree.cooldown = def.cooldownSec || 30;
+            if (window.showToast) {
+              window.showToast(`💧 Cây ${def.name} đã được tưới đủ nước, lớn lên Giai đoạn ${tree.stage}/3!`);
+            }
           }
+
+          this.saveState();
+          this.render();
         }
       } else {
         this.playSound('wrong');
-        q.firstTryErrors[currentWord.id] = (q.firstTryErrors[currentWord.id] || 0) + 1;
-        plot.hp -= 1;
-
-        if (plot.hp <= 0) {
-          plot.hp = 0;
-          plot.state = 'withered';
-          this.saveState();
-          this.render();
-
-          const sheet = document.getElementById('farm-sheet-fruit-quiz');
-          sheet?.classList.remove('active');
-          this.activeTreeQuiz = null;
-
-          if (window.showToast) window.showToast(`🥀 Cây ${treeConf.name} đã bị héo do hết máu! Hãy dọn dẹp để trồng cây mới.`);
-          return;
-        }
+        q.firstTryErrors[currentWord.id || currentWord.word] = true;
+        tree.hearts = Math.max(1, (tree.hearts || def.maxHp) - 1);
 
         this.saveState();
-        if (window.showToast) window.showToast(`Trả lời sai! Cây mất 1 máu (còn ${plot.hp}/${treeConf.maxHp} ❤️)`);
         this.renderFruitTreeQuizModal();
+
+        if (window.showToast) {
+          window.showToast(`Trả lời sai! Cây ${def.name} mất 1 máu (còn ${tree.hearts}/${def.maxHp} ❤️)`);
+        }
       }
     },
 
-    harvestTree(plotId) {
-      const plot = this.state.treePlots.find(p => p.id === plotId);
-      if (!plot || plot.state !== 'ready') return;
+    harvestFruitTree(treeType) {
+      const tree = this.state.treePlots.find(t => t.type === treeType);
+      const def = FRUIT_TREES[treeType];
+      if (!tree || !def) return;
 
-      const treeConf = FRUIT_TREES[plot.treeType];
       const bonusChance = (this.state.level || 1) * 0.05;
       const bonusFood = Math.random() < bonusChance ? 1 : 0;
-      const foodYield = treeConf.yieldFood + bonusFood;
+      const foodYield = def.yieldFood + bonusFood;
 
       this.state.food = (this.state.food || 0) + foodYield;
       if (!this.state.foodStorage) this.state.foodStorage = {};
-      this.state.foodStorage[plot.treeType] = (this.state.foodStorage[plot.treeType] || 0) + 1;
+      this.state.foodStorage[treeType] = (this.state.foodStorage[treeType] || 0) + 1;
 
-      this.gainXp(treeConf.rewardXp);
+      this.gainXp(def.rewardXp);
       this.state.harvestedTodayCount = (this.state.harvestedTodayCount || 0) + 1;
-      this.state.quests.harvested += 1;
+      this.state.quests.harvested = (this.state.quests.harvested || 0) + 1;
 
-      // Reset tree plot to empty
-      plot.state = 'empty';
-      plot.treeType = null;
-      plot.words = [];
-      plot.stage = 0;
-      plot.hp = 0;
-      plot.cooldownUntil = 0;
+      // Cây hồi sinh về giai đoạn 1, chờ cooldown để chu kỳ sau tiếp tục lớn
+      tree.stage = 1;
+      tree.hearts = def.maxHp;
+      tree.cooldown = def.cooldownSec || 30;
+      tree.words = this.pickMultipleRandomWords(def.maxWords);
 
       this.saveState();
       this.render();
       this.playSound('ting');
 
       this.showHarvestToast({
-        word: `Trái ${treeConf.name}`,
-        meaning: `Độ hiếm: ${treeConf.rarity}`,
+        word: `Trái ${def.name}`,
+        meaning: `Độ hiếm: ${def.rarity}`,
         foodYield: foodYield,
-        rewardXp: treeConf.rewardXp
+        rewardXp: def.rewardXp
       });
     },
 
-    // =========================================================================
-    // ZOOM & PAN BẢN ĐỒ NÔNG TRẠI V2 (Group C)
-    // =========================================================================
-    initZoomAndPan() {
-      const viewport = document.getElementById('farm-canvas-viewport');
-      const canvas = document.getElementById('farm-canvas');
-      if (!viewport || !canvas || this._zoomPanInited) return;
-      this._zoomPanInited = true;
-
-      this.zoom = window.innerWidth < 640 ? 0.75 : 1.0;
-      this.pan = { x: 0, y: 0 };
-      this.updateCanvasTransform();
-
-      document.getElementById('farm-btn-zoom-in')?.addEventListener('click', () => {
-        this.zoom = Math.min(1.5, Math.round((this.zoom + 0.15) * 100) / 100);
-        this.updateCanvasTransform();
-      });
-
-      document.getElementById('farm-btn-zoom-out')?.addEventListener('click', () => {
-        this.zoom = Math.max(0.6, Math.round((this.zoom - 0.15) * 100) / 100);
-        this.updateCanvasTransform();
-      });
-
-      document.getElementById('farm-btn-zoom-reset')?.addEventListener('click', () => {
-        this.zoom = window.innerWidth < 640 ? 0.75 : 1.0;
-        this.pan = { x: 0, y: 0 };
-        this.updateCanvasTransform();
-      });
-
-      // Drag Pan & Pinch Zoom
-      let isPanning = false;
-      let startX = 0, startY = 0;
-      let initialPanX = 0, initialPanY = 0;
-      let startPinchDist = 0;
-      let startPinchZoom = 1.0;
-
-      const onPointerDown = (e) => {
-        if (e.target.closest('.farm-plot') || e.target.closest('.farm-tree-plot') || e.target.closest('button')) {
-          return;
-        }
-
-        if (e.pointerType === 'touch' && !e.isPrimary) return;
-
-        isPanning = true;
-        viewport.classList.add('panning');
-        startX = e.clientX;
-        startY = e.clientY;
-        initialPanX = this.pan.x;
-        initialPanY = this.pan.y;
-        viewport.setPointerCapture?.(e.pointerId);
-      };
-
-      const onPointerMove = (e) => {
-        if (!isPanning) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        this.pan.x = initialPanX + dx;
-        this.pan.y = initialPanY + dy;
-        this.updateCanvasTransform();
-      };
-
-      const onPointerUp = (e) => {
-        if (isPanning) {
-          isPanning = false;
-          viewport.classList.remove('panning');
-        }
-      };
-
-      viewport.addEventListener('pointerdown', onPointerDown);
-      viewport.addEventListener('pointermove', onPointerMove);
-      viewport.addEventListener('pointerup', onPointerUp);
-      viewport.addEventListener('pointercancel', onPointerUp);
-
-      viewport.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-          isPanning = false;
-          viewport.classList.remove('panning');
-          const t1 = e.touches[0];
-          const t2 = e.touches[1];
-          startPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-          startPinchZoom = this.zoom;
-        }
-      }, { passive: true });
-
-      viewport.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && startPinchDist > 0) {
-          const t1 = e.touches[0];
-          const t2 = e.touches[1];
-          const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-          const factor = dist / startPinchDist;
-          this.zoom = Math.min(1.5, Math.max(0.6, Math.round(startPinchZoom * factor * 100) / 100));
-          this.updateCanvasTransform();
-        }
-      }, { passive: true });
-
-      viewport.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2) {
-          startPinchDist = 0;
-        }
-      }, { passive: true });
-    },
-
-    updateCanvasTransform() {
-      const canvas = document.getElementById('farm-canvas');
-      if (canvas) {
-        canvas.style.transform = `translate(${this.pan.x}px, ${this.pan.y}px) scale(${this.zoom})`;
+    showLockedTreeToast(def) {
+      const missingXp = this.getMissingXpForLevel(def.unlockLevel);
+      if (window.showToast) {
+        window.showToast(`Cần lên Cấp ${def.unlockLevel} để mở Cây ${def.name} (còn thiếu ${missingXp} XP)!`);
       }
     },
 
@@ -2767,25 +2637,14 @@
       });
 
       // 1b. Chạm ô cây ăn quả (Event Delegation - Group C)
+      // 1b. Chạm ô cây ăn quả (Cây có sẵn trên sân)
       document.getElementById('farm-tree-grid')?.addEventListener('click', (e) => {
-        const cleanBtn = e.target.closest('[data-clean-tree-id]');
-        if (cleanBtn) {
-          const id = parseInt(cleanBtn.getAttribute('data-clean-tree-id'), 10);
-          this.cleanTreePlot(id);
-          return;
-        }
-
-        const lockedTree = e.target.closest('.farm-tree-plot.farm-plot-locked');
-        if (lockedTree) {
-          const reqLevel = parseInt(lockedTree.getAttribute('data-tree-locked-level'), 10);
-          this.showLockedTreePlotToast(reqLevel);
-          return;
-        }
-
-        const treePlotEl = e.target.closest('.farm-tree-plot');
-        if (treePlotEl) {
-          const id = parseInt(treePlotEl.getAttribute('data-tree-plot-id'), 10);
-          this.handleTreePlotClick(id);
+        const treeCard = e.target.closest('.farm-tree-card');
+        if (treeCard) {
+          const type = treeCard.getAttribute('data-tree-type');
+          if (type) {
+            this.handleFruitTreeClick(type);
+          }
         }
       });
 
@@ -2798,14 +2657,31 @@
         this.renderHUD();
       });
 
-      // Bấm huy hiệu cấp độ hoặc thanh XP mở thông tin Level & XP (Group A)
-      document.getElementById('farm-hud-level')?.addEventListener('click', () => this.openLevelInfoModal());
-      document.getElementById('farm-hud-xp-track')?.addEventListener('click', () => this.openLevelInfoModal());
+      // Bấm huy hiệu cấp độ hoặc thanh XP mở tooltip Level & XP (2 dòng)
+      document.getElementById('farm-hud-level')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleLevelTooltip();
+      });
+      document.getElementById('farm-hud-xp-track')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleLevelTooltip();
+      });
 
-      // Bấm chip lương thực mở kho lưu trữ (Group C)
+      // Đóng tooltip khi bấm ra ngoài
+      document.addEventListener('click', (e) => {
+        const tooltip = document.getElementById('farm-level-tooltip');
+        if (tooltip && !tooltip.hasAttribute('hidden')) {
+          if (!e.target.closest('#farm-hud-level') && !e.target.closest('#farm-hud-xp-track') && !e.target.closest('#farm-level-tooltip')) {
+            tooltip.setAttribute('hidden', '');
+          }
+        }
+      });
+
+      // Bấm chip lương thực mở kho lưu trữ
       document.getElementById('farm-hud-food')?.addEventListener('click', () => this.openStorageModal());
 
       // 3. Nút dưới thanh đáy
+      document.getElementById('farm-btn-storage')?.addEventListener('click', () => this.openStorageModal());
       document.getElementById('farm-btn-shop')?.addEventListener('click', () => this.openShopModal());
       document.getElementById('farm-btn-quests')?.addEventListener('click', () => this.openQuestsModal());
       document.getElementById('farm-shop-buy-fert')?.addEventListener('click', () => this.buyFertilizerFromShop());
@@ -2866,9 +2742,6 @@
       document.getElementById('farm-levelup-btn-continue')?.addEventListener('click', () => {
         document.getElementById('farm-levelup-overlay')?.classList.remove('active');
       });
-
-      // 8. Khởi tạo Zoom & Pan
-      this.initZoomAndPan();
 
       // 9. Phím ESC để đóng sheet hoặc đóng farm
       window.addEventListener('keydown', (e) => {

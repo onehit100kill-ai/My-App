@@ -908,16 +908,27 @@
     <!-- Thanh HUD trên cùng -->
     <header class="farm-hud">
       <div class="farm-hud-left">
-        <div class="farm-level-badge" id="farm-hud-level" title="Xem chi tiết Cấp & XP" style="cursor: pointer;">🌱 Cấp 1</div>
-        <div class="farm-xp-track" id="farm-hud-xp-track" title="Xem chi tiết Cấp & XP" style="cursor: pointer;">
+        <div class="farm-level-badge" id="farm-hud-level" title="Nhấn xem EXP & phần thưởng cấp sau" style="cursor: pointer;">🌱 Cấp 1</div>
+        <div class="farm-xp-track" id="farm-hud-xp-track" title="Nhấn xem EXP & phần thưởng cấp sau" style="cursor: pointer;">
           <div class="farm-xp-bar" id="farm-hud-xp-bar"></div>
+        </div>
+        <!-- Tooltip nhỏ hiển thị EXP & Vật phẩm mở khoá tiếp theo (2 dòng) -->
+        <div class="farm-level-tooltip" id="farm-level-tooltip" hidden>
+          <div class="farm-tooltip-row">
+            <span class="farm-tooltip-icon">⭐</span>
+            <span class="farm-tooltip-text" id="farm-tooltip-xp-line">EXP: 0 / 100 XP</span>
+          </div>
+          <div class="farm-tooltip-row">
+            <span class="farm-tooltip-icon" id="farm-tooltip-reward-icon">🎁</span>
+            <span class="farm-tooltip-text" id="farm-tooltip-reward-line">Cấp 2: +4 Ô đất hàng 2 & Cây Cam</span>
+          </div>
         </div>
       </div>
 
       <div class="farm-hud-center">
-        <div class="farm-stat-chip farm-food-chip" id="farm-hud-food" title="Kho lương thực (bấm để mở kho)" style="cursor: pointer;">🍞 5</div>
-        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins">🪙 30</div>
-        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert">🧪 ×0</div>
+        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Vàng">🪙 30</div>
+        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Phân bón">🧪 ×0</div>
+        <div class="farm-stat-chip farm-food-chip" id="farm-hud-food" title="Kho lương thực (chạm để mở kho)" style="cursor: pointer;">🍞 5</div>
       </div>
 
       <div class="farm-hud-right">
@@ -927,55 +938,45 @@
       </div>
     </header>
 
-    <!-- Khu vườn chính: Lưới ô đất kèm Zoom & Pan -->
+    <!-- Khu vườn chính: Giao diện cố định cuộn dọc điện thoại -->
     <main class="farm-field" id="farm-field">
-      <!-- Nút điều khiển Zoom -->
-      <div class="farm-zoom-controls">
-        <button type="button" class="farm-zoom-btn" id="farm-btn-zoom-in" title="Phóng to">+</button>
-        <button type="button" class="farm-zoom-btn" id="farm-btn-zoom-reset" title="Đặt lại 1.0×">1.0×</button>
-        <button type="button" class="farm-zoom-btn" id="farm-btn-zoom-out" title="Thu nhỏ">−</button>
-      </div>
+      <div class="farm-scroll-container">
+        <!-- Khu 1: Vườn Nông Sản (16 ô tương ứng 4 hàng) -->
+        <section class="farm-zone farm-zone-crops">
+          <div class="farm-zone-header">
+            <span class="farm-zone-title">🌾 Vườn Nông Sản</span>
+            <span class="farm-zone-badge">16 Ô • 4 Hàng</span>
+          </div>
+          <div class="farm-grid" id="farm-grid">
+            <!-- Render động 16 ô đất bằng farm.js -->
+          </div>
+        </section>
 
-      <!-- Khung Viewport & Canvas bản đồ nông trại -->
-      <div class="farm-canvas-viewport" id="farm-canvas-viewport">
-        <div class="farm-canvas" id="farm-canvas">
-          <!-- Khu 1: Vườn Nông Sản -->
-          <section class="farm-zone farm-zone-crops">
-            <div class="farm-zone-header">
-              <span class="farm-zone-title">🌾 Vườn Nông Sản</span>
-              <span class="farm-zone-badge">Cây ngắn ngày</span>
-            </div>
-            <div class="farm-grid" id="farm-grid">
-              <!-- Render động danh sách ô đất bằng farm.js -->
-            </div>
-          </section>
+        <!-- Khu 2: Khu Cây Ăn Quả (Có sẵn trên sân) -->
+        <section class="farm-zone farm-zone-orchard">
+          <div class="farm-zone-header">
+            <span class="farm-zone-title">🌳 Khu Cây Ăn Quả</span>
+            <span class="farm-zone-badge">Cây có sẵn</span>
+          </div>
+          <div class="farm-tree-grid" id="farm-tree-grid">
+            <!-- Render động 5 cây ăn quả có sẵn bằng farm.js -->
+          </div>
+        </section>
 
-          <!-- Khu 2: Khu Cây Ăn Quả -->
-          <section class="farm-zone farm-zone-orchard">
-            <div class="farm-zone-header">
-              <span class="farm-zone-title">🌳 Khu Cây Ăn Quả</span>
-              <span class="farm-zone-badge">Cây thân gỗ</span>
+        <!-- Khu 3: Khu Chăn Nuôi (Sắp ra mắt) -->
+        <section class="farm-zone farm-zone-poultry">
+          <div class="farm-zone-header">
+            <span class="farm-zone-title">🐔 Khu Chăn Nuôi</span>
+            <span class="farm-zone-badge">Sắp ra mắt</span>
+          </div>
+          <div class="farm-poultry-placeholder">
+            <div class="farm-poultry-fence">
+              <div class="farm-poultry-icon">🐔</div>
+              <div class="farm-poultry-title">Khu Nuôi Gà</div>
+              <div class="farm-poultry-desc">Đang dựng hàng rào & chuẩn bị chuồng trại...</div>
             </div>
-            <div class="farm-tree-grid" id="farm-tree-grid">
-              <!-- Render động 6 ô cây ăn quả bằng farm.js -->
-            </div>
-          </section>
-
-          <!-- Khu 3: Khu Chăn Nuôi (Sắp ra mắt) -->
-          <section class="farm-zone farm-zone-poultry">
-            <div class="farm-zone-header">
-              <span class="farm-zone-title">🐔 Khu Chăn Nuôi</span>
-              <span class="farm-zone-badge">Sắp ra mắt</span>
-            </div>
-            <div class="farm-poultry-placeholder">
-              <div class="farm-poultry-fence">
-                <div class="farm-poultry-icon">🐔</div>
-                <div class="farm-poultry-title">Khu Nuôi Gà</div>
-                <div class="farm-poultry-desc">Đang dựng hàng rào & chuẩn bị chuồng trại...</div>
-              </div>
-            </div>
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </main>
 
@@ -985,9 +986,16 @@
         <span id="farm-bottom-words-left">🌱 Từ còn trong kho: 0</span>
         <span id="farm-bottom-harvested">🧺 Đã thu hoạch: 0</span>
       </div>
-      <div class="farm-bottom-right" style="display: flex; gap: 8px;">
-        <button type="button" class="farm-btn-quests" id="farm-btn-quests">🎯 Nhiệm vụ</button>
-        <button type="button" class="farm-btn-shop" id="farm-btn-shop">🛒 Cửa hàng</button>
+      <div class="farm-bottom-right" style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="farm-btn-action farm-btn-storage" id="farm-btn-storage" title="Mở Kho lương thực">
+          <span class="farm-btn-icon-symbol">🧺</span> <span>Kho</span>
+        </button>
+        <button type="button" class="farm-btn-action farm-btn-quests" id="farm-btn-quests" title="Nhiệm vụ">
+          <span class="farm-btn-icon-symbol">🎯</span> <span>Nhiệm vụ</span>
+        </button>
+        <button type="button" class="farm-btn-shop" id="farm-btn-shop" title="Cửa hàng">
+          <span class="farm-shop-icon">🛒</span> <span>Shop</span>
+        </button>
       </div>
     </footer>
 
