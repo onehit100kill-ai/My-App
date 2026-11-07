@@ -109,3 +109,4 @@ for fruit in ['apple', 'orange', 'peach', 'pear', 'cherry']:
         save_img(img, name)
 
 print("All 15 fruit tree assets generated successfully!")
+

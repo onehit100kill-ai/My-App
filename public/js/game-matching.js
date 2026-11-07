@@ -281,16 +281,15 @@
     },
 
     // =========================================================================
-    // XỬ LÝ CHỌN VÀ GHÉP TỪ VỚI NGHĨA TRÊN LƯỚI 4X4
+    // XỬ LÝ CHỌN VÀ GHÉP TỪ VỚI NGHĨA TRÊN LƯỚI MA TRẬN 4X4
     // =========================================================================
     handleCardClick(cardEl) {
       if (this.isLocked) return;
       if (cardEl.classList.contains('matched') || cardEl.classList.contains('cleared')) return;
 
-      this.playSound('select');
-
-      // 1. Chưa chọn thẻ nào -> Chọn thẻ này
+      // 1. Chưa chọn thẻ nào -> Nhấn vào thẻ nào thì viền thẻ đó sáng lên
       if (!this.selectedCard) {
+        this.playSound('select');
         cardEl.classList.add('selected');
         this.selectedCard = cardEl;
 
@@ -304,55 +303,40 @@
         return;
       }
 
-      // 2. Nhấp lại chính thẻ đang chọn -> Huỷ chọn
+      // 2. Nhấp lại chính thẻ đang chọn -> Tắt ánh sáng viền, huỷ chọn
       if (this.selectedCard === cardEl) {
         cardEl.classList.remove('selected');
         this.selectedCard = null;
         return;
       }
 
-      const prevType = this.selectedCard.getAttribute('data-type');
-      const currType = cardEl.getAttribute('data-type');
-
-      // 3. Nhấp vào thẻ cùng loại (ví dụ đang chọn từ tiếng Anh này, nhấp từ tiếng Anh khác)
-      // -> Chuyển vùng chọn mượt mà sang thẻ mới
-      if (prevType === currType) {
-        this.selectedCard.classList.remove('selected');
-        cardEl.classList.add('selected');
-        this.selectedCard = cardEl;
-
-        if (currType === 'en') {
-          const wordText = cardEl.querySelector('.matching-card-text')?.textContent;
-          if (wordText && window.wordsManager?.playPronunciation) {
-            try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
-          }
-        }
-        return;
-      }
-
-      // 4. Khác loại (1 thẻ Từ Tiếng Anh + 1 thẻ Nghĩa Tiếng Việt) -> So sánh ghép đôi!
+      // 3. Đã có thẻ 1 đang chọn (cardA), vừa nhấp thẻ thứ 2 (cardB)
       const cardA = this.selectedCard;
       const cardB = cardEl;
-      cardB.classList.add('selected');
 
       this.movesCount += 1;
       this.updateMovesDisplay();
 
       const pairA = cardA.getAttribute('data-pair-id');
       const pairB = cardB.getAttribute('data-pair-id');
-      const isMatch = (pairA === pairB);
+      const typeA = cardA.getAttribute('data-type');
+      const typeB = cardB.getAttribute('data-type');
+
+      // Điều kiện ghép đúng: cùng cặp ID và khác loại (1 thẻ Từ Tiếng Anh + 1 thẻ Nghĩa Tiếng Việt)
+      const isMatch = (pairA === pairB && typeA !== typeB);
 
       if (isMatch) {
-        // ================= GHÉP ĐÚNG =================
+        // ================= GHÉP ĐÚNG: 2 THẺ BIẾN MẤT =================
         this.playSound('match');
 
-        // Đọc từ tiếng Anh vừa ghép đúng
-        const enCard = prevType === 'en' ? cardA : cardB;
-        const enWord = enCard.querySelector('.matching-word-text')?.textContent;
+        // Phát âm từ tiếng Anh vừa ghép đúng
+        const enCard = typeA === 'en' ? cardA : cardB;
+        const enWord = enCard.querySelector('.matching-card-text')?.textContent;
         if (enWord && window.wordsManager?.playPronunciation) {
           try { window.wordsManager.playPronunciation(enWord); } catch (e) {}
         }
 
+        // Viền xanh lá sáng rực báo đúng
         cardA.classList.remove('selected');
         cardB.classList.remove('selected');
         cardA.classList.add('matched');
@@ -361,7 +345,7 @@
         this.matchedPairsCount += 1;
         this.selectedCard = null;
 
-        // Ẩn nhẹ nhàng 2 ô vừa ghép đúng sau 350ms
+        // 2 thẻ biến mất sau 350ms
         setTimeout(() => {
           cardA.classList.add('cleared');
           cardB.classList.add('cleared');
@@ -369,25 +353,28 @@
 
         // Ghép đủ 8 cặp -> CHIẾN THẮNG!
         if (this.matchedPairsCount >= this.currentWords.length) {
-          setTimeout(() => this.handleVictory(), 600);
+          setTimeout(() => this.handleVictory(), 650);
         }
 
       } else {
-        // ================= GHÉP SAI =================
+        // ================= GHÉP SAI: NGHĨA KHÁC NHAU =================
+        // Khoá bàn trong thời gian báo lỗi
         this.isLocked = true;
         this.playSound('mismatch');
 
+        // Ánh sáng đỏ ở viền cả 2 thẻ
         cardA.classList.remove('selected');
         cardB.classList.remove('selected');
         cardA.classList.add('mismatch');
         cardB.classList.add('mismatch');
 
+        // Sau 550ms tắt ánh sáng viền đỏ để chọn thẻ khác
         setTimeout(() => {
           cardA.classList.remove('mismatch');
           cardB.classList.remove('mismatch');
           this.selectedCard = null;
           this.isLocked = false;
-        }, 600);
+        }, 550);
       }
     },
 
