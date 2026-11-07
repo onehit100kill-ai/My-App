@@ -927,7 +927,6 @@
 
       <div class="farm-hud-center">
         <div class="farm-stat-chip farm-words-chip" id="farm-hud-words" title="Số từ vựng sẵn sàng để học">📖 0 từ</div>
-        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Vàng">🪙 30</div>
         <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Túi phân bón">
           <svg class="farm-fert-bag-svg" viewBox="0 0 24 24" width="18" height="18" style="vertical-align: -2px; display: inline-block;">
             <path d="M8 3.5h8c.6 0 1 .5.9 1.1L16 6.5H8L7.1 4.6c-.1-.6.3-1.1.9-1.1z" fill="#ca8a04"/>
@@ -936,7 +935,6 @@
             <circle cx="12" cy="5" r="1" fill="#fde047"/>
           </svg> ×0
         </div>
-        <div class="farm-stat-chip farm-food-chip" id="farm-hud-food" title="Lương thực trồng cây (chạm mở kho)" style="cursor: pointer;">🍞 5</div>
         <div class="farm-stat-chip farm-storage-chip" id="farm-hud-storage" title="Kho Nông Sản & Trái Cây (chạm mở kho)" style="cursor: pointer;">🧺 Kho (0)</div>
       </div>
 
@@ -972,18 +970,14 @@
           </div>
         </section>
 
-        <!-- Khu 3: Khu Chăn Nuôi (Gà đẻ trứng) -->
+        <!-- Khu 3: Khu Chăn Nuôi (Gà đẻ trứng: 2 hàng x 4 ô) -->
         <section class="farm-zone farm-zone-poultry">
           <div class="farm-zone-header">
             <span class="farm-zone-title">🐔 Khu Chăn Nuôi</span>
-            <span class="farm-zone-badge">Chuồng Gà</span>
+            <span class="farm-zone-badge">8 Ô • 2 Hàng</span>
           </div>
-          <div class="farm-poultry-placeholder" id="farm-poultry-coop" style="cursor: pointer;" title="Chạm để nhặt trứng gà">
-            <div class="farm-poultry-fence">
-              <div class="farm-poultry-icon">🐔</div>
-              <div class="farm-poultry-title">Khu Nuôi Gà</div>
-              <div class="farm-poultry-desc" id="farm-poultry-desc">Chạm để nhặt trứng 🥚</div>
-            </div>
+          <div class="farm-poultry-grid" id="farm-poultry-grid">
+            <!-- Render động 8 ô nuôi gà bằng farm.js -->
           </div>
         </section>
       </div>
@@ -1281,6 +1275,18 @@
         </div>
         <div class="farm-sheet-body" id="farm-shop-body">
           <!-- Render động mua phân bón & bán nông sản -->
+        </div>
+
+        <!-- Popup Xác Nhận Số Tiền Tổng Khi Bán -->
+        <div class="farm-shop-confirm-overlay" id="farm-shop-confirm-overlay" style="display: none;">
+          <div class="farm-shop-confirm-card">
+            <div class="farm-shop-confirm-title">💰 Xác Nhận Bán Vật Phẩm</div>
+            <div class="farm-shop-confirm-body" id="farm-shop-confirm-content"></div>
+            <div class="farm-shop-confirm-actions">
+              <button type="button" class="btn btn-secondary" id="farm-shop-confirm-cancel">✕ Hủy</button>
+              <button type="button" class="btn btn-primary" id="farm-shop-confirm-ok">✅ Xác Nhận Bán</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
