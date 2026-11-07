@@ -10,12 +10,14 @@ router.get('/status', (req, res) => {
   const status = keyPool.getStatus();
   const hasGroq = status.totalKeys > 0;
   const hasGemini = !!process.env.GEMINI_API_KEY;
+  const hasOpenRouter = !!process.env.OPENROUTER_API_KEY;
 
   res.json({
     success: true,
-    enabled: hasGroq || hasGemini,
-    primaryProvider: hasGroq ? 'Groq LPU' : 'Gemini Flash-Lite',
-    backupProvider: hasGemini ? 'Gemini Flash-Lite (API Phụ 1)' : null,
+    enabled: hasGroq || hasGemini || hasOpenRouter,
+    primaryProvider: hasGroq ? 'Groq LPU' : (hasGemini ? 'Gemini Flash-Lite' : 'OpenRouter'),
+    backupProvider1: hasGemini ? 'Gemini Flash-Lite' : null,
+    backupProvider2: hasOpenRouter ? 'OpenRouter Llama 3.3' : null,
     totalGroqKeys: status.totalKeys,
     activeGroqKeys: status.activeKeysCount,
     coolingGroqKeys: status.coolingKeysCount

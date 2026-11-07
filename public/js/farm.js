@@ -1453,8 +1453,9 @@
           const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
           if (subText) {
             const primary = aiStatus.primaryProvider || 'Groq LPU';
-            const backup = aiStatus.backupProvider ? ` (Kèm ${aiStatus.backupProvider})` : '';
-            subText.textContent = `${primary} siêu tốc sẵn sàng${backup}`;
+            const backups = [aiStatus.backupProvider1, aiStatus.backupProvider2].filter(Boolean).join(' & ');
+            const backupText = backups ? ` (Dự phòng: ${backups})` : '';
+            subText.textContent = `${primary} sẵn sàng${backupText}`;
           }
           aiToggle.checked = !!this.settings.modes.ai;
         } else {

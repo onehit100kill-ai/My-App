@@ -199,7 +199,17 @@ async function generateSentenceWithGroq(word, meaning) {
     }
   }
 
-  throw new Error('Tất cả API Key Groq và API Phụ Gemini đều đang bận: ' + (lastError || ''));
+  // Nếu API Phụ 1 cũng bận, chuyển sang API Phụ 2: OpenRouter
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      console.log('[AI Phụ 2] Chuyển sang API Phụ Thứ Hai: OpenRouter...');
+      return await fallbackToOpenRouter(cleanWord, cleanMeaning);
+    } catch (openRouterErr) {
+      console.error('[AI Phụ 2] OpenRouter gặp lỗi:', openRouterErr.message);
+    }
+  }
+
+  throw new Error('Tất cả hệ thống AI (Groq, Gemini Phụ 1, OpenRouter Phụ 2) đều đang bận: ' + (lastError || ''));
 }
 
 /**
@@ -265,9 +275,80 @@ async function fallbackToGemini(word, meaning) {
   throw new Error('API Phụ Gemini Flash-Lite không thể tạo câu: ' + lastErr);
 }
 
+/**
+ * API Phụ Thứ Hai: OpenRouter
+ */
+async function fallbackToOpenRouter(word, meaning) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error('Chưa có OPENROUTER_API_KEY');
+
+  const promptSystem = `You are an expert English language teacher. Given a vocabulary word and its Vietnamese meaning, create ONE natural, high quality English fill-in-the-blank sentence where the vocabulary word is replaced with "_____". Return strictly a valid JSON object with no markdown formatting:
+{
+  "sentence": "She felt _____ before giving her presentation.",
+  "missingWord": "${word}",
+  "hint": "Bản dịch tiếng Việt của câu này làm gợi ý"
+}`;
+
+  const promptUser = `Vocabulary word: "${word}" (Meaning: "${meaning}")`;
+
+  const models = [
+    process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct',
+    'deepseek/deepseek-chat',
+    'google/gemini-flash-1.5'
+  ];
+
+  let lastErr = null;
+  for (const m of models) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://vocabmaster.app',
+          'X-Title': 'VocabMaster',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: m,
+          messages: [
+            { role: 'system', content: promptSystem },
+            { role: 'user', content: promptUser }
+          ],
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        lastErr = `${m}: ${errText}`;
+        continue;
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content || '';
+      if (rawText) {
+        const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        return {
+          sentence: parsed.sentence || `Fill in the blank: _____ (${word})`,
+          missingWord: parsed.missingWord || word,
+          hint: parsed.hint || meaning,
+          provider: 'OpenRouter (API Phụ 2)',
+          model: m
+        };
+      }
+    } catch (e) {
+      lastErr = e.message;
+    }
+  }
+
+  throw new Error('API Phụ 2 OpenRouter không thể tạo câu: ' + lastErr);
+}
+
 module.exports = {
   keyPool,
   generateSentenceWithGroq,
-  fallbackToGemini
+  fallbackToGemini,
+  fallbackToOpenRouter
 };
 
