@@ -810,16 +810,7 @@
     },
 
     renderBottomBar() {
-      const wordsLeftEl = document.getElementById('farm-bottom-words-left');
-      const harvestedEl = document.getElementById('farm-bottom-harvested');
-
-      if (wordsLeftEl) {
-        const count = this.getRemainingWordsCount();
-        wordsLeftEl.textContent = `🌱 Từ còn trong kho: ${count}`;
-      }
-      if (harvestedEl) {
-        harvestedEl.textContent = `🧺 Đã thu hoạch: ${this.state.harvestedTodayCount || 0}`;
-      }
+      // Dòng "Đã thu hoạch" và "Từ còn trong kho" đã được lược bỏ khỏi footer theo yêu cầu
     },
 
     renderField() {
