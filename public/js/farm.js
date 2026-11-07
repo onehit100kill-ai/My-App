@@ -198,7 +198,31 @@
       choice: true,
       typing: true,
       listening: true,
-      ai: true // Đã kích hoạt API AI
+      ai: true
+    },
+    // Cài đặt cách học riêng cho từng vùng
+    zoneModes: {
+      crops: {
+        choice: true,
+        typing: true,
+        listening: true,
+        ai: true,
+        randomMode: true // 🎲 Ngẫu nhiên loại câu hỏi
+      },
+      orchard: {
+        choice: true,
+        typing: true,
+        listening: true,
+        ai: true,
+        randomMode: true // 🎲 Ngẫu nhiên loại câu hỏi
+      },
+      poultry: {
+        choice: true,
+        typing: true,
+        listening: true,
+        ai: true,
+        randomMode: true // 🎲 Ngẫu nhiên loại câu hỏi
+      }
     }
   };
 
@@ -282,6 +306,45 @@
         }
       } catch (e) {
         this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+      }
+
+      // Đảm bảo cài đặt riêng cho 3 vùng luôn tồn tại
+      if (!this.settings.zoneModes) {
+        const base = this.settings.modes || DEFAULT_SETTINGS.modes;
+        this.settings.zoneModes = {
+          crops: { choice: !!base.choice, typing: !!base.typing, listening: !!base.listening, ai: !!base.ai, randomMode: true },
+          orchard: { choice: !!base.choice, typing: !!base.typing, listening: !!base.listening, ai: !!base.ai, randomMode: true },
+          poultry: { choice: !!base.choice, typing: !!base.typing, listening: !!base.listening, ai: !!base.ai, randomMode: true }
+        };
+      } else {
+        ['crops', 'orchard', 'poultry'].forEach(z => {
+          if (!this.settings.zoneModes[z]) {
+            this.settings.zoneModes[z] = { choice: true, typing: true, listening: true, ai: true, randomMode: true };
+          }
+          if (this.settings.zoneModes[z].randomMode === undefined) {
+            this.settings.zoneModes[z].randomMode = true;
+          }
+        });
+      }
+    },
+
+    getZoneQuizMode(zone, stage = 0) {
+      const zConfig = (this.settings.zoneModes && this.settings.zoneModes[zone]) || this.settings.modes || {};
+      const activeModes = [];
+      if (zConfig.choice) activeModes.push('choice');
+      if (zConfig.typing) activeModes.push('typing');
+      if (zConfig.listening) activeModes.push('listening');
+      if (zConfig.ai) activeModes.push('ai');
+
+      if (activeModes.length === 0) activeModes.push('choice');
+
+      if (zConfig.randomMode) {
+        // Ngẫu nhiên loại câu hỏi trong các cách học đã chọn
+        return activeModes[Math.floor(Math.random() * activeModes.length)];
+      } else {
+        // Thứ tự tiến dần theo giai đoạn phát triển
+        const idx = Math.min(activeModes.length - 1, Math.max(0, stage));
+        return activeModes[idx];
       }
     },
 
@@ -738,6 +801,11 @@
       if (foodEl) foodEl.textContent = `🍞 ${this.state.food || 0}`;
       if (coinsEl) coinsEl.textContent = `🪙 ${this.state.coins}`;
       if (fertEl) fertEl.textContent = `🧪 ×${this.state.fertilizer}`;
+      const wordsHudEl = document.getElementById('farm-hud-words');
+      if (wordsHudEl) {
+        const count = this.getRemainingWordsCount();
+        wordsHudEl.textContent = `📖 ${count} từ`;
+      }
       if (soundBtn) soundBtn.textContent = this.state.soundEnabled ? '🔊' : '🔇';
     },
 
@@ -1224,19 +1292,8 @@
 
       const crop = CROP_TYPES[plot.cropType];
 
-      // Xác định dạng quiz theo thứ tự giai đoạn & cài đặt:
-      // chọn nghĩa < điền từ < AI sentence < nghe điền từ
-      const activeModes = [];
-      if (this.settings.modes.choice) activeModes.push('choice');
-      if (this.settings.modes.typing) activeModes.push('typing');
-      if (this.settings.modes.ai) activeModes.push('ai');
-      if (this.settings.modes.listening) activeModes.push('listening');
-
-      if (activeModes.length === 0) activeModes.push('choice');
-
-      // Chọn dạng câu hỏi theo giai đoạn
-      const modeIdx = Math.min(activeModes.length - 1, Math.max(0, plot.stage));
-      const mode = activeModes[modeIdx];
+      // Lấy dạng quiz từ cài đặt riêng cho Vườn Nông Sản (có hỗ trợ ngẫu nhiên)
+      const mode = this.getZoneQuizMode('crops', plot.stage);
 
       this.activeQuiz = {
         plotId: plot.id,
@@ -2192,7 +2249,7 @@
       this.renderFruitTreeQuizModal();
     },
 
-    renderFruitTreeQuizModal() {
+    async renderFruitTreeQuizModal() {
       const sheet = document.getElementById('farm-sheet-fruit-quiz');
       const titleEl = document.getElementById('farm-fruit-quiz-title');
       const statusEl = document.getElementById('farm-fruit-quiz-status');
@@ -2223,17 +2280,55 @@
 
       const currentWord = q.words[q.wordIndex];
 
-      const availableModes = [];
-      if (this.settings.modes.choice) availableModes.push('choice');
-      if (this.settings.modes.typing) availableModes.push('typing');
-      if (this.settings.modes.listening) availableModes.push('listening');
-      if (availableModes.length === 0) availableModes.push('choice');
-
-      const mode = availableModes[Math.floor(Math.random() * availableModes.length)];
+      // Lấy dạng quiz từ cài đặt riêng cho Khu Cây Ăn Quả (hỗ trợ ngẫu nhiên loại câu hỏi)
+      const mode = this.getZoneQuizMode('orchard', tree.stage || 1);
 
       let quizHtml = '';
 
-      if (mode === 'listening') {
+      if (mode === 'ai') {
+        bodyEl.innerHTML = `
+          <div class="farm-quiz-prompt-card" style="padding: 24px 16px; text-align: center;">
+            <div style="font-size: 28px; margin-bottom: 6px;">⚡</div>
+            <div style="font-size: 0.95rem; color: #f59e0b; font-weight: 700;">Groq AI đang tạo câu đố cho Cây ${def.name}...</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Ngữ cảnh cho từ "${currentWord.word}"</div>
+          </div>
+        `;
+        sheet.classList.add('active');
+
+        try {
+          const aiRes = await window.api.generateAiSentence(currentWord.word, currentWord.meaning);
+          if (aiRes && aiRes.success && aiRes.data && aiRes.data.sentence) {
+            const aiData = aiRes.data;
+            const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
+            quizHtml = `
+              <div class="farm-quiz-prompt-card">
+                <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 700;">${providerTag}:</span>
+                <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
+                  "${aiData.sentence}"
+                </div>
+                ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
+              </div>
+              <div style="margin-top: 14px;">
+                <input type="text" id="farm-fruit-input" class="form-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+              </div>
+              <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
+            `;
+          } else {
+            throw new Error('AI generation failed');
+          }
+        } catch (e) {
+          quizHtml = `
+            <div class="farm-quiz-prompt-card">
+              <div class="farm-quiz-prompt-meaning">${this.escapeHtml(currentWord.meaning)}</div>
+              ${currentWord.example ? `<div class="farm-quiz-prompt-example">"${this.escapeHtml(currentWord.example)}"</div>` : ''}
+            </div>
+            <div style="margin-top: 14px;">
+              <input type="text" id="farm-fruit-input" class="form-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+            </div>
+            <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
+          `;
+        }
+      } else if (mode === 'listening') {
         quizHtml = `
           <div style="text-align: center; padding: 20px 0;">
             <button type="button" class="btn-audio" id="farm-fruit-audio-btn" style="width: 72px; height: 72px; font-size: 32px; border-radius: 50%;">🔊</button>
@@ -2422,16 +2517,6 @@
         customWrap.style.display = (this.settings.wordSource === 'custom') ? 'block' : 'none';
       }
 
-      // Đồng bộ toggle modes
-      const choiceToggle = document.getElementById('farm-setting-mode-choice');
-      const typingToggle = document.getElementById('farm-setting-mode-typing');
-      const listeningToggle = document.getElementById('farm-setting-mode-listening');
-      const aiToggle = document.getElementById('farm-setting-mode-ai');
-
-      if (choiceToggle) choiceToggle.checked = !!this.settings.modes.choice;
-      if (typingToggle) typingToggle.checked = !!this.settings.modes.typing;
-      if (listeningToggle) listeningToggle.checked = !!this.settings.modes.listening;
-
       // Kiểm tra trạng thái AI backend
       let aiEnabled = false;
       let aiStatus = null;
@@ -2440,26 +2525,42 @@
         aiEnabled = !!aiStatus?.enabled;
       } catch (e) {}
 
-      if (aiToggle) {
-        if (aiEnabled) {
-          aiToggle.disabled = false;
-          aiToggle.closest('.farm-toggle-item')?.classList.remove('disabled');
-          const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
-          if (subText) {
-            const primary = aiStatus.primaryProvider || 'Groq LPU';
-            const backups = [aiStatus.backupProvider1, aiStatus.backupProvider2].filter(Boolean).join(' & ');
-            const backupText = backups ? ` (Dự phòng: ${backups})` : '';
-            subText.textContent = `${primary} sẵn sàng${backupText}`;
+      // Đồng bộ toggle modes riêng cho 3 vùng: Vườn Nông Sản, Cây Ăn Quả, Khu Chăn Nuôi
+      const zones = ['crops', 'orchard', 'poultry'];
+      zones.forEach(z => {
+        const zConf = (this.settings.zoneModes && this.settings.zoneModes[z]) || this.settings.modes || {};
+        const choiceEl = document.getElementById(`farm-setting-${z}-choice`);
+        const typingEl = document.getElementById(`farm-setting-${z}-typing`);
+        const listeningEl = document.getElementById(`farm-setting-${z}-listening`);
+        const aiEl = document.getElementById(`farm-setting-${z}-ai`);
+        const randomEl = document.getElementById(`farm-setting-${z}-random`);
+
+        if (choiceEl) choiceEl.checked = !!zConf.choice;
+        if (typingEl) typingEl.checked = !!zConf.typing;
+        if (listeningEl) listeningEl.checked = !!zConf.listening;
+        if (randomEl) randomEl.checked = zConf.randomMode !== false; // Mặc định bật ngẫu nhiên
+
+        if (aiEl) {
+          if (aiEnabled) {
+            aiEl.disabled = false;
+            aiEl.closest('.farm-toggle-item')?.classList.remove('disabled');
+            const subText = sheet.querySelector(`.farm-ai-status-${z}`);
+            if (subText) {
+              const primary = aiStatus.primaryProvider || 'Groq LPU';
+              const backups = [aiStatus.backupProvider1, aiStatus.backupProvider2].filter(Boolean).join(' & ');
+              const backupText = backups ? ` (Dự phòng: ${backups})` : '';
+              subText.textContent = `${primary} sẵn sàng${backupText}`;
+            }
+            aiEl.checked = !!zConf.ai;
+          } else {
+            aiEl.checked = false;
+            aiEl.disabled = true;
+            aiEl.closest('.farm-toggle-item')?.classList.add('disabled');
+            const subText = sheet.querySelector(`.farm-ai-status-${z}`);
+            if (subText) subText.textContent = 'Cần cấu hình GROQ_API_KEYS trong .env';
           }
-          aiToggle.checked = !!this.settings.modes.ai;
-        } else {
-          aiToggle.checked = false;
-          aiToggle.disabled = true;
-          aiToggle.closest('.farm-toggle-item')?.classList.add('disabled');
-          const subText = aiToggle.closest('.farm-toggle-item')?.querySelector('small');
-          if (subText) subText.textContent = 'Cần cấu hình GROQ_API_KEYS trong .env';
         }
-      }
+      });
 
       // Tải danh sách ngày nếu chọn chế độ Tuỳ chọn
       await this.renderCustomDaysChecklist();
@@ -2506,20 +2607,32 @@
       if (!sheet) return;
 
       const sourceRadio = sheet.querySelector('input[name="farm-word-source"]:checked');
-      const choiceToggle = document.getElementById('farm-setting-mode-choice');
-      const typingToggle = document.getElementById('farm-setting-mode-typing');
-      const listeningToggle = document.getElementById('farm-setting-mode-listening');
-      const aiToggle = document.getElementById('farm-setting-mode-ai');
+      const zoneNames = {
+        crops: 'Vườn Nông Sản',
+        orchard: 'Khu Cây Ăn Quả',
+        poultry: 'Khu Chăn Nuôi'
+      };
 
-      // Kiểm tra ít nhất 1 phương thức học bật
-      const choice = choiceToggle ? choiceToggle.checked : true;
-      const typing = typingToggle ? typingToggle.checked : false;
-      const listening = listeningToggle ? listeningToggle.checked : false;
-      const ai = aiToggle && !aiToggle.disabled ? aiToggle.checked : false;
+      const newZoneModes = {};
+      for (const z of ['crops', 'orchard', 'poultry']) {
+        const choiceEl = document.getElementById(`farm-setting-${z}-choice`);
+        const typingEl = document.getElementById(`farm-setting-${z}-typing`);
+        const listeningEl = document.getElementById(`farm-setting-${z}-listening`);
+        const aiEl = document.getElementById(`farm-setting-${z}-ai`);
+        const randomEl = document.getElementById(`farm-setting-${z}-random`);
 
-      if (!choice && !typing && !listening && !ai) {
-        if (window.showToast) window.showToast('Cần bật ít nhất 1 cách học!');
-        return;
+        const choice = choiceEl ? choiceEl.checked : true;
+        const typing = typingEl ? typingEl.checked : false;
+        const listening = listeningEl ? listeningEl.checked : false;
+        const ai = aiEl && !aiEl.disabled ? aiEl.checked : false;
+        const randomMode = randomEl ? randomEl.checked : true;
+
+        if (!choice && !typing && !listening && !ai) {
+          if (window.showToast) window.showToast(`Vui lòng bật ít nhất 1 cách học cho ${zoneNames[z]}!`);
+          return;
+        }
+
+        newZoneModes[z] = { choice, typing, listening, ai, randomMode };
       }
 
       const wordSource = sourceRadio ? sourceRadio.value : 'unlearned';
@@ -2536,10 +2649,13 @@
 
       this.settings.wordSource = wordSource;
       this.settings.selectedDayIds = selectedDayIds;
-      this.settings.modes.choice = choice;
-      this.settings.modes.typing = typing;
-      this.settings.modes.listening = listening;
-      this.settings.modes.ai = ai;
+      this.settings.zoneModes = newZoneModes;
+      this.settings.modes = {
+        choice: newZoneModes.crops.choice || newZoneModes.orchard.choice,
+        typing: newZoneModes.crops.typing || newZoneModes.orchard.typing,
+        listening: newZoneModes.crops.listening || newZoneModes.orchard.listening,
+        ai: newZoneModes.crops.ai || newZoneModes.orchard.ai
+      };
 
       this.saveSettings();
       this.refreshWordsPool().then(() => this.render());
@@ -2681,9 +2797,8 @@
       document.getElementById('farm-hud-food')?.addEventListener('click', () => this.openStorageModal());
 
       // 3. Nút dưới thanh đáy
-      document.getElementById('farm-btn-storage')?.addEventListener('click', () => this.openStorageModal());
-      document.getElementById('farm-btn-shop')?.addEventListener('click', () => this.openShopModal());
       document.getElementById('farm-btn-quests')?.addEventListener('click', () => this.openQuestsModal());
+      document.getElementById('farm-btn-shop')?.addEventListener('click', () => this.openShopModal());
       document.getElementById('farm-shop-buy-fert')?.addEventListener('click', () => this.buyFertilizerFromShop());
       document.getElementById('farm-shop-buy-food')?.addEventListener('click', () => this.buyFoodFromShop());
 

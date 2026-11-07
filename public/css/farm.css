@@ -337,6 +337,12 @@
   white-space: nowrap;
 }
 
+.farm-stat-chip.farm-words-chip {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
 .farm-stat-chip.farm-gold-chip {
   color: #fbbf24;
 }
@@ -857,8 +863,34 @@
   color: #93c5fd;
 }
 
+/* NÚT NHIỆM VỤ: PHỐI MÀU CAM ẤM ÁP ĐỒNG BỘ VỚI SHOP VÀNG */
 .farm-btn-quests {
-  color: #fbbf24;
+  background: linear-gradient(135deg, #ffedd5 0%, #fb923c 50%, #f97316 100%);
+  color: #7c2d12; /* Nâu cam đậm */
+  border: 2px solid #ea580c;
+  border-radius: 12px;
+  padding: 8px 16px;
+  min-height: 42px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(234, 88, 12, 0.45);
+  transition: transform 0.15s ease, filter 0.15s ease;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.farm-btn-quests:active {
+  transform: scale(0.94);
+}
+
+.farm-quests-icon {
+  font-size: 1.25rem;
+  color: #7c2d12;
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.5));
 }
 
 /* NÚT SHOP: TO CHÚT, ICON MÀU NÂU VÀ NỀN VÀNG */
@@ -1340,6 +1372,72 @@
 .farm-toggle-item.disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* THẺ CÀI ĐẶT CÁCH HỌC THEO TỪNG VÙNG */
+.farm-settings-zone-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+
+.farm-settings-zone-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.farm-settings-zone-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.farm-settings-zone-badge.badge-crops {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fde047;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.farm-settings-zone-badge.badge-orchard {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.farm-settings-zone-badge.badge-poultry {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+}
+
+.farm-settings-zone-desc {
+  font-size: 0.74rem;
+  color: #94a3b8;
+}
+
+.farm-settings-zone-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.farm-toggle-item.farm-toggle-random {
+  background: rgba(254, 240, 138, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1px dashed rgba(250, 204, 21, 0.4);
 }
 
 /* 7.6. BẢNG NHIỆM VỤ NGÀY */

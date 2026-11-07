@@ -926,6 +926,7 @@
       </div>
 
       <div class="farm-hud-center">
+        <div class="farm-stat-chip farm-words-chip" id="farm-hud-words" title="Số từ vựng sẵn sàng để học">📖 0 từ</div>
         <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Vàng">🪙 30</div>
         <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Phân bón">🧪 ×0</div>
         <div class="farm-stat-chip farm-food-chip" id="farm-hud-food" title="Kho lương thực (chạm để mở kho)" style="cursor: pointer;">🍞 5</div>
@@ -983,15 +984,11 @@
     <!-- Thanh trạng thái / thao tác đáy -->
     <footer class="farm-bottombar">
       <div class="farm-bottom-left">
-        <span id="farm-bottom-words-left">🌱 Từ còn trong kho: 0</span>
         <span id="farm-bottom-harvested">🧺 Đã thu hoạch: 0</span>
       </div>
       <div class="farm-bottom-right" style="display: flex; gap: 8px; align-items: center;">
-        <button type="button" class="farm-btn-action farm-btn-storage" id="farm-btn-storage" title="Mở Kho lương thực">
-          <span class="farm-btn-icon-symbol">🧺</span> <span>Kho</span>
-        </button>
-        <button type="button" class="farm-btn-action farm-btn-quests" id="farm-btn-quests" title="Nhiệm vụ">
-          <span class="farm-btn-icon-symbol">🎯</span> <span>Nhiệm vụ</span>
+        <button type="button" class="farm-btn-quests" id="farm-btn-quests" title="Nhiệm vụ">
+          <span class="farm-quests-icon">🎯</span> <span>Nhiệm vụ</span>
         </button>
         <button type="button" class="farm-btn-shop" id="farm-btn-shop" title="Cửa hàng">
           <span class="farm-shop-icon">🛒</span> <span>Shop</span>
@@ -1109,28 +1106,117 @@
             </div>
           </div>
 
-          <!-- Nhóm 2: Chọn cách học -->
+          <!-- Nhóm 2: Cài đặt cách học theo từng vùng -->
           <div class="farm-settings-group" style="border-bottom: none; margin-bottom: 0;">
-            <div class="farm-settings-title">🎯 Cách học (Bật ít nhất 1 cách):</div>
-            <label class="farm-toggle-item">
-              <span>1. Chọn nghĩa (Trắc nghiệm)</span>
-              <input type="checkbox" id="farm-setting-mode-choice" checked>
-            </label>
-            <label class="farm-toggle-item">
-              <span>2. Điền từ (Gõ từ vựng)</span>
-              <input type="checkbox" id="farm-setting-mode-typing" checked>
-            </label>
-            <label class="farm-toggle-item">
-              <span>3. Nghe điền từ</span>
-              <input type="checkbox" id="farm-setting-mode-listening" checked>
-            </label>
-            <label class="farm-toggle-item">
-              <div>
-                <span>4. Câu điền từ AI</span>
-                <small style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+            <div class="farm-settings-title">🎯 Cách học riêng cho từng vùng:</div>
+
+            <!-- Vùng 1: Vườn Nông Sản -->
+            <div class="farm-settings-zone-card">
+              <div class="farm-settings-zone-header">
+                <span class="farm-settings-zone-badge badge-crops">🌾 Vườn Nông Sản</span>
+                <span class="farm-settings-zone-desc">16 Ô Luống (Củ cải, Dâu tây, Hướng dương)</span>
               </div>
-              <input type="checkbox" id="farm-setting-mode-ai" checked>
-            </label>
+              <div class="farm-settings-zone-toggles">
+                <label class="farm-toggle-item">
+                  <span>1. Chọn nghĩa (Trắc nghiệm)</span>
+                  <input type="checkbox" id="farm-setting-crops-choice" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <span>2. Điền từ (Gõ từ vựng)</span>
+                  <input type="checkbox" id="farm-setting-crops-typing" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <span>3. Nghe điền từ</span>
+                  <input type="checkbox" id="farm-setting-crops-listening" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <div>
+                    <span>4. Câu điền từ AI</span>
+                    <small class="farm-ai-status-crops" style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+                  </div>
+                  <input type="checkbox" id="farm-setting-crops-ai" checked>
+                </label>
+                <label class="farm-toggle-item farm-toggle-random">
+                  <div>
+                    <span style="font-weight: 700; color: #fde047;">🎲 Ngẫu nhiên loại câu hỏi</span>
+                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên các cách học đã bật thay vì theo giai đoạn</small>
+                  </div>
+                  <input type="checkbox" id="farm-setting-crops-random" checked>
+                </label>
+              </div>
+            </div>
+
+            <!-- Vùng 2: Khu Cây Ăn Quả -->
+            <div class="farm-settings-zone-card">
+              <div class="farm-settings-zone-header">
+                <span class="farm-settings-zone-badge badge-orchard">🌳 Khu Cây Ăn Quả</span>
+                <span class="farm-settings-zone-desc">5 Cây Thân Gỗ (Táo, Cam, Đào, Lê, Anh đào)</span>
+              </div>
+              <div class="farm-settings-zone-toggles">
+                <label class="farm-toggle-item">
+                  <span>1. Chọn nghĩa (Trắc nghiệm)</span>
+                  <input type="checkbox" id="farm-setting-orchard-choice" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <span>2. Điền từ (Gõ từ vựng)</span>
+                  <input type="checkbox" id="farm-setting-orchard-typing" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <span>3. Nghe điền từ</span>
+                  <input type="checkbox" id="farm-setting-orchard-listening" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <div>
+                    <span>4. Câu điền từ AI</span>
+                    <small class="farm-ai-status-orchard" style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+                  </div>
+                  <input type="checkbox" id="farm-setting-orchard-ai" checked>
+                </label>
+                <label class="farm-toggle-item farm-toggle-random">
+                  <div>
+                    <span style="font-weight: 700; color: #fde047;">🎲 Ngẫu nhiên loại câu hỏi</span>
+                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên các cách học đã bật</small>
+                  </div>
+                  <input type="checkbox" id="farm-setting-orchard-random" checked>
+                </label>
+              </div>
+            </div>
+
+            <!-- Vùng 3: Khu Chăn Nuôi -->
+            <div class="farm-settings-zone-card">
+              <div class="farm-settings-zone-header">
+                <span class="farm-settings-zone-badge badge-poultry">🐔 Khu Chăn Nuôi</span>
+                <span class="farm-settings-zone-desc">Chuồng Trại (Gà & Gia Súc — Sắp ra mắt)</span>
+              </div>
+              <div class="farm-settings-zone-toggles">
+                <label class="farm-toggle-item">
+                  <span>1. Chọn nghĩa (Trắc nghiệm)</span>
+                  <input type="checkbox" id="farm-setting-poultry-choice" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <span>2. Điền từ (Gõ từ vựng)</span>
+                  <input type="checkbox" id="farm-setting-poultry-typing" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <span>3. Nghe điền từ</span>
+                  <input type="checkbox" id="farm-setting-poultry-listening" checked>
+                </label>
+                <label class="farm-toggle-item">
+                  <div>
+                    <span>4. Câu điền từ AI</span>
+                    <small class="farm-ai-status-poultry" style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+                  </div>
+                  <input type="checkbox" id="farm-setting-poultry-ai" checked>
+                </label>
+                <label class="farm-toggle-item farm-toggle-random">
+                  <div>
+                    <span style="font-weight: 700; color: #fde047;">🎲 Ngẫu nhiên loại câu hỏi</span>
+                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên câu hỏi khi chăm sóc vật nuôi</small>
+                  </div>
+                  <input type="checkbox" id="farm-setting-poultry-random" checked>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
         <div class="farm-sheet-footer">
