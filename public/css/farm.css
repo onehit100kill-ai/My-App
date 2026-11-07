@@ -1,0 +1,1142 @@
+/* ==========================================================================
+   VOCABMASTER - NÔNG TRẠI TỪ VỰNG (FARM GAME) CSS
+   Style hoàn toàn độc lập, tiền tố .farm- và #farm-view, #game-bubble
+   Mobile-First: 390x844 chuẩn, hỗ trợ kéo thả bong bóng, an toàn notch iOS
+   ========================================================================== */
+
+/* 1. BONG BÓNG GAME (GAME BUBBLE) */
+#game-bubble {
+  position: fixed;
+  bottom: 84px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  z-index: 900;
+  user-select: none;
+  touch-action: none; /* Cho phép touch drag */
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#game-bubble:active {
+  cursor: grabbing;
+  transform: scale(0.94);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.6);
+}
+
+#game-bubble .farm-bubble-icon {
+  font-size: 26px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+#game-bubble .farm-bubble-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background: #f59e0b;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* 2. MÀN HÌNH TOÀN MÀN HÌNH CỦA GAME NÔNG TRẠI */
+#farm-view {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-color: #264327;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-primary, #f0f6fc);
+}
+
+#farm-view[hidden] {
+  display: none !important;
+}
+
+/* 3. THANH HUD TRÊN CÙNG */
+.farm-hud {
+  height: 56px;
+  flex-shrink: 0;
+  background: var(--bg-surface, #161b22);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  padding-top: env(safe-area-inset-top, 0);
+  gap: 8px;
+  z-index: 10;
+}
+
+.farm-hud-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 90px;
+}
+
+.farm-level-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #34d399;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.farm-xp-track {
+  width: 100%;
+  max-width: 110px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.farm-xp-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.farm-hud-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.farm-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  min-height: 32px;
+}
+
+.farm-stat-chip.farm-gold-chip {
+  color: #fbbf24;
+}
+
+.farm-stat-chip.farm-fertilizer-chip {
+  color: #a78bfa;
+}
+
+.farm-bump-anim {
+  animation: farm-num-bump 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.farm-hud-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.farm-btn-icon {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary, #f0f6fc);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.farm-btn-icon:active {
+  transform: scale(0.92);
+}
+
+.farm-btn-close {
+  color: #f87171;
+  font-weight: 700;
+}
+
+/* 4. KHU VƯỜN CHÍNH (FARM FIELD) */
+.farm-field {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 12px;
+  background-image: url('../assets/farm/grass-tile.png');
+  background-repeat: repeat;
+  background-size: 64px 64px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.farm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+@media (min-width: 600px) {
+  .farm-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 620px;
+    gap: 16px;
+  }
+}
+
+@media (min-width: 900px) {
+  .farm-grid {
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 820px;
+    gap: 18px;
+  }
+}
+
+/* 5. TỪNG Ô ĐẤT (PLOT) */
+.farm-plot {
+  aspect-ratio: 1 / 1;
+  min-height: 104px;
+  background: rgba(22, 27, 34, 0.85);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg, 12px);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  overflow: hidden;
+  transition: transform 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.farm-plot:active {
+  transform: scale(0.95);
+}
+
+/* 5.1. Ô TRỐNG */
+.farm-plot.farm-plot-empty {
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  background: rgba(30, 41, 28, 0.8);
+}
+
+.farm-plot-empty .farm-empty-plus {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1;
+}
+
+.farm-plot-empty .farm-empty-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 4px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* 5.2. NỀN ĐẤT TRONG Ô */
+.farm-plot-soil-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  opacity: 0.9;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 5.3. SPRITE CÂY */
+.farm-crop-sprite {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.farm-crop-emoji {
+  font-size: 42px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Cây đung đưa nhẹ */
+.farm-sway-anim {
+  animation: farm-sway 3s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+}
+
+/* 5.4. TIẾN ĐỘ & MÁU TRÊN Ô ĐẤT */
+.farm-plot-header-bar {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.farm-plot-hearts {
+  display: flex;
+  gap: 2px;
+  font-size: 10px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+
+.farm-plot-progress-dots {
+  display: flex;
+  gap: 3px;
+  font-size: 8px;
+  color: #34d399;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+
+/* Huy hiệu giọt nước tưới */
+.farm-water-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 1.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  z-index: 5;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.6);
+  animation: farm-water-pulse 1.4s ease-in-out infinite;
+}
+
+/* Huy hiệu phân bón */
+.farm-fertilized-badge {
+  position: absolute;
+  bottom: 22px;
+  right: 6px;
+  font-size: 12px;
+  z-index: 4;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+
+/* Nhãn từ vựng nhỏ dưới đáy ô */
+.farm-plot-word-label {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 3px;
+  z-index: 4;
+  color: #f1f5f9;
+  pointer-events: none;
+}
+
+/* 5.5. TRẠNG THÁI HỒI (COOLING) */
+.farm-plot.farm-plot-cooling .farm-crop-sprite {
+  filter: opacity(0.55);
+}
+
+.farm-cooling-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 4;
+  border-radius: inherit;
+}
+
+.farm-cooling-timer {
+  font-size: 19px;
+  font-weight: 800;
+  color: #38bdf8;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  font-family: monospace;
+}
+
+.farm-cooling-track {
+  width: 75%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.farm-cooling-bar {
+  height: 100%;
+  background: #38bdf8;
+  width: 0%;
+  transition: width 1s linear;
+}
+
+/* 5.6. TRẠNG THÁI CHÍN (READY TO HARVEST) */
+.farm-plot.farm-plot-ready {
+  border-color: #f59e0b;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5), inset 0 0 10px rgba(245, 158, 11, 0.2);
+  animation: farm-ready-pulse 2s ease-in-out infinite alternate;
+}
+
+.farm-basket-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 18px;
+  z-index: 5;
+  animation: farm-bounce-soft 1.2s ease-in-out infinite alternate;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* 5.7. TRẠNG THÁI SÂU (WORM INFESTED) */
+.farm-worm-sprite {
+  position: absolute;
+  bottom: 22px;
+  left: 10px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  z-index: 4;
+  animation: farm-worm-wiggle 1s ease-in-out infinite alternate;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+}
+
+.farm-worm-hearts {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  display: flex;
+  gap: 1px;
+  font-size: 9px;
+  z-index: 5;
+}
+
+/* 5.8. CẢNH BÁO ĐANG HÉO (WITHER WARNING - 1 HP) */
+.farm-plot.farm-plot-wither-warning .farm-crop-sprite {
+  filter: sepia(0.65) saturate(0.7) brightness(0.85);
+  transform: rotate(5deg) translateY(4px);
+}
+
+.farm-wither-warning-badge {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(220, 38, 38, 0.9);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  animation: farm-blink 1s infinite alternate;
+}
+
+/* 5.9. CÂY ĐÃ CHẾT / HÉO (WITHERED DEAD) */
+.farm-plot.farm-plot-withered {
+  border-color: #64748b;
+  background: rgba(30, 41, 59, 0.9);
+}
+
+.farm-plot.farm-plot-withered .farm-crop-sprite {
+  filter: grayscale(0.9) brightness(0.7);
+}
+
+.farm-clean-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.7);
+  z-index: 5;
+  padding: 6px;
+}
+
+.farm-withered-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f87171;
+  margin-bottom: 6px;
+}
+
+.farm-btn-clean {
+  padding: 4px 10px;
+  font-size: 11.5px;
+  min-height: 28px;
+}
+
+/* 6. THANH DƯỚI CÙNG (BOTTOM BAR) */
+.farm-bottombar {
+  flex-shrink: 0;
+  min-height: 60px;
+  background: var(--bg-surface-elevated, #1c2128);
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+  gap: 8px;
+  z-index: 10;
+  font-size: 0.85rem;
+}
+
+.farm-bottom-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.82rem;
+}
+
+.farm-bottom-center {
+  display: flex;
+  align-items: center;
+}
+
+.farm-btn-buy-fert {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  touch-action: manipulation;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.farm-btn-buy-fert:active {
+  transform: scale(0.95);
+}
+
+.farm-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.farm-btn-quests {
+  background: var(--bg-surface, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  color: #f1f5f9;
+  border-radius: var(--radius-md, 8px);
+  padding: 7px 11px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* 7. BOTTOM SHEET & MODAL REUSE */
+.farm-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end; /* Bottom sheet trên mobile */
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.farm-sheet-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.farm-sheet-card {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  background: var(--bg-surface, #161b22);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5);
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+
+.farm-sheet-backdrop.active .farm-sheet-card {
+  transform: translateY(0);
+}
+
+@media (min-width: 768px) {
+  .farm-sheet-backdrop {
+    align-items: center;
+  }
+  .farm-sheet-card {
+    border-radius: var(--radius-lg, 16px);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    transform: scale(0.95);
+    padding-bottom: 0;
+  }
+  .farm-sheet-backdrop.active .farm-sheet-card {
+    transform: scale(1);
+  }
+}
+
+.farm-sheet-handle {
+  width: 42px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  margin: 10px auto 6px auto;
+  flex-shrink: 0;
+}
+
+.farm-sheet-header {
+  padding: 10px 18px 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.farm-sheet-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.farm-sheet-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+}
+
+.farm-sheet-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* 7.1. BẢNG CHỌN HẠT GIỐNG */
+.farm-seed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.farm-seed-card {
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, border-color 0.15s ease;
+}
+
+.farm-seed-card:active {
+  transform: scale(0.98);
+  border-color: #10b981;
+}
+
+.farm-seed-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.farm-seed-info {
+  flex: 1;
+}
+
+.farm-seed-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.farm-seed-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #8b949e);
+  line-height: 1.3;
+}
+
+/* Thẻ xác nhận gieo */
+.farm-plant-confirm-card {
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.farm-plant-word-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.farm-plant-word {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #34d399;
+}
+
+.farm-plant-ipa {
+  font-size: 0.9rem;
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+.farm-plant-meaning {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #f1f5f9;
+}
+
+.farm-plant-example {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #8b949e);
+  font-style: italic;
+  line-height: 1.4;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+/* 7.2. QUIZ TƯỚI / BẮT SÂU */
+.farm-quiz-header-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.farm-quiz-hearts {
+  display: flex;
+  gap: 3px;
+  font-size: 14px;
+}
+
+.farm-quiz-hearts .lost-heart {
+  filter: grayscale(1) opacity(0.35);
+}
+
+.farm-quiz-prompt-card {
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.farm-quiz-question-word {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.farm-quiz-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.farm-quiz-opt-btn {
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1.5px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #f1f5f9;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.farm-quiz-opt-btn:active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+}
+
+.farm-quiz-opt-btn.correct {
+  background: rgba(16, 185, 129, 0.25) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+}
+
+.farm-quiz-opt-btn.incorrect {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: #ef4444 !important;
+  color: #f87171 !important;
+  animation: farm-shake 0.35s ease;
+}
+
+.farm-quiz-input {
+  font-size: 16px !important; /* Chống iOS tự zoom */
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1.5px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 10px;
+  padding: 0 14px;
+  color: #fff;
+  outline: none;
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+
+.farm-quiz-input:focus {
+  border-color: #10b981;
+}
+
+.farm-quiz-hint-box {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fcd34d;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin-top: 10px;
+  line-height: 1.4;
+  animation: farm-fade-in 0.2s ease;
+}
+
+/* 7.3. THẺ ĐÃ THUỘC (HARVEST TOAST / POPUP) */
+.farm-harvest-toast {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgba(15, 23, 42, 0.95);
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 18px 24px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.farm-harvest-toast.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.farm-harvest-toast .harvest-title {
+  color: #fbbf24;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.farm-harvest-toast .harvest-word {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #34d399;
+}
+
+.farm-harvest-toast .harvest-meaning {
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.farm-harvest-toast .harvest-rewards {
+  margin-top: 8px;
+  font-weight: 700;
+  color: #f59e0b;
+  font-size: 0.95rem;
+}
+
+/* 7.4. OVERLAY CHÚC MỪNG LÊN CẤP */
+.farm-levelup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.farm-levelup-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.farm-levelup-card {
+  background: var(--bg-surface, #161b22);
+  border: 2px solid #34d399;
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 12px 36px rgba(16, 185, 129, 0.4);
+  animation: farm-bounce-in 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.farm-levelup-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.farm-levelup-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #34d399;
+  margin-bottom: 8px;
+}
+
+.farm-levelup-desc {
+  font-size: 1rem;
+  color: #f1f5f9;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* 7.5. CÀI ĐẶT NÔNG TRẠI (SETTINGS MODAL) */
+.farm-settings-group {
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  padding-bottom: 16px;
+}
+
+.farm-settings-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 10px;
+}
+
+.farm-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.farm-custom-days-list {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--bg-surface-elevated, #21262d);
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.farm-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.92rem;
+}
+
+.farm-toggle-item.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 7.6. BẢNG NHIỆM VỤ NGÀY */
+.farm-quest-item {
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.farm-quest-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.farm-quest-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.farm-quest-progress-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #8b949e);
+}
+
+.farm-quest-reward {
+  font-weight: 700;
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+/* 8. HIỆU ỨNG ANIMATIONS */
+@keyframes farm-sway {
+  0% { transform: rotate(-2deg); }
+  100% { transform: rotate(2deg); }
+}
+
+@keyframes farm-bounce-soft {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+@keyframes farm-water-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+
+@keyframes farm-ready-pulse {
+  0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+  100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+}
+
+@keyframes farm-worm-wiggle {
+  0% { transform: rotate(-6deg) scale(1); }
+  100% { transform: rotate(6deg) scale(1.08); }
+}
+
+@keyframes farm-blink {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+@keyframes farm-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes farm-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes farm-bounce-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes farm-num-bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); color: #10b981; }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farm-sway-anim,
+  .farm-water-badge,
+  .farm-plot.farm-plot-ready,
+  .farm-worm-sprite,
+  .farm-basket-badge {
+    animation: none !important;
+  }
+}

@@ -13,6 +13,7 @@
   
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/farm.css">
 </head>
 <body>
 
@@ -616,6 +617,19 @@
               <button type="button" class="stepper-btn" id="btn-inc-choice" title="Tăng">+</button>
             </div>
           </div>
+
+          <!-- Chế độ 4: Câu điền từ AI (Vô hiệu hoá khi chưa có backend AI) -->
+          <div class="settings-option-item" style="opacity: 0.6;">
+            <div class="settings-option-info">
+              <div class="settings-option-title">🤖 Câu điền từ AI</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Cần bật AI trước</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" disabled style="cursor: not-allowed;">−</button>
+              <input type="number" class="stepper-input" value="0" readonly disabled style="cursor: not-allowed;">
+              <button type="button" class="stepper-btn" disabled style="cursor: not-allowed;">+</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -740,6 +754,19 @@
               <button type="button" class="stepper-btn" id="btn-inc-choice-int" title="Tăng">+</button>
             </div>
           </div>
+
+          <!-- Chế độ 4: Câu điền từ AI (Chuyên sâu - Vô hiệu hoá) -->
+          <div class="settings-option-item" style="opacity: 0.6;">
+            <div class="settings-option-info">
+              <div class="settings-option-title">🤖 Câu điền từ AI (Chuyên sâu)</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Cần bật AI trước</div>
+            </div>
+            <div class="number-stepper">
+              <button type="button" class="stepper-btn" disabled style="cursor: not-allowed;">−</button>
+              <input type="number" class="stepper-input" value="0" readonly disabled style="cursor: not-allowed;">
+              <button type="button" class="stepper-btn" disabled style="cursor: not-allowed;">+</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -750,12 +777,222 @@
     </div>
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- MÀN HÌNH NÔNG TRẠI TỪ VỰNG TOÀN MÀN HÌNH                              -->
+  <!-- ===================================================================== -->
+  <div id="farm-view" hidden>
+    <!-- Thanh HUD trên cùng -->
+    <header class="farm-hud">
+      <div class="farm-hud-left">
+        <div class="farm-level-badge" id="farm-hud-level">🌱 Cấp 1</div>
+        <div class="farm-xp-track">
+          <div class="farm-xp-bar" id="farm-hud-xp-bar"></div>
+        </div>
+      </div>
+
+      <div class="farm-hud-center">
+        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins">🪙 30</div>
+        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert">🌻 ×0</div>
+      </div>
+
+      <div class="farm-hud-right">
+        <button type="button" class="farm-btn-icon" id="farm-btn-sound" title="Bật/Tắt âm thanh">🔊</button>
+        <button type="button" class="farm-btn-icon" id="farm-btn-settings" title="Cài đặt nông trại">⚙️</button>
+        <button type="button" class="farm-btn-icon farm-btn-close" id="farm-btn-close" title="Rời nông trại">✕</button>
+      </div>
+    </header>
+
+    <!-- Khu vườn chính: Lưới ô đất -->
+    <main class="farm-field" id="farm-field">
+      <div class="farm-grid" id="farm-grid">
+        <!-- Render động danh sách ô đất bằng farm.js -->
+      </div>
+    </main>
+
+    <!-- Thanh trạng thái / thao tác đáy -->
+    <footer class="farm-bottombar">
+      <div class="farm-bottom-left">
+        <span id="farm-bottom-words-left">🌱 Từ còn trong kho: 0</span>
+        <span id="farm-bottom-harvested">🧺 Đã thu hoạch: 0</span>
+      </div>
+      <div class="farm-bottom-center">
+        <button type="button" class="farm-btn-buy-fert" id="farm-btn-buy-fert">
+          <span>🌻 Mua phân bón</span>
+          <small style="opacity: 0.9;">(15🪙)</small>
+        </button>
+      </div>
+      <div class="farm-bottom-right">
+        <button type="button" class="farm-btn-quests" id="farm-btn-quests">🎯 Nhiệm vụ</button>
+      </div>
+    </footer>
+
+    <!-- Bottom Sheet: Chọn hạt giống & xác nhận gieo -->
+    <div class="farm-sheet-backdrop" id="farm-sheet-seed">
+      <div class="farm-sheet-card">
+        <div class="farm-sheet-handle"></div>
+        <div class="farm-sheet-header">
+          <h3 class="farm-sheet-title">🌱 Chọn Hạt Giống</h3>
+          <button type="button" class="farm-btn-icon farm-sheet-btn-close">✕</button>
+        </div>
+        <div class="farm-sheet-body">
+          <!-- Bước 1: Chọn 1 trong 3 loại cây -->
+          <div id="farm-seed-step-select">
+            <div class="farm-seed-list">
+              <div class="farm-seed-card" data-crop="radish">
+                <img class="farm-seed-thumb" src="assets/farm/seed-radish.png" onerror="this.style.display='none'" alt="Củ cải">
+                <span class="farm-crop-emoji" style="display:none; font-size:32px;">🥕</span>
+                <div class="farm-seed-info">
+                  <div class="farm-seed-name">🥕 Củ cải (Rau)</div>
+                  <div class="farm-seed-meta">2 lần tưới • Hồi 20s • Máu 3 • Nhận 10🪙 + 10 XP</div>
+                </div>
+              </div>
+
+              <div class="farm-seed-card" data-crop="strawberry">
+                <img class="farm-seed-thumb" src="assets/farm/seed-strawberry.png" onerror="this.style.display='none'" alt="Dâu tây">
+                <span class="farm-crop-emoji" style="display:none; font-size:32px;">🍓</span>
+                <div class="farm-seed-info">
+                  <div class="farm-seed-name">🍓 Dâu tây (Cây ăn quả)</div>
+                  <div class="farm-seed-meta">3 lần tưới • Hồi 30s • Máu 4 • Nhận 20🪙 + 15 XP</div>
+                </div>
+              </div>
+
+              <div class="farm-seed-card" data-crop="sunflower">
+                <img class="farm-seed-thumb" src="assets/farm/seed-sunflower.png" onerror="this.style.display='none'" alt="Hướng dương">
+                <span class="farm-crop-emoji" style="display:none; font-size:32px;">🌻</span>
+                <div class="farm-seed-info">
+                  <div class="farm-seed-name">🌻 Hướng dương (Hoa)</div>
+                  <div class="farm-seed-meta">4 lần tưới • Hồi 45s • Máu 5 • Nhận 35🪙 + 25 XP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bước 2: Thẻ xác nhận từ gieo -->
+          <div id="farm-seed-step-confirm" style="display: none;">
+            <div id="farm-seed-confirm-body"></div>
+            <div style="display: flex; gap: 10px; margin-top: 14px;">
+              <button type="button" class="btn btn-secondary" id="farm-seed-btn-change-word" style="flex: 1;">🔄 Đổi từ khác</button>
+              <button type="button" class="btn btn-primary" id="farm-seed-btn-confirm-plant" style="flex: 1;">🌱 Gieo Hạt</button>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+              <button type="button" class="btn btn-secondary" id="farm-seed-btn-back" style="font-size: 0.8rem; padding: 4px 10px;">← Chọn cây khác</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Quiz Tưới Cây & Bắt Sâu -->
+    <div class="farm-sheet-backdrop" id="farm-sheet-quiz">
+      <div class="farm-sheet-card">
+        <div class="farm-sheet-handle"></div>
+        <div class="farm-sheet-header">
+          <h3 class="farm-sheet-title" id="farm-quiz-title">Tưới cây</h3>
+          <button type="button" class="farm-btn-icon farm-sheet-btn-close" title="Thoát không tưới">✕</button>
+        </div>
+        <div style="padding: 6px 18px 0 18px;" id="farm-quiz-header-status">
+          <!-- Render máu & tiến độ -->
+        </div>
+        <div class="farm-sheet-body" id="farm-quiz-body">
+          <!-- Render câu hỏi động -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Cài đặt nông trại -->
+    <div class="farm-sheet-backdrop" id="farm-sheet-settings">
+      <div class="farm-sheet-card">
+        <div class="farm-sheet-handle"></div>
+        <div class="farm-sheet-header">
+          <h3 class="farm-sheet-title">⚙️ Cài Đặt Nông Trại</h3>
+          <button type="button" class="farm-btn-icon farm-sheet-btn-close">✕</button>
+        </div>
+        <div class="farm-sheet-body">
+          <!-- Nhóm 1: Chọn từ học -->
+          <div class="farm-settings-group">
+            <div class="farm-settings-title">📚 Chọn nguồn từ vựng:</div>
+            <label class="farm-radio-item">
+              <input type="radio" name="farm-word-source" value="unlearned" checked>
+              <span>Từ chưa thuộc (Mặc định)</span>
+            </label>
+            <label class="farm-radio-item">
+              <input type="radio" name="farm-word-source" value="learned">
+              <span>Từ đã thuộc (Chế độ ôn lại)</span>
+            </label>
+            <label class="farm-radio-item">
+              <input type="radio" name="farm-word-source" value="custom">
+              <span>Tuỳ chọn theo Ngày & Phần</span>
+            </label>
+            <div id="farm-custom-days-wrap" style="display: none;">
+              <div class="farm-custom-days-list" id="farm-custom-days-checklist">
+                <!-- Render động checklist ngày -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Nhóm 2: Chọn cách học -->
+          <div class="farm-settings-group" style="border-bottom: none; margin-bottom: 0;">
+            <div class="farm-settings-title">🎯 Cách học (Bật ít nhất 1 cách):</div>
+            <label class="farm-toggle-item">
+              <span>1. Chọn nghĩa (Trắc nghiệm)</span>
+              <input type="checkbox" id="farm-setting-mode-choice" checked>
+            </label>
+            <label class="farm-toggle-item">
+              <span>2. Điền từ (Gõ từ vựng)</span>
+              <input type="checkbox" id="farm-setting-mode-typing" checked>
+            </label>
+            <label class="farm-toggle-item">
+              <span>3. Nghe điền từ</span>
+              <input type="checkbox" id="farm-setting-mode-listening" checked>
+            </label>
+            <label class="farm-toggle-item disabled" title="Cần bật AI trước">
+              <div>
+                <span>4. Câu điền từ AI</span>
+                <small style="display: block; color: var(--text-muted); font-size: 0.75rem;">Cần bật AI trước</small>
+              </div>
+              <input type="checkbox" id="farm-setting-mode-ai" disabled>
+            </label>
+          </div>
+        </div>
+        <div class="farm-sheet-footer">
+          <button type="button" class="btn btn-secondary farm-sheet-btn-close">Hủy</button>
+          <button type="button" class="btn btn-primary" id="farm-btn-save-settings">Lưu Cài Đặt</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Nhiệm vụ ngày -->
+    <div class="farm-sheet-backdrop" id="farm-sheet-quests">
+      <div class="farm-sheet-card">
+        <div class="farm-sheet-handle"></div>
+        <div class="farm-sheet-header">
+          <h3 class="farm-sheet-title">🎯 Nhiệm Vụ Hàng Ngày</h3>
+          <button type="button" class="farm-btn-icon farm-sheet-btn-close">✕</button>
+        </div>
+        <div class="farm-sheet-body" id="farm-quests-list">
+          <!-- Render danh sách nhiệm vụ -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay Chúc mừng lên cấp -->
+    <div class="farm-levelup-overlay" id="farm-levelup-overlay">
+      <div class="farm-levelup-card">
+        <div class="farm-levelup-icon">🌟</div>
+        <div class="farm-levelup-title" id="farm-levelup-title">🎉 Lên Cấp!</div>
+        <div class="farm-levelup-desc" id="farm-levelup-desc">+2 ô đất mới, +20 vàng</div>
+        <button type="button" class="btn btn-primary" id="farm-levelup-btn-continue" style="width: 100%; min-height: 44px;">Tiếp tục chăm sóc</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/api.js?v=2"></script>
   <script src="js/treeview.js?v=2"></script>
   <script src="js/words.js?v=2"></script>
   <script src="js/study.js?v=2"></script>
   <script src="js/app.js?v=2"></script>
+  <script src="js/farm.js?v=1"></script>
 
 </body>
 </html>
