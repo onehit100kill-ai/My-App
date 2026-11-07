@@ -264,15 +264,19 @@
       const shuffledCards = this.shuffle(cards);
 
       // Render vào DOM dạng lưới 4x4, mặt mở sẵn (không úp thẻ)
-      gridEl.innerHTML = shuffledCards.map(card => `
-        <div class="matching-card ${card.type === 'en' ? 'matching-card-en' : 'matching-card-vi'}" data-card-id="${card.cardId}" data-pair-id="${card.pairId}" data-type="${card.type}">
-          <div class="matching-card-content">
-            <span class="matching-card-tag">${card.type === 'en' ? 'EN' : 'VI'}</span>
-            <span class="matching-card-text">${card.text}</span>
-            ${card.sub ? `<span class="matching-card-sub">${card.sub}</span>` : ''}
+      gridEl.innerHTML = shuffledCards.map(card => {
+        const isLongText = (card.text || '').length > 10;
+        const textClass = isLongText ? 'matching-card-text matching-card-text-long' : 'matching-card-text';
+        return `
+          <div class="matching-card ${card.type === 'en' ? 'matching-card-en' : 'matching-card-vi'}" data-card-id="${card.cardId}" data-pair-id="${card.pairId}" data-type="${card.type}">
+            <div class="matching-card-content">
+              <span class="matching-card-tag">${card.type === 'en' ? 'EN' : 'VI'}</span>
+              <span class="${textClass}">${this.escapeHtml(card.text)}</span>
+              ${card.sub ? `<span class="matching-card-sub">${this.escapeHtml(card.sub)}</span>` : ''}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       // Bắt sự kiện nhấp chọn thẻ
       gridEl.querySelectorAll('.matching-card').forEach(cardEl => {
@@ -550,6 +554,16 @@
           });
         }
       } catch (e) {}
+    },
+
+    escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     },
 
     // Thuật toán xáo trộn Fisher-Yates

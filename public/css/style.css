@@ -1376,7 +1376,10 @@ input:checked + .ios-slider:before {
    ========================================================================== */
 .study-modal-card {
   max-width: 860px;
-  height: 85vh;
+  width: 92%;
+  height: auto;
+  min-height: 380px;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
 }
@@ -1386,7 +1389,7 @@ input:checked + .ios-slider:before {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .study-modal-card .study-view-panel {
@@ -1399,8 +1402,8 @@ input:checked + .ios-slider:before {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  padding-top: 30px;
+  justify-content: center;
+  padding: 10px 0 20px 0;
 }
 
 /* Con trỏ & cử chỉ khi đang chờ chạm bất kỳ đâu trên màn hình để sang câu tiếp theo */
@@ -2360,9 +2363,9 @@ input:checked + .ios-slider:before {
 
   /* Tối ưu hóa Giao diện Ôn Tập trên Điện Thoại (iPhone 12 Pro Max) */
   .study-modal-card {
-    height: 85vh;
-
-    max-height: 85vh;
+    height: auto;
+    min-height: 360px;
+    max-height: 90vh;
     margin: auto;
     width: 100%;
     border-radius: var(--radius-xl);

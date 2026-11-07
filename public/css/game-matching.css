@@ -132,12 +132,13 @@
 
 .matching-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  width: min(94vw, 480px);
-  height: min(74vh, 560px);
-  aspect-ratio: 1 / 1.15;
+  width: min(92vw, 480px);
+  height: min(70vh, 520px);
+  max-width: 480px;
+  max-height: 520px;
   box-sizing: border-box;
 }
 
@@ -146,6 +147,8 @@
   position: relative;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   border-radius: 12px;
   background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
   border: 2px solid #334155;
@@ -161,11 +164,11 @@
   -webkit-user-select: none;
   touch-action: manipulation;
   text-align: center;
+  overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
               border-color 0.2s ease,
               background 0.2s ease,
-              box-shadow 0.2s ease,
-              opacity 0.35s ease;
+              box-shadow 0.2s ease;
 }
 
 .matching-card:not(.selected):not(.matched):not(.mismatch):not(.cleared):hover {
@@ -217,32 +220,47 @@
 }
 
 .matching-card-text {
-  font-size: clamp(0.75rem, 2.6vw, 0.98rem);
+  font-size: clamp(0.76rem, 2.3vw, 0.95rem);
   font-weight: 700;
   line-height: 1.25;
   color: #ffffff;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   max-width: 100%;
+  text-align: center;
+}
+
+.matching-card-text.matching-card-text-long {
+  font-size: clamp(0.66rem, 1.9vw, 0.8rem);
+  line-height: 1.2;
 }
 
 .matching-card-vi .matching-card-text {
-  color: #f1f5f9;
+  color: #f8fafc;
   font-weight: 600;
-  font-size: clamp(0.72rem, 2.3vw, 0.92rem);
+  font-size: clamp(0.74rem, 2.2vw, 0.9rem);
+}
+
+.matching-card-vi .matching-card-text.matching-card-text-long {
+  font-size: clamp(0.64rem, 1.8vw, 0.78rem);
 }
 
 .matching-card-sub {
-  font-size: clamp(0.6rem, 1.8vw, 0.72rem);
-  color: #94a3b8;
-  font-style: italic;
+  font-size: clamp(0.74rem, 2vw, 0.86rem);
+  color: #38bdf8;
+  font-weight: 700;
+  font-style: normal;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  letter-spacing: 0.3px;
 }
 
 /* 5. TRẠNG THÁI CHỌN: VIỀN SÁNG LÊN */
@@ -273,13 +291,33 @@
   100% { transform: scale(1); }
 }
 
-/* 2 THẺ BIẾN MẤT */
+/* 2 THẺ BIẾN MẤT: GIỮ NGUYÊN VỊ TRÍ VÀ KÍCH THƯỚC TRÊN LƯỚI 4X4 */
 .matching-card.cleared {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  background: rgba(15, 23, 42, 0.35) !important;
+  border: 1.5px dashed rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.matching-card.cleared .matching-card-content {
   opacity: 0;
-  transform: scale(0.5);
-  pointer-events: none;
   visibility: hidden;
-  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s;
+  transition: opacity 0.25s ease, visibility 0.25s;
+}
+
+.matching-card.cleared::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: rgba(52, 211, 153, 0.35);
+  pointer-events: none;
 }
 
 /* 7. TRẠNG THÁI GHÉP SAI (MISMATCH): ÁNH SÁNG ĐỎ Ở VIỀN 2 THẺ */

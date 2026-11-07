@@ -1541,14 +1541,6 @@
    FARM V2 EXTENSIONS: KHU CÂY ĂN QUẢ, KHO LƯƠNG THỰC, SHOP, LEVEL INFO & AI
    ========================================================================== */
 
-/* 5.10. KHU CÂY ĂN QUẢ (ORCHARD & TREE PLOTS) */
-.farm-tree-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  width: 100%;
-}
-
 /* 4.3. KHU CÂY ĂN QUẢ (CÓ SẴN TRÊN SÂN) */
 .farm-tree-grid {
   display: grid;
@@ -1558,8 +1550,14 @@
   box-sizing: border-box;
 }
 
+@media (min-width: 640px) {
+  .farm-tree-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
 .farm-tree-card {
-  aspect-ratio: 1 / 1.15;
   background: rgba(22, 27, 34, 0.9);
   border-radius: 14px;
   border: 1.5px solid rgba(255, 255, 255, 0.12);
@@ -1569,7 +1567,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 6px;
+  padding: 10px 8px;
+  min-height: 142px;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
@@ -1645,8 +1645,8 @@
 
 .farm-tree-visual {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 82px;
+  height: 82px;
   display: flex;
   align-items: center;
   justify-content: center;

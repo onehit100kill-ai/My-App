@@ -981,7 +981,7 @@
       const treeTypes = ['apple', 'orange', 'peach', 'pear', 'cherry'];
       const currentLevel = this.state.level || 1;
 
-      grid.innerHTML = treeTypes.map(type => {
+      const cardsHtml = treeTypes.map(type => {
         const def = FRUIT_TREES[type];
         if (!def) return '';
 
@@ -1032,6 +1032,18 @@
           </div>
         `;
       }).join('');
+
+      // Ô thứ 6 lấp đầy lưới 6 ô (3 hàng x 2 cột trên mobile, 2 hàng x 3 cột trên desktop), không để lại ô trống
+      const placeholderHtml = `
+        <div class="farm-tree-card farm-tree-card-coming-soon" style="opacity: 0.45; border: 1.5px dashed rgba(255, 255, 255, 0.18); background: rgba(15, 23, 42, 0.45); cursor: default; justify-content: center; text-align: center; gap: 4px;">
+          <div style="font-size: 30px; filter: grayscale(0.4);">🌱</div>
+          <div class="farm-tree-name" style="color: #cbd5e1; font-size: 0.8rem;">Cây Thần Kỳ</div>
+          <span class="farm-tree-lock-badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">🔒 Cấp 10</span>
+          <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">Sắp ra mắt</div>
+        </div>
+      `;
+
+      grid.innerHTML = cardsHtml + placeholderHtml;
     },
 
     getMissingXpForLevel(targetLevel) {
@@ -1323,7 +1335,6 @@
       if (!plot) return;
       const crop = CROP_TYPES[q.cropType] || {};
 
-      let hpString = '';
       const maxPlantHp = plot.maxHp || crop.maxHp || 3;
       let plantHeartsHtml = '';
       for (let i = 0; i < maxPlantHp; i++) {
@@ -1336,9 +1347,19 @@
         for (let i = 0; i < maxWormHp; i++) {
           wormHeartsHtml += i < plot.worm.hp ? '💚' : '<span style="filter:grayscale(1) opacity(0.35);">💚</span>';
         }
-        hpString = `Sâu: ${wormHeartsHtml} | Cây: ${plantHeartsHtml}`;
-      } else {
-        hpString = `Máu: ${plantHeartsHtml}`;
+        statusEl.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; padding-bottom: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="farm-quiz-hearts" style="font-size: 0.9rem;">Máu sâu: ${wormHeartsHtml}</span>
+              <span style="font-size: 0.8rem; color: #34d399; font-weight: 700;">🐛 Sâu còn ${plot.worm.hp}/${maxWormHp} HP</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="farm-quiz-hearts" style="font-size: 0.9rem;">Máu cây: ${plantHeartsHtml}</span>
+              <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Cây ${crop.name || ''}</span>
+            </div>
+          </div>
+        `;
+        return;
       }
 
       let fertBtnHtml = '';
@@ -1352,7 +1373,7 @@
 
       statusEl.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-          <div class="farm-quiz-hearts">${hpString} ${fertBtnHtml}</div>
+          <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml} ${fertBtnHtml}</div>
           <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
             ${q.isWormQuiz ? 'Đánh bại sâu' : `Lần tưới: ${plot.stage + 1}/${plot.stagesNeeded}`}
           </span>
@@ -1548,11 +1569,39 @@
             plot.worm = null;
             this.state.coins += 10;
             this.gainXp(10);
-            this.state.quests.worms += 1;
-            if (window.showToast) window.showToast('🐛 Đã bắt được sâu! +10 vàng, +10 XP');
+            this.state.quests.worms = (this.state.quests.worms || 0) + 1;
+            if (window.showToast) window.showToast('🐛 Đã diệt sạch sâu hại! +10 vàng, +10 XP');
+
+            this.saveState();
+            this.render();
+
+            setTimeout(() => {
+              document.getElementById('farm-sheet-quiz')?.classList.remove('active');
+              this.activeQuiz = null;
+            }, 650);
           } else {
-            if (window.showToast) window.showToast('Đúng rồi! Sâu mất 1 máu.');
+            // Sâu còn máu -> Tiếp tục hỏi câu tiếp theo ngay trong modal, không đóng modal
+            if (window.showToast) window.showToast(`Đúng rồi! Sâu còn ${plot.worm.hp} máu. Hãy tiếp tục!`);
+            this.saveState();
+            this.render();
+
+            const nextWord = this.pickNextWord(q.word.id);
+            q.word = {
+              id: nextWord.id,
+              word: nextWord.word,
+              ipa: nextWord.ipa,
+              meaning: nextWord.meaning,
+              example: nextWord.example,
+              audioUrl: nextWord.audioUrl
+            };
+            q.failCount = 0;
+            q.mode = this.getZoneQuizMode('crops', plot.stage);
+
+            setTimeout(() => {
+              this.renderQuizModal();
+            }, 450);
           }
+          return;
         } else {
           // Tưới cây bình thường:
           // Nếu đang héo (1 HP): hồi 1 máu trước, sau đó mới lớn
@@ -2140,11 +2189,30 @@
 
     pickMultipleRandomWords(count) {
       if (!this.cachedWordsPool || this.cachedWordsPool.length === 0) {
-        return [
-          { id: 9991, word: 'apple', meaning: 'quả táo' },
-          { id: 9992, word: 'orange', meaning: 'quả cam' },
-          { id: 9993, word: 'peach', meaning: 'quả đào' }
+        if (window.wordsManager && Array.isArray(window.wordsManager.words) && window.wordsManager.words.length > 0) {
+          this.cachedWordsPool = window.wordsManager.words;
+        }
+      }
+      if (!this.cachedWordsPool || this.cachedWordsPool.length === 0) {
+        const fallbacks = [
+          { id: 9991, word: 'apple', meaning: 'quả táo', ipa: '/ˈæpl/' },
+          { id: 9992, word: 'orange', meaning: 'quả cam', ipa: '/ˈɒrɪndʒ/' },
+          { id: 9993, word: 'peach', meaning: 'quả đào', ipa: '/piːtʃ/' },
+          { id: 9994, word: 'pear', meaning: 'quả lê', ipa: '/peə(r)/' },
+          { id: 9995, word: 'cherry', meaning: 'quả anh đào', ipa: '/ˈtʃeri/' },
+          { id: 9996, word: 'banana', meaning: 'quả chuối', ipa: '/bəˈnɑːnə/' },
+          { id: 9997, word: 'grape', meaning: 'quả nho', ipa: '/ɡreɪp/' },
+          { id: 9998, word: 'mango', meaning: 'quả xoài', ipa: '/ˈmæŋɡəʊ/' },
+          { id: 9999, word: 'lemon', meaning: 'quả chanh', ipa: '/ˈlemən/' },
+          { id: 10000, word: 'strawberry', meaning: 'quả dâu tây', ipa: '/ˈstrɔːbəri/' },
+          { id: 10001, word: 'watermelon', meaning: 'dưa hấu', ipa: '/ˈwɔːtərmelən/' },
+          { id: 10002, word: 'coconut', meaning: 'quả dừa', ipa: '/ˈkəʊkənʌt/' },
+          { id: 10003, word: 'pineapple', meaning: 'quả dứa', ipa: '/ˈpaɪnæpl/' },
+          { id: 10004, word: 'papaya', meaning: 'quả đu đủ', ipa: '/pəˈpaɪə/' },
+          { id: 10005, word: 'avocado', meaning: 'quả bơ', ipa: '/ˌævəˈkɑːdəʊ/' }
         ];
+        const shuffledFb = this.shuffle([...fallbacks]);
+        return shuffledFb.slice(0, Math.min(count, shuffledFb.length));
       }
 
       // Xáo trộn ngẫu nhiên và lấy count từ
@@ -2235,13 +2303,16 @@
     startFruitTreeQuiz(treeType) {
       let tree = this.state.treePlots.find(t => t.type === treeType);
       const def = FRUIT_TREES[treeType];
+      if (!def) return;
+
       if (!tree) {
         tree = { type: treeType, stage: 1, cooldown: 0, hearts: def.maxHp, words: [] };
         this.state.treePlots.push(tree);
       }
 
-      if (!tree.words || tree.words.length === 0) {
+      if (!Array.isArray(tree.words) || tree.words.length === 0 || !tree.words.every(w => w && (w.word || w.meaning))) {
         tree.words = this.pickMultipleRandomWords(def.maxWords);
+        this.saveState();
       }
 
       this.activeTreeQuiz = {
@@ -2252,6 +2323,41 @@
       };
 
       this.renderFruitTreeQuizModal();
+    },
+
+    fertilizeFruitTree(treeType) {
+      if ((this.state.fertilizer || 0) <= 0) {
+        if (window.showToast) window.showToast('Bạn không còn phân bón! Hãy mua trong Cửa hàng.');
+        return;
+      }
+      const tree = this.state.treePlots.find(t => t.type === treeType);
+      if (!tree) return;
+      this.state.fertilizer -= 1;
+      tree.hasFertilizer = true;
+      this.saveState();
+      this.renderFruitTreeQuizModal();
+      this.playSound('ting');
+      if (window.showToast) window.showToast('🌻 Đã bón phân cho cây! Hoàn thành phiên tưới này cây sẽ lớn +2 giai đoạn.');
+    },
+
+    generateDistractors(targetWord, pool) {
+      const targetMeaning = (targetWord && targetWord.meaning) ? targetWord.meaning.trim() : '';
+      let wordsSource = Array.isArray(pool) && pool.length > 0 ? pool : (window.wordsManager?.words || []);
+      const wrongPool = wordsSource.filter(w => w && w.meaning && w.meaning.trim() !== targetMeaning);
+      const shuffledWrong = this.shuffle([...wrongPool]).slice(0, 3);
+
+      const options = [
+        { meaning: targetMeaning || 'Chính xác', isCorrect: true },
+        ...shuffledWrong.map(w => ({ meaning: w.meaning, isCorrect: false }))
+      ];
+
+      const fallbackMeanings = ['Trái cây bổ dưỡng', 'Nông sản thơm ngon', 'Vật dụng thu hoạch', 'Hoạt động chăm sóc'];
+      let fbIdx = 0;
+      while (options.length < 4 && fbIdx < fallbackMeanings.length) {
+        options.push({ meaning: fallbackMeanings[fbIdx++], isCorrect: false });
+      }
+
+      return this.shuffle(options);
     },
 
     async renderFruitTreeQuizModal() {
@@ -2265,6 +2371,12 @@
       const def = FRUIT_TREES[q.treeType];
       const tree = this.state.treePlots.find(t => t.type === q.treeType) || {};
 
+      if (!q.words || q.words.length === 0) {
+        q.words = this.pickMultipleRandomWords(def.maxWords);
+        tree.words = q.words;
+        this.saveState();
+      }
+
       if (titleEl) {
         titleEl.textContent = `Tưới Cây ${def.name} — Câu ${q.wordIndex + 1}/${q.words.length}`;
       }
@@ -2274,16 +2386,20 @@
         plantHeartsHtml += i < (tree.hearts || def.maxHp) ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
       }
 
+      const fertStatusHtml = tree.hasFertilizer
+        ? '<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px;">🌻 Đã bón phân (+2 cấp)</span>'
+        : `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px;" onclick="FarmGame.fertilizeFruitTree('${q.treeType}')">🌻 Bón phân (${this.state.fertilizer || 0})</button>`;
+
       statusEl.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-          <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml}</div>
+          <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml} ${fertStatusHtml}</div>
           <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
             Giai đoạn: ${tree.stage || 1}/3 • Câu ${q.wordIndex + 1}/${q.words.length}
           </span>
         </div>
       `;
 
-      const currentWord = q.words[q.wordIndex];
+      const currentWord = q.words[q.wordIndex] || { word: 'apple', meaning: 'quả táo' };
 
       // Lấy dạng quiz từ cài đặt riêng cho Khu Cây Ăn Quả (hỗ trợ ngẫu nhiên loại câu hỏi)
       const mode = this.getZoneQuizMode('orchard', tree.stage || 1);
@@ -2393,21 +2509,27 @@
 
       if (inputEl) {
         inputEl.focus();
+        const submitAction = () => {
+          const isCorrect = inputEl.value.trim().toLowerCase() === (currentWord.word || '').trim().toLowerCase();
+          this.handleFruitQuizAnswer(isCorrect);
+        };
         inputEl.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') this.handleFruitQuizAnswer(inputEl.value.trim().toLowerCase() === currentWord.word.trim().toLowerCase());
+          if (e.key === 'Enter') submitAction();
         });
-      }
-
-      if (submitBtn) {
-        submitBtn.addEventListener('click', () => {
-          this.handleFruitQuizAnswer(inputEl.value.trim().toLowerCase() === currentWord.word.trim().toLowerCase());
-        });
+        if (submitBtn) {
+          submitBtn.addEventListener('click', submitAction);
+        }
       }
 
       bodyEl.querySelectorAll('.farm-quiz-opt-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (btn.disabled) return;
           const isCorrect = btn.getAttribute('data-fruit-opt-correct') === 'true';
-          this.handleFruitQuizAnswer(isCorrect);
+          btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+          bodyEl.querySelectorAll('.farm-quiz-opt-btn').forEach(b => b.disabled = true);
+          setTimeout(() => {
+            this.handleFruitQuizAnswer(isCorrect);
+          }, 320);
         });
       });
     },
@@ -2430,7 +2552,9 @@
           this.renderFruitTreeQuizModal();
         } else {
           // Hoàn thành tưới đủ từ của giai đoạn này
-          tree.stage = (tree.stage || 1) + 1;
+          const growth = tree.hasFertilizer ? 2 : 1;
+          tree.hasFertilizer = false;
+          tree.stage = Math.min(3, (tree.stage || 1) + growth);
           const sheet = document.getElementById('farm-sheet-fruit-quiz');
           if (sheet) sheet.classList.remove('active');
           this.activeTreeQuiz = null;
@@ -2457,9 +2581,23 @@
       } else {
         this.playSound('wrong');
         q.firstTryErrors[currentWord.id || currentWord.word] = true;
-        tree.hearts = Math.max(1, (tree.hearts || def.maxHp) - 1);
-
+        tree.hearts = Math.max(0, (tree.hearts || def.maxHp) - 1);
         this.saveState();
+
+        if (tree.hearts <= 0) {
+          tree.hearts = def.maxHp;
+          tree.cooldown = 15;
+          const sheet = document.getElementById('farm-sheet-fruit-quiz');
+          if (sheet) sheet.classList.remove('active');
+          this.activeTreeQuiz = null;
+          this.saveState();
+          this.render();
+          if (window.showToast) {
+            window.showToast(`🥀 Cây ${def.name} đã hết tim do trả lời sai! Hãy thử lại sau một lát.`);
+          }
+          return;
+        }
+
         this.renderFruitTreeQuizModal();
 
         if (window.showToast) {
