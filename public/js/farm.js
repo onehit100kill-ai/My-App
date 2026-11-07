@@ -112,6 +112,7 @@
       this.loadSettings();
       this.loadState();
       this.initBubble();
+      this.initGameMenuEvents();
       this.initUIEvents();
     },
 
@@ -225,19 +226,22 @@
     },
 
     // =========================================================================
-    // BONG BÓNG GAME (DRAGGABLE BUBBLE)
+    // BONG BÓNG GAME (DRAGGABLE BUBBLE & GAME MENU)
     // =========================================================================
     initBubble() {
       let bubble = document.getElementById('game-bubble');
       if (!bubble) {
         bubble = document.createElement('div');
         bubble.id = 'game-bubble';
-        bubble.title = 'Nông trại từ vựng';
+        bubble.title = 'Trò chơi từ vựng';
         bubble.innerHTML = `
-          <span class="farm-bubble-icon">🌾</span>
-          <span class="farm-bubble-badge"></span>
+          <span class="farm-bubble-icon">🎮</span>
         `;
         document.body.appendChild(bubble);
+      } else {
+        bubble.innerHTML = `
+          <span class="farm-bubble-icon">🎮</span>
+        `;
       }
 
       // Khôi phục vị trí lưu trước đó
@@ -296,13 +300,13 @@
         if (!isDragging) return;
         isDragging = false;
 
-        // Lưu vị trí
+        // Lưu vị trí nếu đã kéo
         if (movedDistance > 4) {
           const rect = bubble.getBoundingClientRect();
           localStorage.setItem('vm_game_bubble_pos', JSON.stringify({ x: rect.left, y: rect.top }));
         } else {
-          // Bấm mở game
-          FarmGame.open();
+          // Bấm mở menu trò chơi
+          FarmGame.toggleGameMenu();
         }
       };
 
@@ -313,6 +317,94 @@
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
       window.addEventListener('pointercancel', onPointerUp);
+    },
+
+    toggleGameMenu() {
+      const backdrop = document.getElementById('game-bubble-menu-backdrop');
+      if (backdrop && backdrop.classList.contains('active')) {
+        this.closeGameMenu();
+      } else {
+        this.openGameMenu();
+      }
+    },
+
+    openGameMenu() {
+      const backdrop = document.getElementById('game-bubble-menu-backdrop');
+      const menu = document.getElementById('game-bubble-menu');
+      const bubble = document.getElementById('game-bubble');
+      if (!backdrop || !menu || !bubble) return;
+
+      // Trên desktop: popover định vị theo bong bóng
+      if (window.innerWidth > 640) {
+        const bubbleRect = bubble.getBoundingClientRect();
+        const menuWidth = 250;
+        const menuHeight = 160;
+
+        let left = bubbleRect.right + 12;
+        if (left + menuWidth > window.innerWidth - 10) {
+          left = bubbleRect.left - menuWidth - 12;
+        }
+        if (left < 10) left = 10;
+
+        let top = bubbleRect.top - 20;
+        if (top + menuHeight > window.innerHeight - 10) {
+          top = window.innerHeight - menuHeight - 10;
+        }
+        if (top < 10) top = 10;
+
+        menu.style.position = 'fixed';
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        menu.style.right = 'auto';
+        menu.style.bottom = 'auto';
+      } else {
+        menu.style.position = '';
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.right = '';
+        menu.style.bottom = '';
+      }
+
+      backdrop.classList.add('active');
+    },
+
+    closeGameMenu() {
+      const backdrop = document.getElementById('game-bubble-menu-backdrop');
+      if (backdrop) {
+        backdrop.classList.remove('active');
+      }
+    },
+
+    initGameMenuEvents() {
+      const backdrop = document.getElementById('game-bubble-menu-backdrop');
+      const closeBtn = document.getElementById('game-menu-close-btn');
+      const matchingBtn = document.getElementById('game-menu-matching-btn');
+      const farmBtn = document.getElementById('game-menu-farm-btn');
+
+      closeBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.closeGameMenu();
+      });
+
+      backdrop?.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          this.closeGameMenu();
+        }
+      });
+
+      matchingBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.closeGameMenu();
+        if (window.MatchingGame && typeof window.MatchingGame.open === 'function') {
+          window.MatchingGame.open();
+        }
+      });
+
+      farmBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.closeGameMenu();
+        this.open();
+      });
     },
 
     // =========================================================================
@@ -899,6 +991,52 @@
       this.renderQuizModal();
     },
 
+    updateQuizHeaderStatus() {
+      const statusEl = document.getElementById('farm-quiz-header-status');
+      if (!statusEl || !this.activeQuiz) return;
+
+      const q = this.activeQuiz;
+      const plot = this.state.plots.find(p => p.id === q.plotId);
+      if (!plot) return;
+      const crop = CROP_TYPES[q.cropType] || {};
+
+      let hpString = '';
+      const maxPlantHp = plot.maxHp || crop.maxHp || 3;
+      let plantHeartsHtml = '';
+      for (let i = 0; i < maxPlantHp; i++) {
+        plantHeartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+      }
+
+      if (q.isWormQuiz && plot.worm) {
+        const maxWormHp = plot.worm.maxHp || (crop.id === 'radish' ? 2 : 3);
+        let wormHeartsHtml = '';
+        for (let i = 0; i < maxWormHp; i++) {
+          wormHeartsHtml += i < plot.worm.hp ? '💚' : '<span style="filter:grayscale(1) opacity(0.35);">💚</span>';
+        }
+        hpString = `Sâu: ${wormHeartsHtml} | Cây: ${plantHeartsHtml}`;
+      } else {
+        hpString = `Máu: ${plantHeartsHtml}`;
+      }
+
+      let fertBtnHtml = '';
+      if (!q.isWormQuiz && plot.stage < plot.stagesNeeded) {
+        if (plot.hasFertilizer) {
+          fertBtnHtml = '<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px;">🌻 Đã bón phân</span>';
+        } else {
+          fertBtnHtml = `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px;" onclick="FarmGame.fertilizePlot(${plot.id}); FarmGame.updateQuizHeaderStatus();">🌻 Bón phân (${this.state.fertilizer})</button>`;
+        }
+      }
+
+      statusEl.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div class="farm-quiz-hearts">${hpString} ${fertBtnHtml}</div>
+          <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
+            ${q.isWormQuiz ? 'Đánh bại sâu' : `Lần tưới: ${plot.stage + 1}/${plot.stagesNeeded}`}
+          </span>
+        </div>
+      `;
+    },
+
     async renderQuizModal() {
       const sheet = document.getElementById('farm-sheet-quiz');
       if (!sheet || !this.activeQuiz) return;
@@ -913,34 +1051,8 @@
         titleEl.textContent = q.isWormQuiz ? 'Bắt sâu! 🐛' : `Tưới cây — ${crop.name}`;
       }
 
-      // Trạng thái máu cây / máu sâu & số lần tưới
-      const statusEl = document.getElementById('farm-quiz-header-status');
-      if (statusEl) {
-        let hpString = '';
-        if (q.isWormQuiz && plot.worm) {
-          hpString = `Sâu: ${'💚'.repeat(plot.worm.hp)} | Cây: ${'❤️'.repeat(plot.hp)}`;
-        } else {
-          hpString = `Máu: ${'❤️'.repeat(plot.hp)}`;
-        }
-
-        let fertBtnHtml = '';
-        if (!q.isWormQuiz && plot.stage < plot.stagesNeeded) {
-          if (plot.hasFertilizer) {
-            fertBtnHtml = '<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px;">🌻 Đã bón phân</span>';
-          } else {
-            fertBtnHtml = `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px;" onclick="FarmGame.fertilizePlot(${plot.id}); FarmGame.renderQuizModal();">🌻 Bón phân (${this.state.fertilizer})</button>`;
-          }
-        }
-
-        statusEl.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div class="farm-quiz-hearts">${hpString} ${fertBtnHtml}</div>
-            <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
-              ${q.isWormQuiz ? 'Đánh bại sâu' : `Lần tưới: ${plot.stage + 1}/${plot.stagesNeeded}`}
-            </span>
-          </div>
-        `;
-      }
+      // Trạng thái máu cây / máu sâu & số lần tưới (Cập nhật trực tiếp)
+      this.updateQuizHeaderStatus();
 
       const bodyEl = document.getElementById('farm-quiz-body');
       if (!bodyEl) return;
@@ -1102,6 +1214,7 @@
         if (q.isWormQuiz && plot.worm) {
           // Bắt sâu: Trừ 1 máu sâu
           plot.worm.hp -= 1;
+          this.updateQuizHeaderStatus();
           if (plot.worm.hp <= 0) {
             // Đã bắt xong sâu!
             plot.worm = null;
@@ -1152,6 +1265,9 @@
 
         // Trừ 1 máu cây (cả lúc tưới lẫn bắt sâu)
         plot.hp -= 1;
+
+        // Cập nhật ngay lập tức tim máu trên bảng quiz
+        this.updateQuizHeaderStatus();
 
         if (plot.hp <= 0) {
           // Cây chết
@@ -1428,6 +1544,12 @@
       const radio = sheet.querySelector(`input[name="farm-word-source"][value="${this.settings.wordSource}"]`);
       if (radio) radio.checked = true;
 
+      // Tự động hiển thị danh sách ngày nếu đang lưu nguồn từ là "custom"
+      const customWrap = document.getElementById('farm-custom-days-wrap');
+      if (customWrap) {
+        customWrap.style.display = (this.settings.wordSource === 'custom') ? 'block' : 'none';
+      }
+
       // Đồng bộ toggle modes
       const choiceToggle = document.getElementById('farm-setting-mode-choice');
       const typingToggle = document.getElementById('farm-setting-mode-typing');
@@ -1492,7 +1614,7 @@
             </div>
           `;
           for (const d of days) {
-            const isChecked = this.settings.selectedDayIds.includes(d.id);
+            const isChecked = this.settings.selectedDayIds.some(id => String(id) === String(d.id));
             html += `
               <label class="farm-radio-item" style="margin-left: 14px; margin-bottom: 4px;">
                 <input type="checkbox" class="farm-custom-day-checkbox" value="${d.id}" ${isChecked ? 'checked' : ''}>

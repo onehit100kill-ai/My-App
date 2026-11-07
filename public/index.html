@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css?v=3">
   <link rel="stylesheet" href="css/farm.css">
+  <link rel="stylesheet" href="css/game-matching.css">
 </head>
 <body>
 
@@ -986,6 +987,88 @@
     </div>
   </div>
 
+  <!-- MENU POPUP / BOTTOM SHEET CHO BONG BÓNG GAME -->
+  <div id="game-bubble-menu-backdrop" class="game-bubble-menu-backdrop">
+    <div id="game-bubble-menu" class="game-bubble-menu">
+      <div class="game-bubble-menu-header">
+        <span class="game-bubble-menu-title">🎮 Trò Chơi Học Tập</span>
+        <button type="button" class="game-bubble-menu-close" id="game-menu-close-btn" title="Đóng menu">✕</button>
+      </div>
+      <div class="game-bubble-menu-items">
+        <button type="button" class="game-bubble-menu-item" id="game-menu-matching-btn">
+          <span class="game-menu-item-icon">🎮</span>
+          <div class="game-menu-item-text">
+            <span class="game-menu-item-name">Ghép cặp</span>
+            <span class="game-menu-item-desc">Lật thẻ 4×4 rèn trí nhớ & từ vựng</span>
+          </div>
+        </button>
+        <button type="button" class="game-bubble-menu-item" id="game-menu-farm-btn">
+          <span class="game-menu-item-icon">🌾</span>
+          <div class="game-menu-item-text">
+            <span class="game-menu-item-name">Nông trại</span>
+            <span class="game-menu-item-desc">Trồng trọt, tưới cây & thu hoạch từ</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÀN HÌNH GAME GHÉP CẶP TOÀN MÀN HÌNH -->
+  <div id="matching-game-view" class="matching-game-view" hidden>
+    <header class="matching-hud">
+      <div class="matching-hud-left">
+        <div class="matching-title-badge">🎮 Ghép Cặp</div>
+        <span class="matching-topic-label" id="matching-topic-label">Đang tải...</span>
+      </div>
+      <div class="matching-hud-center">
+        <div class="matching-stat-chip">⏱️ <span id="matching-timer">00:00</span></div>
+        <div class="matching-stat-chip">🔄 <span id="matching-moves">0 lượt</span></div>
+      </div>
+      <div class="matching-hud-right">
+        <button type="button" class="matching-btn-icon" id="matching-btn-restart" title="Chơi lại">🔄</button>
+        <button type="button" class="matching-btn-icon matching-btn-close" id="matching-btn-close" title="Đóng game">✕</button>
+      </div>
+    </header>
+
+    <main class="matching-board-container">
+      <div class="matching-grid" id="matching-grid">
+        <!-- 16 thẻ bài 4x4 sinh bởi game-matching.js -->
+      </div>
+    </main>
+
+    <!-- Overlay Chúc Mừng Chiến Thắng -->
+    <div class="matching-victory-overlay" id="matching-victory-overlay">
+      <div class="matching-victory-card">
+        <div class="matching-victory-confetti">🎉</div>
+        <h2 class="matching-victory-title">Xuất Sắc!</h2>
+        <p class="matching-victory-subtitle">Bạn đã ghép thành công tất cả 8 cặp từ vựng!</p>
+        
+        <div class="matching-record-stats">
+          <div class="matching-record-row">
+            <span>⏱️ Thời gian:</span>
+            <b id="matching-final-time">00:00</b>
+          </div>
+          <div class="matching-record-row">
+            <span>🔄 Số lượt lật:</span>
+            <b id="matching-final-moves">0 lượt</b>
+          </div>
+          <div class="matching-record-row matching-best-row">
+            <span>🏆 Kỷ lục tốt nhất:</span>
+            <b id="matching-best-record">--:--</b>
+          </div>
+          <div class="matching-new-record-badge" id="matching-new-record-badge" style="display:none;">
+            ⭐ KỶ LỤC MỚI! ⭐
+          </div>
+        </div>
+
+        <div class="matching-victory-actions">
+          <button type="button" class="btn btn-secondary" id="matching-victory-close-btn">Đóng</button>
+          <button type="button" class="btn btn-primary" id="matching-victory-restart-btn">Chơi Lại 🔄</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/api.js?v=2"></script>
   <script src="js/treeview.js?v=2"></script>
@@ -993,6 +1076,7 @@
   <script src="js/study.js?v=2"></script>
   <script src="js/app.js?v=2"></script>
   <script src="js/farm.js?v=1"></script>
+  <script src="js/game-matching.js"></script>
 
 </body>
 </html>
