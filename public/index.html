@@ -936,7 +936,8 @@
             <circle cx="12" cy="5" r="1" fill="#fde047"/>
           </svg> ×0
         </div>
-        <div class="farm-stat-chip farm-food-chip" id="farm-hud-food" title="Kho Nông Sản & Trái Cây (Bấm để xem kho)" style="cursor: pointer;">🧺 Kho (0)</div>
+        <div class="farm-stat-chip farm-food-chip" id="farm-hud-food" title="Lương thực trồng cây (chạm mở kho)" style="cursor: pointer;">🍞 5</div>
+        <div class="farm-stat-chip farm-storage-chip" id="farm-hud-storage" title="Kho Nông Sản & Trái Cây (chạm mở kho)" style="cursor: pointer;">🧺 Kho (0)</div>
       </div>
 
       <div class="farm-hud-right">
@@ -971,17 +972,17 @@
           </div>
         </section>
 
-        <!-- Khu 3: Khu Chăn Nuôi (Sắp ra mắt) -->
+        <!-- Khu 3: Khu Chăn Nuôi (Gà đẻ trứng) -->
         <section class="farm-zone farm-zone-poultry">
           <div class="farm-zone-header">
             <span class="farm-zone-title">🐔 Khu Chăn Nuôi</span>
-            <span class="farm-zone-badge">Sắp ra mắt</span>
+            <span class="farm-zone-badge">Chuồng Gà</span>
           </div>
-          <div class="farm-poultry-placeholder">
+          <div class="farm-poultry-placeholder" id="farm-poultry-coop" style="cursor: pointer;" title="Chạm để nhặt trứng gà">
             <div class="farm-poultry-fence">
               <div class="farm-poultry-icon">🐔</div>
               <div class="farm-poultry-title">Khu Nuôi Gà</div>
-              <div class="farm-poultry-desc">Đang dựng hàng rào & chuẩn bị chuồng trại...</div>
+              <div class="farm-poultry-desc" id="farm-poultry-desc">Chạm để nhặt trứng 🥚</div>
             </div>
           </div>
         </section>
