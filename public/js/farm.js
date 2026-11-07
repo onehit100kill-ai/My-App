@@ -15,6 +15,8 @@
       id: 'radish',
       name: 'Củ cải',
       icon: '🥕',
+      seedPrice: 5,
+      sellPrice: 8,
       stagesNeeded: 2,
       cooldownSec: 20,
       maxHp: 3,
@@ -31,6 +33,8 @@
       id: 'strawberry',
       name: 'Dâu tây',
       icon: '🍓',
+      seedPrice: 10,
+      sellPrice: 15,
       stagesNeeded: 3,
       cooldownSec: 30,
       maxHp: 4,
@@ -47,6 +51,8 @@
       id: 'sunflower',
       name: 'Hướng dương',
       icon: '🌻',
+      seedPrice: 15,
+      sellPrice: 25,
       stagesNeeded: 4,
       cooldownSec: 45,
       maxHp: 5,
@@ -73,8 +79,9 @@
       maxWords: 5,
       maxHp: 5,
       cooldownSec: 30,
-      costFood: 3,
+      costFood: 0,
       yieldFood: 5,
+      sellPrice: 12,
       rewardXp: 15,
       sprites: [
         'assets/farm/crop-apple-1.png',
@@ -92,8 +99,9 @@
       maxWords: 6,
       maxHp: 5,
       cooldownSec: 30,
-      costFood: 3,
+      costFood: 0,
       yieldFood: 6,
+      sellPrice: 16,
       rewardXp: 15,
       sprites: [
         'assets/farm/crop-orange-1.png',
@@ -111,8 +119,9 @@
       maxWords: 10,
       maxHp: 8,
       cooldownSec: 45,
-      costFood: 5,
+      costFood: 0,
       yieldFood: 10,
+      sellPrice: 20,
       rewardXp: 25,
       sprites: [
         'assets/farm/crop-peach-1.png',
@@ -130,8 +139,9 @@
       maxWords: 12,
       maxHp: 8,
       cooldownSec: 45,
-      costFood: 5,
+      costFood: 0,
       yieldFood: 12,
+      sellPrice: 25,
       rewardXp: 25,
       sprites: [
         'assets/farm/crop-pear-1.png',
@@ -149,8 +159,9 @@
       maxWords: 15,
       maxHp: 10,
       cooldownSec: 60,
-      costFood: 8,
+      costFood: 0,
       yieldFood: 15,
+      sellPrice: 30,
       rewardXp: 40,
       sprites: [
         'assets/farm/crop-cherry-1.png',
@@ -165,8 +176,17 @@
     coins: 30,
     xp: 0,
     level: 1,
-    food: 5, // Bắt đầu với 5 lương thực
-    foodStorage: {}, // Lưu số lượng nông sản & trái cây đã thu hoạch
+    food: 5,
+    foodStorage: {
+      radish: 3,
+      strawberry: 3,
+      sunflower: 3,
+      apple: 3,
+      orange: 3,
+      peach: 3,
+      pear: 3,
+      cherry: 3
+    }, // Lưu số lượng nông sản & trái cây đã thu hoạch
     fertilizer: 0,
     soundEnabled: true,
     harvestedTodayCount: 0,
@@ -235,6 +255,16 @@
     cachedWordsPool: [],
     isOpen: false,
 
+    // Icon túi phân bón SVG dùng chung
+    getFertilizerBagIcon(size = 18) {
+      return `<svg class="farm-fert-bag-svg" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: -2px; display: inline-block;">
+        <path d="M8 3.5h8c.6 0 1 .5.9 1.1L16 6.5H8L7.1 4.6c-.1-.6.3-1.1.9-1.1z" fill="#ca8a04"/>
+        <path d="M5.5 7.5h13c.8 0 1.5.7 1.4 1.5l-1.2 10.5c-.1.8-.8 1.5-1.6 1.5H6.9c-.8 0-1.5-.7-1.6-1.5L4.1 9c-.1-.8.6-1.5 1.4-1.5z" fill="#15803d"/>
+        <path d="M12 11c-1.8 1.8-1.8 3.8 0 5.5 1.8-1.7 1.8-3.7 0-5.5z" fill="#86efac"/>
+        <circle cx="12" cy="5" r="1" fill="#fde047"/>
+      </svg>`;
+    },
+
     // Khởi tạo
     init() {
       this.loadSettings();
@@ -269,8 +299,17 @@
         }
       }
 
-      if (this.state.food === undefined) this.state.food = 5;
       if (!this.state.foodStorage) this.state.foodStorage = {};
+
+      // Bổ sung x3 mỗi loại nông sản & trái cây vào kho để test theo yêu cầu
+      if (!this.state._testStockBoostV3) {
+        const testItems = ['radish', 'strawberry', 'sunflower', 'apple', 'orange', 'peach', 'pear', 'cherry'];
+        testItems.forEach(k => {
+          this.state.foodStorage[k] = Math.max(3, (this.state.foodStorage[k] || 0) + 3);
+        });
+        this.state._testStockBoostV3 = true;
+        this.saveState();
+      }
 
       // Đảm bảo 5 cây ăn quả có sẵn trên sân
       const validTypes = ['apple', 'orange', 'peach', 'pear', 'cherry'];
@@ -798,9 +837,16 @@
         xpBarEl.style.width = `${pct}%`;
         xpBarEl.title = `${this.state.xp}/${nextXp} XP (Bấm để xem chi tiết)`;
       }
-      if (foodEl) foodEl.textContent = `🍞 ${this.state.food || 0}`;
+      if (foodEl) {
+        const totalStock = Object.values(this.state.foodStorage || {}).reduce((a, b) => a + (b || 0), 0);
+        foodEl.innerHTML = `🧺 Kho (${totalStock})`;
+        foodEl.title = 'Kho Nông Sản & Trái Cây (Bấm để xem kho)';
+      }
       if (coinsEl) coinsEl.textContent = `🪙 ${this.state.coins}`;
-      if (fertEl) fertEl.textContent = `🧪 ×${this.state.fertilizer}`;
+      if (fertEl) {
+        fertEl.innerHTML = `${this.getFertilizerBagIcon(18)} ×${this.state.fertilizer || 0}`;
+        fertEl.title = 'Túi phân bón';
+      }
       const wordsHudEl = document.getElementById('farm-hud-words');
       if (wordsHudEl) {
         const count = this.getRemainingWordsCount();
@@ -906,9 +952,9 @@
               <div class="farm-water-badge" title="Tưới cây">💧</div>
             ` : ''}
 
-            <!-- Huy hiệu phân bón (Icon 🧪) -->
+            <!-- Huy hiệu phân bón (Túi phân bón) -->
             ${plot.hasFertilizer && !isReady && !isWitheredDead ? `
-              <div class="farm-fertilized-badge" title="Đã bón phân: Lớn 2 giai đoạn">🧪</div>
+              <div class="farm-fertilized-badge" title="Đã bón phân: Lớn 2 giai đoạn">${this.getFertilizerBagIcon(15)}</div>
             ` : ''}
 
             <!-- Huy hiệu giỏ thu hoạch -->
@@ -1014,7 +1060,7 @@
               ${isLocked 
                 ? `<div class="farm-tree-locked-hint">Mở ở Cấp ${def.unlockLevel}</div>`
                 : isReady 
-                  ? `<button type="button" class="farm-tree-btn btn-harvest" data-harvest-tree="${type}">🧺 Thu hoạch (+${def.yieldFood} 🍞)</button>`
+                  ? `<button type="button" class="farm-tree-btn btn-harvest" data-harvest-tree="${type}">🧺 Thu hoạch (+${def.yieldFood} ${def.icon})</button>`
                   : isCooldown 
                     ? `<div class="farm-tree-cooldown">Đang hồi sức (${treeState.cooldown}s)</div>`
                     : `<button type="button" class="farm-tree-btn btn-water" data-water-tree="${type}">💧 Tưới (${(treeState.words && treeState.words.length) ? treeState.words.length : def.maxWords} từ)</button>`
@@ -1176,6 +1222,29 @@
       sheet.setAttribute('data-target-plot', plotId);
       sheet.setAttribute('data-selected-word-id', word.id);
 
+      // Cập nhật số lượng nông sản trong kho hoặc giá xu trên thẻ chọn hạt giống
+      const storage = this.state.foodStorage || {};
+      const seedCards = sheet.querySelectorAll('.farm-seed-card');
+      seedCards.forEach(card => {
+        const cType = card.getAttribute('data-crop');
+        const cDef = CROP_TYPES[cType];
+        if (!cDef) return;
+        const count = storage[cType] || 0;
+        let badgeEl = card.querySelector('.farm-seed-stock-badge');
+        if (!badgeEl) {
+          badgeEl = document.createElement('span');
+          badgeEl.className = 'farm-seed-stock-badge';
+          card.appendChild(badgeEl);
+        }
+        if (count > 0) {
+          badgeEl.className = 'farm-seed-stock-badge in-stock';
+          badgeEl.innerHTML = `📦 Kho: ×${count}`;
+        } else {
+          badgeEl.className = 'farm-seed-stock-badge need-coins';
+          badgeEl.innerHTML = `🪙 ${cDef.seedPrice || 5} xu`;
+        }
+      });
+
       // Hiển thị danh sách hạt giống ban đầu
       const stepSelect = document.getElementById('farm-seed-step-select');
       const stepConfirm = document.getElementById('farm-seed-step-confirm');
@@ -1202,13 +1271,45 @@
       const cardEl = document.getElementById('farm-seed-confirm-body');
 
       const crop = CROP_TYPES[cropType];
+      if (!crop) return;
+
+      const storage = this.state.foodStorage || {};
+      const count = storage[cropType] || 0;
+      const seedPrice = crop.seedPrice || 5;
+      const userCoins = this.state.coins || 0;
+
+      let costBanner = '';
+      let btnLabel = '🌱 Gieo Hạt';
+      if (count > 0) {
+        costBanner = `
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <span>📦 Đang có <b>${count}</b> ${crop.name} trong kho</span>
+            <span style="font-weight: 700; color: #a7f3d0;">Dùng 1 kho</span>
+          </div>
+        `;
+        btnLabel = `🌱 Gieo Hạt (Dùng 1 kho)`;
+      } else {
+        costBanner = `
+          <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <span>🪙 Kho hết ${crop.name} • Mua hạt: <b>${seedPrice} xu</b></span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">Ví: ${userCoins}🪙</span>
+          </div>
+        `;
+        btnLabel = `🌱 Mua & Gieo Hạt (${seedPrice}🪙)`;
+      }
+
+      const confirmBtn = document.getElementById('farm-seed-btn-confirm-plant');
+      if (confirmBtn) {
+        confirmBtn.innerHTML = btnLabel;
+      }
 
       if (cardEl) {
         cardEl.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #34d399; font-weight: 700;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #34d399; font-weight: 700;">
             <img src="${crop.seedImg}" style="width: 28px; height: 28px; image-rendering: pixelated;" onerror="this.style.display='none'">
-            <span>Hạt giống ${crop.name} (Miễn phí)</span>
+            <span>Hạt giống ${crop.name}</span>
           </div>
+          ${costBanner}
           <div class="farm-plant-confirm-card">
             <div class="farm-plant-word-row">
               <span class="farm-plant-word">${word.word}</span>
@@ -1247,40 +1348,50 @@
       const cropType = sheet.getAttribute('data-selected-crop');
       const wordId = parseInt(sheet.getAttribute('data-selected-word-id'), 10);
 
-      if ((this.state.food || 0) < 1) {
-        if (window.showToast) window.showToast('Không đủ lương thực! Cần 1 🍞 để gieo hạt.');
-        return;
-      }
-
       const word = this.cachedWordsPool.find(w => w.id === wordId) || this.pickNextWord();
       const plot = this.state.plots.find(p => p.id === plotId);
       const crop = CROP_TYPES[cropType];
+      if (!plot || !crop) return;
 
-      if (plot && crop) {
-        this.state.food -= 1; // Gieo hạt tốn 1 lương thực
-        plot.cropType = cropType;
-        plot.wordId = word.id;
-        plot.word = word.word;
-        plot.ipa = word.ipa;
-        plot.meaning = word.meaning;
-        plot.example = word.example;
-        plot.audioUrl = word.audioUrl;
-        plot.stage = 0; // Hạt giống vừa gieo
-        plot.stagesNeeded = crop.stagesNeeded;
-        plot.hp = crop.maxHp;
-        plot.maxHp = crop.maxHp;
-        plot.cooldownUntil = 0;
-        plot.hasFertilizer = false;
-        plot.worm = null;
-        plot.state = 'growing';
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      const count = this.state.foodStorage[cropType] || 0;
+      const seedPrice = crop.seedPrice || 5;
 
-        this.saveState();
-        this.render();
-        this.playSound('pop');
-
-        if (window.showToast) {
-          window.showToast(`Đã gieo ${crop.name} (-1 🍞, "${word.word}") thành công!`);
+      let toastMsg = '';
+      if (count > 0) {
+        this.state.foodStorage[cropType] = count - 1;
+        toastMsg = `Đã gieo ${crop.name} (dùng 1 ${crop.name} trong kho, "${word.word}")!`;
+      } else {
+        if ((this.state.coins || 0) < seedPrice) {
+          if (window.showToast) window.showToast(`Không đủ xu! Cần ${seedPrice}🪙 để gieo hạt ${crop.name}.`);
+          return;
         }
+        this.state.coins -= seedPrice;
+        toastMsg = `Đã mua hạt và gieo ${crop.name} (-${seedPrice}🪙, "${word.word}")!`;
+      }
+
+      plot.cropType = cropType;
+      plot.wordId = word.id;
+      plot.word = word.word;
+      plot.ipa = word.ipa;
+      plot.meaning = word.meaning;
+      plot.example = word.example;
+      plot.audioUrl = word.audioUrl;
+      plot.stage = 0; // Hạt giống vừa gieo
+      plot.stagesNeeded = crop.stagesNeeded;
+      plot.hp = crop.maxHp;
+      plot.maxHp = crop.maxHp;
+      plot.cooldownUntil = 0;
+      plot.hasFertilizer = false;
+      plot.worm = null;
+      plot.state = 'growing';
+
+      this.saveState();
+      this.render();
+      this.playSound('pop');
+
+      if (window.showToast) {
+        window.showToast(toastMsg);
       }
 
       sheet.classList.remove('active');
@@ -1763,14 +1874,13 @@
 
       const crop = CROP_TYPES[plot.cropType];
 
-      // Thu hoạch nông sản: KHÔNG CÒN CHO VÀNG! Nhận lương thực:
-      // Bắt đầu 2 lương thực, bonus tỉ lệ = cấp × 5% nhận 3 thay vì 2
+      // Thu hoạch nông sản cất vào kho nông sản:
+      // Bắt đầu 1 nông sản, bonus tỉ lệ = cấp × 5% nhận 2 thay vì 1
       const bonusChance = (this.state.level || 1) * 0.05;
-      const foodYield = Math.random() < bonusChance ? 3 : 2;
+      const cropYield = Math.random() < bonusChance ? 2 : 1;
 
-      this.state.food = (this.state.food || 0) + foodYield;
       if (!this.state.foodStorage) this.state.foodStorage = {};
-      this.state.foodStorage[plot.cropType] = (this.state.foodStorage[plot.cropType] || 0) + 1;
+      this.state.foodStorage[plot.cropType] = (this.state.foodStorage[plot.cropType] || 0) + cropYield;
 
       this.gainXp(crop.rewardXp);
       this.state.harvestedTodayCount = (this.state.harvestedTodayCount || 0) + 1;
@@ -1792,7 +1902,9 @@
       const harvestedInfo = {
         word: plot.word,
         meaning: plot.meaning,
-        foodYield: foodYield,
+        cropIcon: crop.icon,
+        cropName: crop.name,
+        cropYield: cropYield,
         rewardXp: crop.rewardXp
       };
 
@@ -1831,11 +1943,15 @@
         document.getElementById('farm-view')?.appendChild(toast);
       }
 
+      const itemIcon = info.cropIcon || '🌾';
+      const itemName = info.cropName || 'Nông sản';
+      const yieldQty = info.cropYield || 1;
+
       toast.innerHTML = `
         <div class="harvest-title">✨ Đã thuộc lòng!</div>
         <div class="harvest-word">${info.word}</div>
         <div class="harvest-meaning">${info.meaning}</div>
-        <div class="harvest-rewards">+${info.foodYield} 🍞 | +${info.rewardXp} XP</div>
+        <div class="harvest-rewards">+${yieldQty} ${itemIcon} (${itemName}) | +${info.rewardXp} XP</div>
       `;
 
       toast.classList.add('active');
@@ -1976,37 +2092,37 @@
     },
 
     // =========================================================================
-    // KHO LƯƠNG THỰC & NÔNG SẢN (Group C)
+    // KHO NÔNG SẢN & TRÁI CÂY (Group C)
     // =========================================================================
     openStorageModal() {
       const modal = document.getElementById('farm-sheet-storage');
       const body = document.getElementById('farm-storage-body');
       if (!modal || !body) return;
 
-      const food = this.state.food || 0;
       const storage = this.state.foodStorage || {};
-
       const items = [
-        { id: 'radish', name: 'Củ cải', icon: '🥕' },
-        { id: 'strawberry', name: 'Dâu tây', icon: '🍓' },
-        { id: 'sunflower', name: 'Hướng dương', icon: '🌻' },
-        { id: 'apple', name: 'Táo', icon: '🍎' },
-        { id: 'orange', name: 'Cam', icon: '🍊' },
-        { id: 'peach', name: 'Đào', icon: '🍑' },
-        { id: 'pear', name: 'Lê', icon: '🍐' },
-        { id: 'cherry', name: 'Anh đào', icon: '🍒' }
+        { id: 'radish', name: 'Củ cải', icon: '🥕', price: CROP_TYPES.radish?.sellPrice || 8 },
+        { id: 'strawberry', name: 'Dâu tây', icon: '🍓', price: CROP_TYPES.strawberry?.sellPrice || 15 },
+        { id: 'sunflower', name: 'Hướng dương', icon: '🌻', price: CROP_TYPES.sunflower?.sellPrice || 25 },
+        { id: 'apple', name: 'Táo', icon: '🍎', price: FRUIT_TREES.apple?.sellPrice || 12 },
+        { id: 'orange', name: 'Cam', icon: '🍊', price: FRUIT_TREES.orange?.sellPrice || 16 },
+        { id: 'peach', name: 'Đào', icon: '🍑', price: FRUIT_TREES.peach?.sellPrice || 20 },
+        { id: 'pear', name: 'Lê', icon: '🍐', price: FRUIT_TREES.pear?.sellPrice || 25 },
+        { id: 'cherry', name: 'Anh đào', icon: '🍒', price: FRUIT_TREES.cherry?.sellPrice || 30 }
       ];
+
+      const totalItems = items.reduce((acc, it) => acc + (storage[it.id] || 0), 0);
 
       body.innerHTML = `
         <div class="farm-storage-summary">
           <div>
-            <div style="font-size: 0.85rem; color: #94a3b8;">Tổng Lương Thực Có Sẵn:</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: #fbbf24;">🍞 ${food}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Tổng nông sản & trái cây:</div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #38bdf8;">🧺 ${totalItems} vật phẩm</div>
           </div>
-          <button type="button" class="btn btn-primary" id="farm-storage-btn-go-shop" style="padding: 6px 12px; font-size: 0.85rem;">🛒 Mua thêm</button>
+          <button type="button" class="btn btn-primary" id="farm-storage-btn-go-shop" style="padding: 6px 14px; font-size: 0.85rem; font-weight: 700;">🛒 Đến Shop Bán</button>
         </div>
 
-        <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 10px; font-size: 0.9rem;">Kho Nông Sản & Trái Cây Đã Thu Hoạch:</div>
+        <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 10px; font-size: 0.9rem;">Danh Sách Nông Sản & Trái Cây:</div>
         <div class="farm-storage-grid">
           ${items.map(it => `
             <div class="farm-storage-item">
@@ -2027,12 +2143,198 @@
     },
 
     // =========================================================================
-    // CỬA HÀNG NÔNG TRẠI (Extra Shop Requirement)
+    // CỬA HÀNG NÔNG TRẠI (SHOP: CHỈ MUA PHÂN BÓN, BÁN TẤT CẢ NÔNG SẢN)
     // =========================================================================
     openShopModal() {
       const modal = document.getElementById('farm-sheet-shop');
       if (!modal) return;
+      this.renderShopModal();
       modal.classList.add('active');
+    },
+
+    renderShopModal() {
+      const body = document.getElementById('farm-shop-body');
+      if (!body) return;
+
+      const storage = this.state.foodStorage || {};
+      const items = [
+        { id: 'radish', name: 'Củ cải', icon: '🥕', price: CROP_TYPES.radish?.sellPrice || 8 },
+        { id: 'strawberry', name: 'Dâu tây', icon: '🍓', price: CROP_TYPES.strawberry?.sellPrice || 15 },
+        { id: 'sunflower', name: 'Hướng dương', icon: '🌻', price: CROP_TYPES.sunflower?.sellPrice || 25 },
+        { id: 'apple', name: 'Táo', icon: '🍎', price: FRUIT_TREES.apple?.sellPrice || 12 },
+        { id: 'orange', name: 'Cam', icon: '🍊', price: FRUIT_TREES.orange?.sellPrice || 16 },
+        { id: 'peach', name: 'Đào', icon: '🍑', price: FRUIT_TREES.peach?.sellPrice || 20 },
+        { id: 'pear', name: 'Lê', icon: '🍐', price: FRUIT_TREES.pear?.sellPrice || 25 },
+        { id: 'cherry', name: 'Anh đào', icon: '🍒', price: FRUIT_TREES.cherry?.sellPrice || 30 }
+      ];
+
+      // Tính tổng giá trị và số lượng có thể bán
+      let totalSellValue = 0;
+      let totalItemsCount = 0;
+      items.forEach(it => {
+        const count = storage[it.id] || 0;
+        totalSellValue += count * it.price;
+        totalItemsCount += count;
+      });
+
+      body.innerHTML = `
+        <!-- PHẦN 1: MUA VẬT PHẨM (CHỈ CẦN MUA PHÂN BÓN) -->
+        <div style="margin-bottom: 20px;">
+          <div style="font-weight: 700; color: #38bdf8; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <span>🛒 Mua Vật Phẩm</span>
+          </div>
+          <div class="farm-shop-card">
+            <div class="farm-shop-item-icon">
+              ${this.getFertilizerBagIcon(36)}
+            </div>
+            <div class="farm-shop-item-info">
+              <div class="farm-shop-item-name">Túi Phân Bón Tăng Trưởng</div>
+              <div class="farm-shop-item-desc">Giúp cây lớn nhanh 2 giai đoạn khi tưới nước</div>
+              <div style="font-size: 0.78rem; color: #34d399; margin-top: 4px; font-weight: 600;">
+                Đang có: ×${this.state.fertilizer || 0} túi
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary farm-shop-buy-btn" id="farm-shop-btn-buy-fert">
+              15🪙 Mua
+            </button>
+          </div>
+        </div>
+
+        <!-- PHẦN 2: BÁN NÔNG SẢN & TRÁI CÂY (TRỪ PHÂN BÓN) -->
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+            <div style="font-weight: 700; color: #fbbf24; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+              <span>💰 Bán Nông Sản Lấy Xu</span>
+              <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">(Kho: ${totalItemsCount})</span>
+            </div>
+            <button type="button" class="btn btn-secondary" id="farm-shop-btn-sell-all" 
+              style="padding: 4px 10px; font-size: 0.78rem; font-weight: 700; color: #fbbf24; border-color: rgba(251, 191, 36, 0.4);"
+              ${totalItemsCount === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+              ⚡ Bán hết (+${totalSellValue}🪙)
+            </button>
+          </div>
+
+          <div class="farm-shop-sell-grid">
+            ${items.map(it => {
+              const count = storage[it.id] || 0;
+              const hasItem = count > 0;
+              return `
+                <div class="farm-shop-sell-card" style="${!hasItem ? 'opacity: 0.55;' : ''}">
+                  <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+                    <span style="font-size: 24px; flex-shrink: 0;">${it.icon}</span>
+                    <div style="min-width: 0;">
+                      <div style="font-weight: 600; font-size: 0.88rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${it.name}
+                      </div>
+                      <div style="font-size: 0.75rem; color: #94a3b8;">
+                        Giá: <b style="color: #fbbf24;">+${it.price}🪙</b> • Kho: <b style="color: ${hasItem ? '#34d399' : '#94a3b8'};">×${count}</b>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                    <button type="button" class="btn btn-secondary farm-btn-sell-1" data-item-id="${it.id}"
+                      style="padding: 4px 8px; font-size: 0.78rem;" ${!hasItem ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+                      Bán 1
+                    </button>
+                    <button type="button" class="btn btn-secondary farm-btn-sell-all-item" data-item-id="${it.id}"
+                      style="padding: 4px 8px; font-size: 0.78rem; font-weight: 600; color: #38bdf8;" ${!hasItem ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+                      Hết
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+
+      // Gắn sự kiện Mua Phân Bón
+      body.querySelector('#farm-shop-btn-buy-fert')?.addEventListener('click', () => {
+        this.buyFertilizerFromShop();
+      });
+
+      // Gắn sự kiện Bán hết tất cả
+      body.querySelector('#farm-shop-btn-sell-all')?.addEventListener('click', () => {
+        this.sellAllStorageItems(items);
+      });
+
+      // Gắn sự kiện bán từng món
+      body.querySelectorAll('.farm-btn-sell-1').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemId = btn.getAttribute('data-item-id');
+          this.sellStorageItem(itemId, 1);
+        });
+      });
+
+      body.querySelectorAll('.farm-btn-sell-all-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemId = btn.getAttribute('data-item-id');
+          this.sellStorageItem(itemId, 'all');
+        });
+      });
+    },
+
+    sellStorageItem(itemId, qty = 1) {
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      const current = this.state.foodStorage[itemId] || 0;
+      if (current <= 0) {
+        if (window.showToast) window.showToast('Không có món này trong kho để bán!');
+        return;
+      }
+
+      const crop = CROP_TYPES[itemId];
+      const tree = FRUIT_TREES[itemId];
+      const itemDef = crop || tree;
+      const price = itemDef?.sellPrice || 10;
+      const name = itemDef?.name || itemId;
+
+      const qtyToSell = qty === 'all' ? current : Math.min(current, qty);
+      const earned = qtyToSell * price;
+
+      this.state.foodStorage[itemId] = current - qtyToSell;
+      this.state.coins = (this.state.coins || 0) + earned;
+
+      this.saveState();
+      this.renderHUD();
+      this.renderShopModal();
+      this.playSound('ting');
+
+      if (window.showToast) {
+        window.showToast(`Đã bán ${qtyToSell} ${name}, thu được +${earned}🪙!`);
+      }
+    },
+
+    sellAllStorageItems(items) {
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      const storage = this.state.foodStorage;
+
+      let totalEarned = 0;
+      let totalSold = 0;
+
+      items.forEach(it => {
+        const count = storage[it.id] || 0;
+        if (count > 0) {
+          totalEarned += count * it.price;
+          totalSold += count;
+          storage[it.id] = 0;
+        }
+      });
+
+      if (totalSold === 0) {
+        if (window.showToast) window.showToast('Kho nông sản đang trống, không có gì để bán!');
+        return;
+      }
+
+      this.state.coins = (this.state.coins || 0) + totalEarned;
+
+      this.saveState();
+      this.renderHUD();
+      this.renderShopModal();
+      this.playSound('ting');
+
+      if (window.showToast) {
+        window.showToast(`Đã bán toàn bộ ${totalSold} nông sản, thu được +${totalEarned}🪙!`);
+      }
     },
 
     buyFertilizerFromShop() {
@@ -2044,21 +2346,9 @@
       this.state.fertilizer = (this.state.fertilizer || 0) + 1;
       this.saveState();
       this.renderHUD();
+      this.renderShopModal();
       this.playSound('pop');
-      if (window.showToast) window.showToast('Đã mua 1 🧪 Phân bón tăng trưởng thành công!');
-    },
-
-    buyFoodFromShop() {
-      if ((this.state.coins || 0) < 10) {
-        if (window.showToast) window.showToast('Không đủ vàng! Cần 10🪙 để mua lương thực.');
-        return;
-      }
-      this.state.coins -= 10;
-      this.state.food = (this.state.food || 0) + 2;
-      this.saveState();
-      this.renderHUD();
-      this.playSound('pop');
-      if (window.showToast) window.showToast('Đã mua 2 🍞 Lương thực khẩn cấp thành công!');
+      if (window.showToast) window.showToast('Đã mua 1 Túi phân bón tăng trưởng thành công!');
     },
 
     // =========================================================================
@@ -2110,7 +2400,7 @@
                 ${isLocked ? `<span style="font-size:0.75rem; color:#f87171; margin-left:auto;">🔒 Cần Cấp ${tree.unlockLevel}</span>` : ''}
               </div>
               <div class="farm-fruit-card-meta">
-                ${isLocked ? `Mở ở Cấp ${tree.unlockLevel}` : `Trồng tốn ${tree.costFood} 🍞 • Thu ${tree.yieldFood} 🍞 + ${tree.rewardXp} XP • ${tree.maxWords} từ`}
+                ${isLocked ? `Mở ở Cấp ${tree.unlockLevel}` : `Thu ${tree.yieldFood} ${tree.icon} + ${tree.rewardXp} XP • ${tree.maxWords} từ`}
               </div>
             </div>
             ${!isLocked ? `<button type="button" class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem;">Chọn</button>` : ''}
@@ -2131,11 +2421,6 @@
     selectFruitTreeType(treeType) {
       const tree = FRUIT_TREES[treeType];
       if (!tree) return;
-
-      if ((this.state.food || 0) < tree.costFood) {
-        if (window.showToast) window.showToast(`Không đủ lương thực! Cần ${tree.costFood} 🍞 để trồng cây ${tree.name}.`);
-        return;
-      }
 
       this.activeTreePlanting.selectedTree = treeType;
       this.reshuffleFruitTreeWords();
@@ -2160,7 +2445,7 @@
             <div style="font-size: 32px;">${tree.icon}</div>
             <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">Cây ${tree.name} (${tree.rarity})</div>
             <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">
-              Chi phí: <b style="color:#fbbf24;">${tree.costFood} 🍞</b> • Thu hoạch: <b style="color:#34d399;">${tree.yieldFood} 🍞</b> + <b style="color:#a5b4fc;">${tree.rewardXp} XP</b>
+              Thu hoạch: <b style="color:#34d399;">+${tree.yieldFood} ${tree.icon}</b> + <b style="color:#a5b4fc;">${tree.rewardXp} XP</b>
             </div>
           </div>
           <div style="font-weight: 600; font-size: 0.85rem; color: #e2e8f0; margin-bottom: 6px;">
@@ -2245,7 +2530,7 @@
       this.activeTreePlanting = null;
 
       if (window.showToast) {
-        window.showToast(`Đã trồng cây ${tree.name} thành công (-${tree.costFood} 🍞)!`);
+        window.showToast(`Đã trồng cây ${tree.name} thành công!`);
       }
     },
 
@@ -2272,7 +2557,7 @@
 
       if ((tree.cooldown || 0) > 0) {
         if (this.state.fertilizer > 0) {
-          if (confirm(`Cây ${def.name} đang hồi sức (còn ${tree.cooldown}s). Bạn có muốn dùng 1 🧪 phân bón để tưới ngay không?`)) {
+          if (confirm(`Cây ${def.name} đang hồi sức (còn ${tree.cooldown}s). Bạn có muốn dùng 1 túi phân bón để tưới ngay không?`)) {
             this.state.fertilizer -= 1;
             tree.cooldown = 0;
             this.saveState();
@@ -2603,12 +2888,10 @@
       if (!tree || !def) return;
 
       const bonusChance = (this.state.level || 1) * 0.05;
-      const bonusFood = Math.random() < bonusChance ? 1 : 0;
-      const foodYield = def.yieldFood + bonusFood;
+      const fruitYield = Math.random() < bonusChance ? 2 : 1;
 
-      this.state.food = (this.state.food || 0) + foodYield;
       if (!this.state.foodStorage) this.state.foodStorage = {};
-      this.state.foodStorage[treeType] = (this.state.foodStorage[treeType] || 0) + 1;
+      this.state.foodStorage[treeType] = (this.state.foodStorage[treeType] || 0) + fruitYield;
 
       this.gainXp(def.rewardXp);
       this.state.harvestedTodayCount = (this.state.harvestedTodayCount || 0) + 1;
@@ -2627,7 +2910,9 @@
       this.showHarvestToast({
         word: `Trái ${def.name}`,
         meaning: `Độ hiếm: ${def.rarity}`,
-        foodYield: foodYield,
+        cropIcon: def.icon,
+        cropName: def.name,
+        cropYield: fruitYield,
         rewardXp: def.rewardXp
       });
     },
@@ -2938,8 +3223,6 @@
       // 3. Nút dưới thanh đáy
       document.getElementById('farm-btn-quests')?.addEventListener('click', () => this.openQuestsModal());
       document.getElementById('farm-btn-shop')?.addEventListener('click', () => this.openShopModal());
-      document.getElementById('farm-shop-buy-fert')?.addEventListener('click', () => this.buyFertilizerFromShop());
-      document.getElementById('farm-shop-buy-food')?.addEventListener('click', () => this.buyFoodFromShop());
 
       // 4. Chọn hạt giống nông sản
       document.querySelectorAll('.farm-seed-card').forEach(card => {
