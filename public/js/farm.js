@@ -161,9 +161,8 @@
     }
   };
 
-  // Danh mục 11 loại vật phẩm có thể bán trong Shop (Không có bánh mì)
+  // Danh mục các loại nông sản & sản phẩm chăn nuôi có thể bán trong Shop (Không cho bán phân bón)
   const SHOP_SELL_ITEMS = [
-    { id: 'fertilizer', name: 'Túi phân bón', icon: '🎒', price: 5, type: 'fertilizer' },
     { id: 'radish', name: 'Củ cải', icon: '🥕', price: 6, type: 'storage' },
     { id: 'strawberry', name: 'Dâu tây', icon: '🍓', price: 10, type: 'storage' },
     { id: 'sunflower', name: 'Hướng dương', icon: '🌻', price: 15, type: 'storage' },
@@ -265,14 +264,14 @@
     cachedWordsPool: [],
     isOpen: false,
 
-    // Icon túi phân bón SVG dùng chung
+    // Icon túi phân bón dùng chung (ảnh người dùng đã tải lên, đã tách nền)
     getFertilizerBagIcon(size = 18) {
-      return `<svg class="farm-fert-bag-svg" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: -2px; display: inline-block;">
-        <path d="M8 3.5h8c.6 0 1 .5.9 1.1L16 6.5H8L7.1 4.6c-.1-.6.3-1.1.9-1.1z" fill="#ca8a04"/>
-        <path d="M5.5 7.5h13c.8 0 1.5.7 1.4 1.5l-1.2 10.5c-.1.8-.8 1.5-1.6 1.5H6.9c-.8 0-1.5-.7-1.6-1.5L4.1 9c-.1-.8.6-1.5 1.4-1.5z" fill="#15803d"/>
-        <path d="M12 11c-1.8 1.8-1.8 3.8 0 5.5 1.8-1.7 1.8-3.7 0-5.5z" fill="#86efac"/>
-        <circle cx="12" cy="5" r="1" fill="#fde047"/>
-      </svg>`;
+      return `<img class="farm-fert-icon-img" src="assets/farm/fertilizer-bag.png" alt="fert" style="width:${size}px; height:${size}px; object-fit:contain; vertical-align:middle; display:inline-block;" />`;
+    },
+
+    // Icon đồng xu vàng dùng chung (ảnh người dùng đã tải lên, đã tách nền)
+    getCoinIcon(size = 18) {
+      return `<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin" style="width:${size}px; height:${size}px; object-fit:contain; vertical-align:middle; display:inline-block;" />`;
     },
 
     // Khởi tạo
@@ -584,7 +583,7 @@
             ` : isFeeding ? `
               <span class="farm-chicken-cooldown-text">⏳ ${leftSec}s</span>
             ` : `
-              <span class="farm-animal-feed-badge">🌾 -2🪙</span>
+              <span class="farm-animal-feed-badge">🌾 -2${this.getCoinIcon(12)}</span>
               <span class="farm-chicken-label" style="color: #86efac;">Cho ăn</span>
             `}
           </div>
@@ -712,7 +711,7 @@
             ` : isFeeding ? `
               <span class="farm-cow-cooldown-text">⏳ ${leftSec}s</span>
             ` : `
-              <span class="farm-animal-feed-badge">🌿 -6🪙</span>
+              <span class="farm-animal-feed-badge">🌿 -6${this.getCoinIcon(12)}</span>
               <span class="farm-cow-label" style="color: #67e8f9;">Cho ăn</span>
             `}
           </div>
@@ -1184,16 +1183,22 @@
         xpBarEl.title = `${this.state.xp}/${nextXp} XP (Bấm để xem chi tiết)`;
       }
 
-      const storageEl = document.getElementById('farm-hud-storage');
-      if (storageEl) {
-        const totalStock = Object.values(this.state.foodStorage || {}).reduce((a, b) => a + (b || 0), 0);
-        storageEl.innerHTML = `🧺 Kho (${totalStock})`;
-        storageEl.title = 'Kho Nông Sản & Trái Cây (chạm mở kho)';
+      const coinsCountEl = document.getElementById('farm-hud-coins-count');
+      const coinsEl = document.getElementById('farm-hud-coins');
+      if (coinsCountEl) {
+        coinsCountEl.textContent = this.state.coins || 0;
+      } else if (coinsEl) {
+        coinsEl.innerHTML = `${this.getCoinIcon(18)} <span id="farm-hud-coins-count">${this.state.coins || 0}</span>`;
       }
 
       if (fertEl) {
-        fertEl.innerHTML = `${this.getFertilizerBagIcon(18)} ×${this.state.fertilizer || 0}`;
-        fertEl.title = 'Túi phân bón';
+        const fertCountEl = document.getElementById('farm-hud-fert-count');
+        if (fertCountEl) {
+          fertCountEl.textContent = `×${this.state.fertilizer || 0}`;
+        } else {
+          fertEl.innerHTML = `${this.getFertilizerBagIcon(18)} <span id="farm-hud-fert-count">×${this.state.fertilizer || 0}</span>`;
+        }
+        fertEl.title = 'Túi phân bón (chạm để mở Shop)';
       }
 
       const wordsHudEl = document.getElementById('farm-hud-words');
@@ -1629,7 +1634,7 @@
           card.appendChild(badgeEl);
         }
         badgeEl.className = 'farm-seed-stock-badge in-stock';
-        badgeEl.innerHTML = `Giá: ${cDef.seedPrice}🪙 • Kho: ×${count} • Bán: +${cDef.sellPrice}🪙`;
+        badgeEl.innerHTML = `Giá: ${cDef.seedPrice}${this.getCoinIcon(12)} • Kho: ×${count} • Bán: +${cDef.sellPrice}${this.getCoinIcon(12)}`;
       });
 
       // Hiển thị danh sách hạt giống ban đầu
@@ -1669,19 +1674,19 @@
       if (canAfford) {
         costBanner = `
           <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-            <span>🪙 Chi phí mua hạt & gieo: <b>${seedPrice} vàng</b></span>
-            <span style="font-weight: 700; color: #a7f3d0;">Ví của bạn: ${userCoins}🪙</span>
+            <span style="display:inline-flex; align-items:center; gap:4px;">${this.getCoinIcon(16)} Chi phí mua hạt & gieo: <b>${seedPrice} vàng</b></span>
+            <span style="font-weight: 700; color: #a7f3d0; display:inline-flex; align-items:center; gap:2px;">Ví của bạn: ${userCoins}${this.getCoinIcon(13)}</span>
           </div>
         `;
-        btnLabel = `🌱 Gieo Hạt (-${seedPrice}🪙)`;
+        btnLabel = `🌱 Gieo Hạt (-${seedPrice}${this.getCoinIcon(13)})`;
       } else {
         costBanner = `
           <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-            <span>🪙 Cần <b>${seedPrice} vàng</b> để gieo hạt</span>
-            <span style="font-weight: 700; color: #f87171;">Ví chỉ có: ${userCoins}🪙 (Thiếu)</span>
+            <span style="display:inline-flex; align-items:center; gap:4px;">${this.getCoinIcon(16)} Cần <b>${seedPrice} vàng</b> để gieo hạt</span>
+            <span style="font-weight: 700; color: #f87171; display:inline-flex; align-items:center; gap:2px;">Ví chỉ có: ${userCoins}${this.getCoinIcon(13)} (Thiếu)</span>
           </div>
         `;
-        btnLabel = `Thiếu Vàng (${seedPrice}🪙)`;
+        btnLabel = `Thiếu Vàng (${seedPrice}${this.getCoinIcon(13)})`;
       }
 
       const confirmBtn = document.getElementById('farm-seed-btn-confirm-plant');
@@ -2479,115 +2484,10 @@
     },
 
     // =========================================================================
-    // KHO NÔNG SẢN & TRÁI CÂY (Không có bánh mì)
+    // KHO ĐÃ ĐƯỢC THAY BẰNG HIỂN THỊ XU VÀNG & QUẢN LÝ BÁN QUA SHOP
     // =========================================================================
     openStorageModal() {
-      const modal = document.getElementById('farm-sheet-storage');
-      const body = document.getElementById('farm-storage-body');
-      if (!modal || !body) return;
-
-      const storage = this.state.foodStorage || {};
-      const cropAndFruitItems = [
-        { id: 'radish', name: 'Củ cải', icon: '🥕', price: 6 },
-        { id: 'strawberry', name: 'Dâu tây', icon: '🍓', price: 10 },
-        { id: 'sunflower', name: 'Hướng dương', icon: '🌻', price: 15 },
-        { id: 'apple', name: 'Táo', icon: '🍎', price: 20 },
-        { id: 'orange', name: 'Cam', icon: '🍊', price: 24 },
-        { id: 'peach', name: 'Đào', icon: '🍑', price: 35 },
-        { id: 'pear', name: 'Lê', icon: '🍐', price: 42 },
-        { id: 'cherry', name: 'Anh đào', icon: '🍒', price: 50 }
-      ];
-
-      const eggCount = storage.egg || 0;
-      const milkCount = storage.milk || 0;
-      const totalStorageItems = cropAndFruitItems.reduce((acc, it) => acc + (storage[it.id] || 0), 0) + eggCount + milkCount;
-
-      body.innerHTML = `
-        <div class="farm-storage-summary" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; background: rgba(30, 41, 59, 0.6); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-          <div style="display: flex; gap: 16px;">
-            <div>
-              <div style="font-size: 0.78rem; color: #94a3b8;">Ví vàng:</div>
-              <div style="font-size: 1.25rem; font-weight: 800; color: #fbbf24;">🪙 ${this.state.coins || 0}</div>
-            </div>
-            <div>
-              <div style="font-size: 0.78rem; color: #94a3b8;">Phân bón:</div>
-              <div style="font-size: 1.25rem; font-weight: 800; color: #86efac; display: flex; align-items: center; gap: 4px;">
-                ${this.getFertilizerBagIcon(20)} ×${this.state.fertilizer || 0}
-              </div>
-            </div>
-            <div>
-              <div style="font-size: 0.78rem; color: #94a3b8;">Kho vật phẩm:</div>
-              <div style="font-size: 1.25rem; font-weight: 800; color: #38bdf8;">🧺 ×${totalStorageItems}</div>
-            </div>
-          </div>
-          <button type="button" class="btn btn-primary" id="farm-storage-btn-go-shop" style="padding: 6px 14px; font-size: 0.85rem; font-weight: 700;">🛒 Đến Shop</button>
-        </div>
-
-        <!-- THẺ ĐẶC BIỆT: SẢN PHẨM CHĂN NUÔI (TRỨNG & SỮA) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
-          <!-- TRỨNG GÀ -->
-          <div style="background: rgba(22, 27, 34, 0.85); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 24px;">🥚</span>
-              <div>
-                <div style="font-weight: 700; font-size: 0.85rem; color: #fff;">Trứng Gà (×${eggCount})</div>
-                <div style="font-size: 0.72rem; color: #fbbf24;">+8🪙 / quả</div>
-              </div>
-            </div>
-            <button type="button" class="btn btn-secondary farm-storage-egg-btn" id="farm-storage-btn-sell-egg"
-              style="padding: 4px 8px; font-size: 0.75rem; color: #fbbf24; font-weight: 700; border-color: rgba(251, 191, 36, 0.4); width: 100%;"
-              ${eggCount <= 0 ? 'disabled style="opacity:0.35; cursor:not-allowed;"' : ''}>
-              💰 Bán Trứng
-            </button>
-          </div>
-
-          <!-- SỮA TƯƠI -->
-          <div style="background: rgba(22, 27, 34, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 24px;">🥛</span>
-              <div>
-                <div style="font-weight: 700; font-size: 0.85rem; color: #fff;">Sữa Tươi (×${milkCount})</div>
-                <div style="font-size: 0.72rem; color: #38bdf8;">+24🪙 / bình</div>
-              </div>
-            </div>
-            <button type="button" class="btn btn-secondary" id="farm-storage-btn-sell-milk"
-              style="padding: 4px 8px; font-size: 0.75rem; color: #38bdf8; font-weight: 700; border-color: rgba(56, 189, 248, 0.4); width: 100%;"
-              ${milkCount <= 0 ? 'disabled style="opacity:0.35; cursor:not-allowed;"' : ''}>
-              💰 Bán Sữa
-            </button>
-          </div>
-        </div>
-
-        <div style="font-weight: 700; color: #e2e8f0; margin-bottom: 10px; font-size: 0.9rem;">Danh Sách Nông Sản & Trái Cây:</div>
-        <div class="farm-storage-grid">
-          ${cropAndFruitItems.map(it => `
-            <div class="farm-storage-item">
-              <span class="farm-storage-item-icon">${it.icon}</span>
-              <span class="farm-storage-item-name">${it.name}</span>
-              <span class="farm-storage-item-count">×${storage[it.id] || 0}</span>
-            </div>
-          `).join('')}
-        </div>
-      `;
-
-      body.querySelector('#farm-storage-btn-go-shop')?.addEventListener('click', () => {
-        modal.classList.remove('active');
-        this.openShopModal();
-      });
-
-      body.querySelector('#farm-storage-btn-sell-egg')?.addEventListener('click', () => {
-        modal.classList.remove('active');
-        this.openShopModal();
-        this.openSellModal('egg');
-      });
-
-      body.querySelector('#farm-storage-btn-sell-milk')?.addEventListener('click', () => {
-        modal.classList.remove('active');
-        this.openShopModal();
-        this.openSellModal('milk');
-      });
-
-      modal.classList.add('active');
+      this.openShopModal();
     },
 
     // =========================================================================
@@ -2612,7 +2512,9 @@
         <div class="farm-shop-wallet-box" style="justify-content: center; text-align: center;">
           <div class="farm-shop-wallet-info" style="align-items: center; width: 100%;">
             <div class="farm-shop-wallet-label">Ví Của Bạn</div>
-            <div class="farm-shop-wallet-amount">🪙 <span id="farm-shop-coins-display">${this.state.coins || 0}</span> vàng</div>
+            <div class="farm-shop-wallet-amount" style="display:inline-flex; align-items:center; gap:6px;">
+              ${this.getCoinIcon(24)} <span id="farm-shop-coins-display">${this.state.coins || 0}</span> vàng
+            </div>
           </div>
         </div>
 
@@ -2634,13 +2536,14 @@
               </div>
             </div>
             <button type="button" class="btn btn-primary farm-shop-buy-btn" id="farm-shop-btn-buy-fert"
+              style="display:inline-flex; align-items:center; gap:4px;"
               ${(this.state.coins || 0) < fertPrice ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
-              ${fertPrice}🪙 Mua
+              ${fertPrice}${this.getCoinIcon(16)} Mua
             </button>
           </div>
         </div>
 
-        <!-- PHẦN 2: BÁN VẬT PHẨM (MỖI VẬT PHẨM 1 NÚT BÁN) -->
+        <!-- PHẦN 2: BÁN VẬT PHẨM (MỖI VẬT PHẨM 1 NÚT BÁN - KHÔNG BÁN PHÂN BÓN) -->
         <div>
           <div class="farm-shop-section-title" style="margin-bottom: 8px;">
             <span>💰 Bán Hàng Lấy Vàng</span>
@@ -2653,14 +2556,14 @@
               return `
                 <div class="farm-shop-grid-card ${stock === 0 ? 'empty-stock' : ''}">
                   <div class="farm-shop-grid-icon">
-                    ${it.id === 'fertilizer' ? this.getFertilizerBagIcon(28) : it.icon}
+                    ${it.icon}
                   </div>
                   <div class="farm-shop-grid-name" title="${it.name}">${it.name}</div>
                   <div class="farm-shop-grid-stock">
                     Đang có: <b style="color: ${stock > 0 ? '#34d399' : '#94a3b8'};">×${stock}</b>
                   </div>
-                  <div class="farm-shop-grid-price">
-                    Đơn giá: <b style="color: #fbbf24;">+${it.price}🪙</b>
+                  <div class="farm-shop-grid-price" style="display:inline-flex; align-items:center; justify-content:center; gap:2px;">
+                    Đơn giá: <b style="color: #fbbf24;">+${it.price}${this.getCoinIcon(14)}</b>
                   </div>
                   <div class="farm-shop-grid-actions">
                     <button type="button" class="farm-shop-sell-btn farm-btn-sell-item" data-item-id="${it.id}"
@@ -2720,24 +2623,24 @@
 
         if (slider && parseInt(slider.value, 10) !== currentQty) slider.value = currentQty;
         if (input && parseInt(input.value, 10) !== currentQty) input.value = currentQty;
-        if (totalEl) totalEl.textContent = `+${totalGold} VÀNG 🪙`;
+        if (totalEl) totalEl.innerHTML = `+${totalGold} VÀNG ${this.getCoinIcon(20)}`;
         if (previewEl) {
-          previewEl.innerHTML = `Ví hiện tại: <b>${userCoins}🪙</b> ➔ Sau khi bán: <b style="color: #34d399;">${afterCoins}🪙</b>`;
+          previewEl.innerHTML = `Ví hiện tại: <b style="display:inline-flex; align-items:center; gap:2px;">${userCoins}${this.getCoinIcon(13)}</b> ➔ Sau khi bán: <b style="color: #34d399; display:inline-flex; align-items:center; gap:2px;">${afterCoins}${this.getCoinIcon(13)}</b>`;
         }
         if (okBtn) {
-          okBtn.innerHTML = `✅ Bán (+${totalGold}🪙)`;
+          okBtn.innerHTML = `✅ Bán (+${totalGold}${this.getCoinIcon(14)})`;
         }
         this.pendingSale = { itemId, it, qty: currentQty, totalGold };
       };
 
-      const iconHtml = it.id === 'fertilizer' ? this.getFertilizerBagIcon(36) : `<span style="font-size: 2.2rem; line-height: 1;">${it.icon}</span>`;
+      const iconHtml = `<span style="font-size: 2.2rem; line-height: 1;">${it.icon}</span>`;
 
       contentEl.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           ${iconHtml}
           <div style="font-weight: 800; font-size: 1.05rem; color: #fff;">${it.name}</div>
-          <div style="font-size: 0.82rem; color: #94a3b8;">
-            Đang có: <b style="color: #34d399;">×${stock}</b> • Đơn giá: <b style="color: #fbbf24;">+${it.price}🪙</b>
+          <div style="font-size: 0.82rem; color: #94a3b8; display:flex; align-items:center; gap:4px;">
+            Đang có: <b style="color: #34d399;">×${stock}</b> • Đơn giá: <b style="color: #fbbf24; display:inline-flex; align-items:center; gap:2px;">+${it.price}${this.getCoinIcon(14)}</b>
           </div>
         </div>
 
@@ -2758,11 +2661,13 @@
 
         <div class="farm-confirm-total-box">
           <div class="farm-confirm-total-label">TỔNG TIỀN NHẬN ĐƯỢC</div>
-          <div class="farm-confirm-total-amount" id="farm-sell-total-amount">+${it.price} VÀNG 🪙</div>
+          <div class="farm-confirm-total-amount" id="farm-sell-total-amount" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+            +${it.price} VÀNG ${this.getCoinIcon(20)}
+          </div>
         </div>
 
         <div id="farm-sell-wallet-preview" style="font-size: 0.78rem; color: #cbd5e1; margin-top: 4px;">
-          Ví hiện tại: <b>${userCoins}🪙</b> ➔ Sau khi bán: <b style="color: #34d399;">${userCoins + it.price}🪙</b>
+          Ví hiện tại: <b style="display:inline-flex; align-items:center; gap:2px;">${userCoins}${this.getCoinIcon(13)}</b> ➔ Sau khi bán: <b style="color: #34d399; display:inline-flex; align-items:center; gap:2px;">${userCoins + it.price}${this.getCoinIcon(13)}</b>
         </div>
       `;
 
@@ -3593,7 +3498,7 @@
             <div class="farm-quest-item">
               <div class="farm-quest-info">
                 <span class="farm-quest-name">${item.name}</span>
-                <span class="farm-quest-progress-text">Thưởng: +${item.reward} 🪙</span>
+                <span class="farm-quest-progress-text" style="display:inline-flex; align-items:center; gap:2px;">Thưởng: +${item.reward}${this.getCoinIcon(14)}</span>
               </div>
               <div>${btnHtml}</div>
             </div>
@@ -3686,8 +3591,9 @@
         }
       });
 
-      // Bấm chip kho mở kho lưu trữ
-      document.getElementById('farm-hud-storage')?.addEventListener('click', () => this.openStorageModal());
+      // Bấm chip xu hoặc phân bón trên HUD -> Mở Cửa hàng
+      document.getElementById('farm-hud-coins')?.addEventListener('click', () => this.openShopModal());
+      document.getElementById('farm-hud-fert')?.addEventListener('click', () => this.openShopModal());
 
       // Chạm chuồng gà nhặt trứng / cho ăn (8 ô nuôi gà - Cấp 5+)
       document.getElementById('farm-poultry-grid')?.addEventListener('click', (e) => {

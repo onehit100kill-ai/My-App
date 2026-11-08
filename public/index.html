@@ -927,15 +927,12 @@
 
       <div class="farm-hud-center">
         <div class="farm-stat-chip farm-words-chip" id="farm-hud-words" title="Số từ vựng sẵn sàng để học">📖 0 từ</div>
-        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Túi phân bón">
-          <svg class="farm-fert-bag-svg" viewBox="0 0 24 24" width="18" height="18" style="vertical-align: -2px; display: inline-block;">
-            <path d="M8 3.5h8c.6 0 1 .5.9 1.1L16 6.5H8L7.1 4.6c-.1-.6.3-1.1.9-1.1z" fill="#ca8a04"/>
-            <path d="M5.5 7.5h13c.8 0 1.5.7 1.4 1.5l-1.2 10.5c-.1.8-.8 1.5-1.6 1.5H6.9c-.8 0-1.5-.7-1.6-1.5L4.1 9c-.1-.8.6-1.5 1.4-1.5z" fill="#15803d"/>
-            <path d="M12 11c-1.8 1.8-1.8 3.8 0 5.5 1.8-1.7 1.8-3.7 0-5.5z" fill="#86efac"/>
-            <circle cx="12" cy="5" r="1" fill="#fde047"/>
-          </svg> ×0
+        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Túi phân bón (chạm để mở Shop)" style="cursor: pointer;">
+          <img class="farm-fert-icon-img" src="assets/farm/fertilizer-bag.png" alt="fert"> <span id="farm-hud-fert-count">×0</span>
         </div>
-        <div class="farm-stat-chip farm-storage-chip" id="farm-hud-storage" title="Kho Nông Sản & Trái Cây (chạm mở kho)" style="cursor: pointer;">🧺 Kho (0)</div>
+        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Số xu vàng hiện có (chạm để mở Shop)" style="cursor: pointer;">
+          <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span id="farm-hud-coins-count">0</span>
+        </div>
       </div>
 
       <div class="farm-hud-right">
@@ -1022,7 +1019,7 @@
                 <span class="farm-crop-emoji" style="display:none; font-size:32px;">🥕</span>
                 <div class="farm-seed-info">
                   <div class="farm-seed-name">🥕 Củ cải (Rau)</div>
-                  <div class="farm-seed-meta">2 lần tưới • Hồi 5s • Máu 3 • Nhận 10🪙 + 10 XP</div>
+                  <div class="farm-seed-meta">2 lần tưới • Hồi 5s • Máu 3 • Nhận 10<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> + 10 XP</div>
                 </div>
               </div>
 
@@ -1032,7 +1029,7 @@
                 <span class="farm-crop-emoji" style="display:none; font-size:32px;">🍓</span>
                 <div class="farm-seed-info">
                   <div class="farm-seed-name">🍓 Dâu tây (Cây ăn quả)</div>
-                  <div class="farm-seed-meta">3 lần tưới • Hồi 5s • Máu 4 • Nhận 20🪙 + 15 XP</div>
+                  <div class="farm-seed-meta">3 lần tưới • Hồi 5s • Máu 4 • Nhận 20<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> + 15 XP</div>
                 </div>
               </div>
 
@@ -1042,7 +1039,7 @@
                 <span class="farm-crop-emoji" style="display:none; font-size:32px;">🌻</span>
                 <div class="farm-seed-info">
                   <div class="farm-seed-name">🌻 Hướng dương (Hoa)</div>
-                  <div class="farm-seed-meta">4 lần tưới • Hồi 5s • Máu 5 • Nhận 35🪙 + 25 XP</div>
+                  <div class="farm-seed-meta">4 lần tưới • Hồi 5s • Máu 5 • Nhận 35<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> + 25 XP</div>
                 </div>
               </div>
             </div>
@@ -1258,20 +1255,6 @@
         </div>
         <div class="farm-sheet-body" id="farm-level-info-body">
           <!-- Render động chi tiết cấp, XP còn thiếu & phần thưởng -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Sheet: Kho Nông Sản & Trái Cây (Group C) -->
-    <div class="farm-sheet-backdrop" id="farm-sheet-storage">
-      <div class="farm-sheet-card">
-        <div class="farm-sheet-handle"></div>
-        <div class="farm-sheet-header">
-          <h3 class="farm-sheet-title">🧺 Kho Nông Sản & Trái Cây</h3>
-          <button type="button" class="farm-btn-icon farm-sheet-btn-close">✕</button>
-        </div>
-        <div class="farm-sheet-body" id="farm-storage-body">
-          <!-- Render động kho dự trữ -->
         </div>
       </div>
     </div>
