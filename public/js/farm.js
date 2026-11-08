@@ -2501,7 +2501,7 @@
             count++;
           });
 
-          this.gainXp(5 * Math.max(1, count));
+          // Tưới cây không tăng EXP, chỉ thu hoạch mới tăng EXP
           this.state.quests.watered = (this.state.quests.watered || 0) + count;
 
           this.saveState();
@@ -2697,8 +2697,7 @@
           // Thời gian hồi sau tưới
           plot.cooldownUntil = Date.now() + (crop ? crop.cooldownSec : 5) * 1000;
 
-          // Cộng XP và nhiệm vụ
-          this.gainXp(5 * (crop ? crop.questionsPerWater : 1));
+          // Tưới cây không tăng EXP, chỉ thu hoạch mới tăng EXP
           this.state.quests.watered = (this.state.quests.watered || 0) + 1;
 
           // 20% tỉ lệ xuất hiện sâu sau khi tưới
@@ -3786,10 +3785,7 @@
 
       if (isCorrect) {
         this.playSound('correct');
-        if (!q.firstTryErrors[currentWord.id || currentWord.word]) {
-          this.gainXp(5);
-        }
-
+        // Tưới cây không tăng EXP, chỉ thu hoạch mới tăng EXP
         q.wordIndex += 1;
         if (q.wordIndex < q.words.length) {
           this.renderFruitTreeQuizModal();
