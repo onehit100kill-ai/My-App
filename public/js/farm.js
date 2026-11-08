@@ -300,6 +300,28 @@
       }
     },
 
+    // Xáo trộn mảng ngẫu nhiên (Fisher-Yates)
+    shuffle(array) {
+      if (!Array.isArray(array)) return [];
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    },
+
+    // Escape chuỗi HTML chống lỗi và vỡ layout
+    escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    },
+
     // Khởi tạo
     init() {
       this.loadSettings();
@@ -3184,7 +3206,7 @@
       const submitBtn = document.getElementById('farm-fruit-submit-btn');
 
       if (inputEl) {
-        inputEl.focus();
+        if (typeof inputEl.focus === 'function') inputEl.focus();
         const submitAction = () => {
           const isCorrect = inputEl.value.trim().toLowerCase() === (currentWord.word || '').trim().toLowerCase();
           this.handleFruitQuizAnswer(isCorrect);
@@ -3576,9 +3598,30 @@
         }
       });
 
-      // 1b. Chạm ô cây ăn quả (Event Delegation - Group C)
-      // 1b. Chạm ô cây ăn quả (Cây có sẵn trên sân)
+      // 1b. Chạm ô cây ăn quả (Cây có sẵn trên sân: tưới cây, thu hoạch, xem thông tin)
       document.getElementById('farm-tree-grid')?.addEventListener('click', (e) => {
+        const harvestBtn = e.target.closest('[data-harvest-tree], .btn-harvest');
+        if (harvestBtn) {
+          e.stopPropagation();
+          const treeCard = harvestBtn.closest('.farm-tree-card');
+          const type = harvestBtn.getAttribute('data-harvest-tree') || treeCard?.getAttribute('data-tree-type');
+          if (type) {
+            this.harvestFruitTree(type);
+            return;
+          }
+        }
+
+        const waterBtn = e.target.closest('[data-water-tree], .btn-water');
+        if (waterBtn) {
+          e.stopPropagation();
+          const treeCard = waterBtn.closest('.farm-tree-card');
+          const type = waterBtn.getAttribute('data-water-tree') || treeCard?.getAttribute('data-tree-type');
+          if (type) {
+            this.handleFruitTreeClick(type);
+            return;
+          }
+        }
+
         const treeCard = e.target.closest('.farm-tree-card');
         if (treeCard) {
           const type = treeCard.getAttribute('data-tree-type');
