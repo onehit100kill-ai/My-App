@@ -185,23 +185,37 @@
     { id: 'milk', name: 'Sữa tươi', icon: '🥛', price: 24, type: 'storage' }
   ];
 
+  // Cấp độ mở khóa của các loại vật phẩm trong Nông Trại
+  const ITEM_UNLOCK_LEVELS = {
+    radish: 1,      // Củ cải (Cấp 1)
+    strawberry: 1,  // Dâu tây (Cấp 1)
+    sunflower: 1,   // Hướng dương (Cấp 1)
+    apple: 3,       // Táo (Cấp 3)
+    egg: 5,         // Trứng gà (Cấp 5)
+    orange: 6,      // Cam (Cấp 6)
+    peach: 9,       // Đào (Cấp 9)
+    milk: 10,       // Sữa tươi (Cấp 10)
+    pear: 12,       // Lê (Cấp 12)
+    cherry: 15      // Anh đào (Cấp 15)
+  };
+
   // Trạng thái mặc định
   const DEFAULT_STATE = {
     coins: 30,
     xp: 0,
     level: 1,
     foodStorage: {
-      radish: 3,
-      strawberry: 3,
-      sunflower: 3,
-      apple: 3,
-      orange: 3,
-      peach: 3,
-      pear: 3,
-      cherry: 3,
-      egg: 3,
-      milk: 3
-    }, // Lưu số lượng nông sản, trái cây & sản phẩm chăn nuôi (trứng, sữa) đã thu hoạch
+      radish: 0,
+      strawberry: 0,
+      sunflower: 0,
+      apple: 0,
+      orange: 0,
+      peach: 0,
+      pear: 0,
+      cherry: 0,
+      egg: 0,
+      milk: 0
+    }, // Lưu số lượng nông sản, trái cây & sản phẩm chăn nuôi (trứng, sữa) đã thu hoạch (chưa mở khóa mặc định là 0)
     fertilizer: 0,
     soundEnabled: true,
     harvestedTodayCount: 0,
@@ -465,6 +479,7 @@
           if (serverTime > localTime || (!localHasProgress && serverHasProgress) || isForce) {
             console.log('[FarmSync] Đồng bộ dữ liệu nông trại mới nhất từ máy chủ:', res);
             this.state = Object.assign({}, DEFAULT_STATE, res.state);
+            this.sanitizeFoodStorage();
             if (res.settings) {
               this.settings = Object.assign({}, DEFAULT_SETTINGS, res.settings);
               this.saveSettings(false);
@@ -506,6 +521,7 @@
             this.updateSyncStatusUI('vừa xong');
             if (res.conflict && res.serverIsNewer && res.state) {
               this.state = Object.assign({}, DEFAULT_STATE, res.state);
+              this.sanitizeFoodStorage();
               if (res.settings) this.settings = Object.assign({}, DEFAULT_SETTINGS, res.settings);
               this.saveState(false);
               this.render();
@@ -518,6 +534,22 @@
           this._cloudSyncInProgress = false;
         }
       }, 600);
+    },
+
+    // Chuẩn hóa kho nông sản: Những vật phẩm chưa mở khóa theo cấp độ người dùng mặc định là 0
+    sanitizeFoodStorage() {
+      if (!this.state) return;
+      if (!this.state.foodStorage) this.state.foodStorage = {};
+      const curLvl = this.state.level || 1;
+      Object.keys(ITEM_UNLOCK_LEVELS).forEach(itemId => {
+        const reqLvl = ITEM_UNLOCK_LEVELS[itemId] || 1;
+        // Những vật phẩm chưa mở khóa mặc định là 0 hết theo yêu cầu
+        if (curLvl < reqLvl) {
+          this.state.foodStorage[itemId] = 0;
+        } else if (typeof this.state.foodStorage[itemId] !== 'number' || isNaN(this.state.foodStorage[itemId])) {
+          this.state.foodStorage[itemId] = 0;
+        }
+      });
     },
 
     // Lưu / Đọc State
@@ -545,23 +577,8 @@
         }
       }
 
-      if (!this.state.foodStorage) this.state.foodStorage = {};
-      if (typeof this.state.foodStorage.egg !== 'number') {
-        this.state.foodStorage.egg = 3;
-      }
-      if (typeof this.state.foodStorage.milk !== 'number') {
-        this.state.foodStorage.milk = 3;
-      }
-
-      // Bổ sung x3 mỗi loại nông sản, trái cây & sản phẩm chăn nuôi (trứng, sữa) vào kho để test theo yêu cầu
-      if (!this.state._testStockBoostV4) {
-        const testItems = ['radish', 'strawberry', 'sunflower', 'apple', 'orange', 'peach', 'pear', 'cherry', 'egg', 'milk'];
-        testItems.forEach(k => {
-          this.state.foodStorage[k] = Math.max(3, (this.state.foodStorage[k] || 0) + 3);
-        });
-        this.state._testStockBoostV4 = true;
-        this.saveState();
-      }
+      // Chuẩn hóa kho hàng: vật phẩm chưa mở khóa là 0
+      this.sanitizeFoodStorage();
 
       // Đảm bảo 5 cây ăn quả có sẵn trên sân
       const validTypes = ['apple', 'orange', 'peach', 'pear', 'cherry'];
@@ -764,6 +781,9 @@
 
     getItemStock(itemId) {
       if (itemId === 'fertilizer') return this.state.fertilizer || 0;
+      const reqLvl = ITEM_UNLOCK_LEVELS[itemId] || 1;
+      const curLvl = this.state.level || 1;
+      if (curLvl < reqLvl) return 0;
       return (this.state.foodStorage && this.state.foodStorage[itemId]) || 0;
     },
 
@@ -3072,6 +3092,7 @@
         this.state.xp -= nextXp;
         this.state.level += 1;
         this.state.coins += 20;
+        this.sanitizeFoodStorage();
 
         // Thêm 2 ô đất (tối đa 20 ô)
         const currentPlotCount = this.state.plots.length;
@@ -3234,24 +3255,30 @@
 
           <div class="farm-shop-grid">
             ${SHOP_SELL_ITEMS.map(it => {
+        const reqLvl = ITEM_UNLOCK_LEVELS[it.id] || 1;
+        const curLvl = this.state.level || 1;
+        const isLocked = curLvl < reqLvl;
         const stock = this.getItemStock(it.id);
 
         return `
-                <div class="farm-shop-grid-card ${stock === 0 ? 'empty-stock' : ''}">
+                <div class="farm-shop-grid-card ${isLocked ? 'locked' : (stock === 0 ? 'empty-stock' : '')}">
                   <div class="farm-shop-grid-icon">
                     ${it.icon}
                   </div>
                   <div class="farm-shop-grid-name" title="${it.name}">${it.name}</div>
                   <div class="farm-shop-grid-stock">
-                    Đang có: <b style="color: ${stock > 0 ? '#34d399' : '#94a3b8'};">${stock}</b>
+                    ${isLocked 
+                      ? `<span style="color:#ef4444; font-size:11px; font-weight:600;">🔒 Mở Cấp ${reqLvl}</span>`
+                      : `Đang có: <b style="color: ${stock > 0 ? '#34d399' : '#94a3b8'};">${stock}</b>`
+                    }
                   </div>
                   <div class="farm-shop-grid-price" style="display:inline-flex; align-items:center; justify-content:center; gap:2px;">
                     Đơn giá: <b style="color: #fbbf24;">+${it.price}${this.getCoinIcon(14)}</b>
                   </div>
                   <div class="farm-shop-grid-actions">
                     <button type="button" class="farm-shop-sell-btn farm-btn-sell-item" data-item-id="${it.id}"
-                      ${stock === 0 ? 'disabled' : ''}>
-                      ${stock === 0 ? 'Hết hàng' : 'Bán'}
+                      ${(isLocked || stock === 0) ? 'disabled' : ''}>
+                      ${isLocked ? `Khóa (Cấp ${reqLvl})` : (stock === 0 ? 'Hết hàng' : 'Bán')}
                     </button>
                   </div>
                 </div>
@@ -3279,6 +3306,13 @@
     openSellModal(itemId) {
       const it = SHOP_SELL_ITEMS.find(x => x.id === itemId);
       if (!it) return;
+
+      const reqLvl = ITEM_UNLOCK_LEVELS[itemId] || 1;
+      const curLvl = this.state.level || 1;
+      if (curLvl < reqLvl) {
+        if (window.showToast) window.showToast(`🔒 Vật phẩm mở khóa ở Cấp ${reqLvl}!`);
+        return;
+      }
 
       const stock = this.getItemStock(itemId);
       if (stock <= 0) {

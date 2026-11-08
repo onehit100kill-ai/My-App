@@ -2559,6 +2559,11 @@ body.keyboard-open #farm-sheet-quiz .farm-sheet-card {
   opacity: 0.45;
 }
 
+.farm-shop-grid-card.locked {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+}
+
 .farm-shop-grid-icon {
   font-size: 28px;
   line-height: 1;
