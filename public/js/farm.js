@@ -1014,6 +1014,7 @@
 
     // Mở Quiz ngẫu nhiên khi cho vật nuôi ăn (Gà / Bò)
     openAnimalQuiz(animalType, animalId, feedCost) {
+      this.prepareFocusForMobile();
       const mode = this.getZoneQuizMode('poultry', 0);
       const word = this.pickNextWord();
 
@@ -1302,6 +1303,20 @@
       this.closeAllSheets();
     },
 
+    // Focus đồng bộ ngay trong user gesture (giống hệt study.js) để bật bàn phím ảo tức thì trên mobile
+    prepareFocusForMobile() {
+      const sheet = document.getElementById('farm-sheet-quiz');
+      const input = document.getElementById('farm-quiz-input');
+      const typingContainer = document.getElementById('farm-quiz-typing-container');
+      if (sheet && input && typingContainer) {
+        sheet.classList.add('active');
+        sheet.style.opacity = '0.01';
+        typingContainer.style.display = 'flex';
+        input.focus();
+        input.click();
+      }
+    },
+
     hideQuizKeyboard() {
       const el1 = document.getElementById('farm-quiz-input');
       if (el1) el1.blur();
@@ -1315,7 +1330,10 @@
 
     closeAllSheets() {
       this.hideQuizKeyboard();
-      document.querySelectorAll('.farm-sheet-backdrop').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.farm-sheet-backdrop').forEach(el => {
+        el.classList.remove('active');
+        el.style.opacity = '';
+      });
     },
 
     // =========================================================================
@@ -1695,6 +1713,7 @@
         return;
       }
 
+      this.prepareFocusForMobile();
       const mode = this.getZoneQuizMode('crops', 0);
       const word = this.pickNextWord();
 
@@ -1943,6 +1962,7 @@
 
       // 4. Có sâu -> Bắt sâu trước!
       if (plot.worm) {
+        this.prepareFocusForMobile();
         this.openQuiz(plotId, true);
         return;
       }
@@ -1957,6 +1977,7 @@
       }
 
       // 6. Cây đang lớn -> Tưới (Quiz)
+      this.prepareFocusForMobile();
       this.openQuiz(plotId, false);
     },
 
@@ -2191,6 +2212,7 @@
     // QUIZ TƯỚI CÂY & BẮT SÂU
     // =========================================================================
     openQuiz(plotId, isWormQuiz = false) {
+      this.prepareFocusForMobile();
       const plot = this.state.plots.find(p => p.id === plotId);
       if (!plot) return;
 
@@ -2341,180 +2363,158 @@
       // Trạng thái máu cây / máu sâu & số lần tưới (Cập nhật trực tiếp)
       this.updateQuizHeaderStatus();
 
-      const bodyEl = document.getElementById('farm-quiz-body');
-      if (!bodyEl) return;
+      // Hiển thị modal đầy đủ (khôi phục độ mờ sau prepareFocusForMobile)
+      sheet.classList.add('active');
+      sheet.style.opacity = '';
 
-      // Chuẩn bị nội dung câu hỏi
-      let contentHtml = '';
+      const listeningContainer = document.getElementById('farm-quiz-listening-container');
+      const promptContainer = document.getElementById('farm-quiz-prompt-container');
+      const questionText = document.getElementById('farm-quiz-question-text');
+      const questionSubtext = document.getElementById('farm-quiz-question-subtext');
+      const audioBtn = document.getElementById('farm-quiz-audio-btn');
+      const optionsContainer = document.getElementById('farm-quiz-options-container');
+      const typingContainer = document.getElementById('farm-quiz-typing-container');
+      const input = document.getElementById('farm-quiz-input');
+      const hintBox = document.getElementById('farm-quiz-hint-box');
+
+      if (hintBox) {
+        hintBox.style.display = 'none';
+        hintBox.innerHTML = '';
+      }
 
       if (q.mode === 'ai') {
         // Chế độ 4: Câu điền từ AI
-        bodyEl.innerHTML = `
-          <div class="farm-quiz-prompt-card" style="padding: 24px 16px;">
-            <div style="font-size: 28px; margin-bottom: 6px;">⚡</div>
-            <div style="font-size: 0.95rem; color: #f59e0b; font-weight: 700;">Groq AI đang tạo câu đố...</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Tạo ngữ cảnh siêu tốc cho từ "${q.word.word}"</div>
-          </div>
-        `;
-        sheet.classList.add('active');
+        if (listeningContainer) listeningContainer.style.display = 'none';
+        if (optionsContainer) optionsContainer.style.display = 'none';
+        if (promptContainer) promptContainer.style.display = 'flex';
+        if (audioBtn) audioBtn.style.display = 'none';
+        if (typingContainer) typingContainer.style.display = 'flex';
+
+        if (questionText) questionText.textContent = '⚡ Groq AI đang tạo câu đố...';
+        if (questionSubtext) {
+          questionSubtext.style.display = 'block';
+          questionSubtext.textContent = `Tạo ngữ cảnh cho từ "${q.word.word}"`;
+        }
+
+        if (input) {
+          input.value = '';
+          input.placeholder = 'Điền từ còn thiếu vào chỗ trống...';
+          input.focus({ preventScroll: true });
+          input.click();
+          requestAnimationFrame(() => input.focus({ preventScroll: true }));
+        }
 
         try {
           const aiRes = await window.api.generateAiSentence(q.word.word, q.word.meaning);
           const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
           if (aiRes && aiRes.success && sentence) {
-            const aiData = {
-              sentence: sentence,
-              hint: aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || q.word.meaning,
-              provider: aiRes?.provider || aiRes?.data?.provider || 'Groq'
-            };
-            const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
-            contentHtml = `
-              <div class="farm-quiz-prompt-card">
-                <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 700;">${providerTag}:</span>
-                <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
-                  "${aiData.sentence}"
-                </div>
-                ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
-              </div>
-              <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
-              <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
-            `;
+            const hint = aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || q.word.meaning;
+            const masked = sentence.replace(
+              new RegExp(q.word.word, 'gi'),
+              '<span style="color: var(--accent-blue, #38bdf8); text-decoration: underline; font-weight: 700;">_____</span>'
+            );
+            if (questionText) questionText.innerHTML = masked;
+            if (questionSubtext) {
+              questionSubtext.style.display = 'block';
+              questionSubtext.textContent = `💡 Gợi ý nghĩa: ${hint}`;
+            }
           } else {
             throw new Error(aiRes?.message || 'Không sinh được câu');
           }
         } catch (e) {
-          console.warn('Lỗi gọi AI, chuyển về điền từ cơ bản:', e);
-          // Fallback về điền từ nếu AI lỗi
-          contentHtml = `
-            <div class="farm-quiz-prompt-card">
-              <span style="font-size: 0.82rem; color: var(--text-secondary);">Gõ từ tiếng Anh có nghĩa:</span>
-              <div class="farm-quiz-question-word" style="color: #38bdf8;">"${q.word.meaning}"</div>
-            </div>
-            <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
-            <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
-          `;
+          console.warn('Lỗi gọi AI, fallback sang điền từ cơ bản:', e);
+          if (questionText) questionText.textContent = q.word.meaning;
+          if (questionSubtext) questionSubtext.style.display = 'none';
         }
+
+        if (input) {
+          input.focus({ preventScroll: true });
+        }
+
       } else if (q.mode === 'listening') {
         // 1. Nghe điền từ
-        contentHtml = `
-          <div class="farm-quiz-prompt-card">
-            <button type="button" class="btn-audio" id="farm-quiz-play-audio" style="width: 72px; height: 72px; font-size: 32px; border-radius: 50%;">🔊</button>
-            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">Nghe và gõ từ chính xác</div>
-          </div>
-          <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ bạn nghe được..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
-          <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
-        `;
-      } else if (q.mode === 'typing') {
-        // 2. Điền từ
-        contentHtml = `
-          <div class="farm-quiz-prompt-card">
-            <span style="font-size: 0.82rem; color: var(--text-secondary);">Gõ từ tiếng Anh có nghĩa:</span>
-            <div class="farm-quiz-question-word" style="color: #38bdf8;">"${q.word.meaning}"</div>
-          </div>
-          <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
-          <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
-        `;
-      } else {
-        // 3. Chọn nghĩa (Choice)
-        // Tạo 4 đáp án (1 đúng + 3 sai từ cached pool)
-        const wrongPool = this.cachedWordsPool.filter(w => w.meaning !== q.word.meaning);
-        const shuffledWrong = wrongPool.sort(() => 0.5 - Math.random()).slice(0, 3);
-        const allOptions = [q.word.meaning, ...shuffledWrong.map(w => w.meaning)].sort(() => 0.5 - Math.random());
+        if (promptContainer) promptContainer.style.display = 'none';
+        if (listeningContainer) listeningContainer.style.display = 'flex';
+        if (optionsContainer) optionsContainer.style.display = 'none';
+        if (typingContainer) typingContainer.style.display = 'flex';
 
-        contentHtml = `
-          <div class="farm-quiz-prompt-card">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="farm-quiz-question-word">${q.word.word}</span>
-              <button type="button" class="btn-audio" style="width: 28px; height: 28px; font-size: 13px;" onclick="window.wordsManager?.playPronunciation('${q.word.word}', '${q.word.audioUrl || ''}')">🔊</button>
-            </div>
-            ${q.word.ipa ? `<span style="font-size: 0.85rem; color: #38bdf8; font-family: monospace;">${q.word.ipa}</span>` : ''}
-          </div>
-          <div class="farm-quiz-options">
-            ${allOptions.map(opt => `
-              <button type="button" class="farm-quiz-opt-btn" data-answer="${encodeURIComponent(opt)}">
-                ${opt}
-              </button>
-            `).join('')}
-          </div>
-        `;
-      }
+        if (input) {
+          input.value = '';
+          input.placeholder = 'Gõ từ bạn nghe được...';
+          input.focus({ preventScroll: true });
+          input.click();
+          requestAnimationFrame(() => input.focus({ preventScroll: true }));
+          setTimeout(() => input.focus({ preventScroll: true }), 50);
+        }
 
-      bodyEl.innerHTML = `
-        ${contentHtml}
-        <div id="farm-quiz-hint-box" style="display: none;" class="farm-quiz-hint-box"></div>
-      `;
-
-      sheet.classList.add('active');
-
-      // Tự động trỏ vào ô nhập nếu là chế độ gõ (sao chép y hệt cơ chế bên phòng học chính study.js)
-      const inputEl = document.getElementById('farm-quiz-input');
-      if (inputEl) {
-        inputEl.value = '';
-        inputEl.focus({ preventScroll: true });
-        
-        // Fix lỗi giật viewport trên mobile khi mất focus (giống study.js)
-        inputEl.addEventListener('blur', () => {
-          setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }, 50);
-        });
-
-        // Chạm vào khung câu hỏi để kích hoạt focus mở bàn phím nếu chưa mở
-        document.querySelector('.farm-quiz-body')?.addEventListener('click', (e) => {
-          if (e.target.closest('button, .farm-quiz-opt-btn')) return;
-          inputEl.focus({ preventScroll: true });
-        });
-
-        // Nhấn Enter nộp bài ngay lập tức (ngăn reload/form submit)
-        inputEl.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            e.stopPropagation();
-            this.checkQuizAnswer(inputEl.value);
-          }
-        });
-      } else {
-        // Nếu là trắc nghiệm, chắc chắn thu gọn bàn phím ảo ngay lập tức (giống study.js)
-        this.hideQuizKeyboard();
-      }
-
-      // Phát âm thanh ngay nếu là chế độ nghe
-      if (q.mode === 'listening') {
         setTimeout(() => {
           window.wordsManager?.playPronunciation(q.word.word, q.word.audioUrl);
-        }, 300);
-      }
+        }, 250);
 
-      // Bắt sự kiện nộp bài
-      document.getElementById('farm-quiz-submit-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const inp = document.getElementById('farm-quiz-input');
-        const val = inp?.value || '';
-        this.checkQuizAnswer(val);
-      });
+      } else if (q.mode === 'typing') {
+        // 2. Điền từ (Gõ từ có nghĩa tiếng Việt)
+        if (listeningContainer) listeningContainer.style.display = 'none';
+        if (promptContainer) promptContainer.style.display = 'flex';
+        if (audioBtn) audioBtn.style.display = 'none';
+        if (optionsContainer) optionsContainer.style.display = 'none';
+        if (typingContainer) typingContainer.style.display = 'flex';
 
-      // Phát âm thanh: dùng mousedown & touchstart để chặn mất focus input (giống study.js)
-      const playAudioBtn = document.getElementById('farm-quiz-play-audio');
-      if (playAudioBtn) {
-        const onAudio = (e) => {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
+        if (questionText) questionText.textContent = q.word.meaning;
+        if (questionSubtext) questionSubtext.style.display = 'none';
+
+        if (input) {
+          input.value = '';
+          input.placeholder = 'Gõ từ tiếng Anh tại đây...';
+          input.focus({ preventScroll: true });
+          input.click();
+          requestAnimationFrame(() => input.focus({ preventScroll: true }));
+          setTimeout(() => input.focus({ preventScroll: true }), 50);
+        }
+
+      } else {
+        // 3. Chọn nghĩa (Choice)
+        this.hideQuizKeyboard();
+        if (listeningContainer) listeningContainer.style.display = 'none';
+        if (promptContainer) promptContainer.style.display = 'flex';
+        if (typingContainer) typingContainer.style.display = 'none';
+
+        if (questionText) questionText.textContent = q.word.word;
+        if (questionSubtext) {
+          if (q.word.ipa) {
+            questionSubtext.style.display = 'block';
+            questionSubtext.textContent = q.word.ipa;
+          } else {
+            questionSubtext.style.display = 'none';
           }
-          window.wordsManager?.playPronunciation(q.word.word, q.word.audioUrl);
-        };
-        playAudioBtn.addEventListener('mousedown', onAudio);
-        playAudioBtn.addEventListener('touchstart', onAudio, { passive: false });
-        playAudioBtn.addEventListener('click', onAudio);
-      }
+        }
+        if (audioBtn) {
+          audioBtn.style.display = 'inline-flex';
+          audioBtn.onclick = (e) => {
+            e.stopPropagation();
+            window.wordsManager?.playPronunciation(q.word.word, q.word.audioUrl);
+          };
+        }
 
-      // Bắt sự kiện chọn đáp án trắc nghiệm
-      document.querySelectorAll('.farm-quiz-opt-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const ans = decodeURIComponent(btn.getAttribute('data-answer'));
-          this.checkQuizAnswer(ans, btn);
-        });
-      });
+        if (optionsContainer) {
+          optionsContainer.style.display = 'grid';
+          const wrongPool = this.cachedWordsPool.filter(w => w.meaning !== q.word.meaning);
+          const shuffledWrong = wrongPool.sort(() => 0.5 - Math.random()).slice(0, 3);
+          const allOptions = [q.word.meaning, ...shuffledWrong.map(w => w.meaning)].sort(() => 0.5 - Math.random());
+
+          optionsContainer.innerHTML = allOptions.map(opt => `
+            <button type="button" class="farm-quiz-opt-btn" data-answer="${encodeURIComponent(opt)}">
+              ${opt}
+            </button>
+          `).join('');
+
+          optionsContainer.querySelectorAll('.farm-quiz-opt-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const ans = decodeURIComponent(btn.getAttribute('data-answer') || '');
+              this.checkQuizAnswer(ans, btn);
+            });
+          });
+        }
+      }
     },
 
     // Kiểm tra câu trả lời
@@ -4455,6 +4455,54 @@
           document.body.classList.remove('keyboard-open');
           btn.closest('.farm-sheet-backdrop')?.classList.remove('active');
         });
+      });
+
+      // 5b. Bắt sự kiện tĩnh cho Quiz Gõ từ (Enter nộp bài, blur chống giật, click mở lại bàn phím - Copy y nguyên study.js)
+      const farmQuizInput = document.getElementById('farm-quiz-input');
+      if (farmQuizInput) {
+        farmQuizInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.checkQuizAnswer(farmQuizInput.value);
+          }
+        });
+
+        // Fix lỗi kéo thẻ lên cao trên iOS khi bị mất focus (giống hệt study.js)
+        farmQuizInput.addEventListener('blur', () => {
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 50);
+        });
+      }
+
+      // Chạm vào thân quiz để kích hoạt focus mở lại bàn phím nếu vô tình bấm trượt ra ngoài
+      document.getElementById('farm-quiz-body')?.addEventListener('click', (e) => {
+        if (e.target.closest('button, .farm-quiz-opt-btn, .btn-audio')) return;
+        const inp = document.getElementById('farm-quiz-input');
+        const typingContainer = document.getElementById('farm-quiz-typing-container');
+        if (inp && typingContainer && typingContainer.style.display !== 'none') {
+          inp.focus({ preventScroll: true });
+        }
+      });
+
+      // Phát âm thanh: dùng mousedown & touchstart để chặn mất focus input (giống hệt study.js)
+      const farmPlayAudio = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (this.activeQuiz?.word && window.wordsManager) {
+          window.wordsManager.playPronunciation(this.activeQuiz.word.word, this.activeQuiz.word.audioUrl);
+        }
+      };
+      ['farm-quiz-play-audio', 'farm-quiz-audio-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          btn.addEventListener('mousedown', farmPlayAudio);
+          btn.addEventListener('touchstart', farmPlayAudio, { passive: false });
+          btn.addEventListener('click', farmPlayAudio);
+        }
       });
 
       // 6. Lưu cài đặt nông trại

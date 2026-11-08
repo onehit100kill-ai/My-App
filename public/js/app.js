@@ -121,39 +121,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
   });
 
-  // Quản lý trạng thái bàn phím ảo THỰC SỰ trên điện thoại qua Visual Viewport
-  // Chỉ kích hoạt khi bàn phím ảo thực sự mở (viewport thu nhỏ đáng kể), KHÔNG kích hoạt chỉ vì programmatic focus
+  // Quản lý trạng thái bàn phím ảo trên điện thoại: chống đẩy modal/thẻ lên quá cao
+  const handleInputFocusIn = (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      document.body.classList.add('keyboard-open');
+    }
+  };
+  const handleInputFocusOut = (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      setTimeout(() => {
+        const activeEl = document.activeElement;
+        if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+          document.body.classList.remove('keyboard-open');
+        }
+      }, 120);
+    }
+  };
+  document.addEventListener('focusin', handleInputFocusIn);
+  document.addEventListener('focusout', handleInputFocusOut);
+
   if (window.visualViewport) {
-    let baseViewportHeight = window.visualViewport.height;
-
-    const checkVirtualKeyboard = () => {
+    let initialH = window.visualViewport.height;
+    window.visualViewport.addEventListener('resize', () => {
       const currentH = window.visualViewport.height;
-      const isInputFocused = document.activeElement && 
-        (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
-
-      // Bàn phím ảo chỉ coi là đang mở khi có input active VÀ chiều cao viewport co lại rõ rệt (> 130px hoặc < 82%)
-      const isKeyboardActuallyOpen = isInputFocused && 
-        (currentH < baseViewportHeight * 0.82 || (baseViewportHeight - currentH) > 130);
-
-      if (isKeyboardActuallyOpen) {
+      if (currentH < initialH * 0.78) {
         document.body.classList.add('keyboard-open');
-        document.documentElement.style.setProperty('--kb-height', `${Math.round(baseViewportHeight - currentH)}px`);
       } else {
         document.body.classList.remove('keyboard-open');
-        document.documentElement.style.removeProperty('--kb-height');
-        // Cập nhật lại baseViewportHeight khi không có bàn phím và viewport mở rộng
-        if (!isInputFocused || currentH >= baseViewportHeight * 0.95) {
-          baseViewportHeight = Math.max(baseViewportHeight, currentH);
-        }
-      }
-    };
-
-    window.visualViewport.addEventListener('resize', checkVirtualKeyboard);
-    window.visualViewport.addEventListener('scroll', checkVirtualKeyboard);
-
-    document.addEventListener('focusout', (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        setTimeout(checkVirtualKeyboard, 100);
+        initialH = Math.max(initialH, currentH);
       }
     });
   }

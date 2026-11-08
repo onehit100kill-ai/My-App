@@ -52,7 +52,19 @@ class StudyManager {
 
   // === XỬ LÝ FOCUS ĐỒNG BỘ TRÊN MOBILE ===
   prepareFocusForMobile() {
-    // Không can thiệp modal trước khi tải xong dữ liệu để tránh giật đẩy thẻ lên cao
+    const modal = document.getElementById('modal-study-room');
+    const input = document.getElementById('quiz-typing-input');
+    const quizView = document.getElementById('view-quiz');
+    const typingContainer = document.getElementById('quiz-typing-container');
+
+    if (modal && input && quizView && typingContainer) {
+      modal.classList.add('active');
+      modal.style.opacity = '0.01'; // Ẩn trực quan nhưng vẫn render để focus
+      quizView.style.display = 'block';
+      typingContainer.style.display = 'flex';
+      input.focus();
+      input.click();
+    }
   }
 
   // === CÀI ĐẶT SỐ LẦN ÔN TẬP ===
@@ -371,6 +383,7 @@ class StudyManager {
         if (this.waitingForTap) {
           this.advanceToNextQuestion();
         } else {
+          document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím ảo trên điện thoại khi submit
           this.handleTypingSubmit();
         }
       }
@@ -426,6 +439,7 @@ class StudyManager {
       }
 
       if (e) {
+        e.preventDefault();
         e.stopPropagation();
       }
       this.advanceToNextQuestion();
@@ -447,12 +461,13 @@ class StudyManager {
       }
     }, { passive: false });
 
-    // Hạn chế bounce/scroll nền ngoài ý muốn khi đang học, nhưng cho phép cuộn nội dung modal
+    // Cấm cuộn thẻ khi đang học (Chống scroll/bounce trên iOS và Android)
     document.addEventListener('touchmove', (e) => {
       const modal = document.getElementById('modal-study-room');
       if (modal && modal.classList.contains('active')) {
-        const scrollable = e.target.closest('.modal-body, .quiz-container, .summary-split-container');
-        if (scrollable) return;
+        const congratsView = document.getElementById('view-congrats');
+        // Nếu đang ở màn hình chúc mừng có danh sách dài thì cho phép cuộn
+        if (congratsView && congratsView.style.display !== 'none') return;
         
         e.preventDefault();
       }
@@ -565,8 +580,6 @@ class StudyManager {
     const isCompleted = congratsView && congratsView.style.display !== 'none';
 
     if (isCompleted) {
-      document.getElementById('quiz-typing-input')?.blur();
-      document.body.classList.remove('keyboard-open');
       this.clearSessionState();
       this.setWaitingForTap(false);
       const modal = document.getElementById('modal-study-room');
@@ -583,8 +596,6 @@ class StudyManager {
       confirmText: 'Rời phòng học',
       cancelText: 'Tiếp tục học',
       onConfirm: () => {
-        document.getElementById('quiz-typing-input')?.blur();
-        document.body.classList.remove('keyboard-open');
         this.clearSessionState();
         this.setWaitingForTap(false);
         const modal = document.getElementById('modal-study-room');
@@ -603,6 +614,8 @@ class StudyManager {
       alert('Vui lòng chọn một Ngày học trước.');
       return;
     }
+
+    this.prepareFocusForMobile(); // Kích hoạt focus đồng bộ trước khi await
 
     try {
       const profile = this.currentConfigProfile || 'all';
@@ -641,6 +654,7 @@ class StudyManager {
             confirmText: 'Ôn lại toàn bộ',
             cancelText: 'Hủy',
             onConfirm: async () => {
+              this.prepareFocusForMobile();
               this.currentStudyProfile = 'all'; // Tự động chuyển profile sang all để ôn
               const dayObj = await window.api.getDay(dayId);
               const title = dayObj.data ? dayObj.data.title : `Ngày ${dayId}`;
@@ -665,6 +679,7 @@ class StudyManager {
 
   // === BẮT ĐẦU HỌC CHUYÊN SÂU ===
   async startIntensiveStudy() {
+    this.prepareFocusForMobile();
     try {
       const res = await window.api.getIntensiveWords();
       if (res.success && res.data.length > 0) {
@@ -784,6 +799,8 @@ class StudyManager {
 
     // Cập nhật profile cho phiên học
     this.currentStudyProfile = profile;
+
+    this.prepareFocusForMobile();
 
     try {
       const res = await window.api.getWordsByDays(dayIds, status);
@@ -1038,15 +1055,17 @@ class StudyManager {
       typingContainer.style.display = 'flex';
 
       const input = document.getElementById('quiz-typing-input');
-      if (input) {
-        input.value = '';
-        input.focus({ preventScroll: true });
-      }
+      input.value = '';
 
       // Tự động phát âm thanh
       if (window.wordsManager) {
         window.wordsManager.playPronunciation(w.word, w.audioUrl);
       }
+
+      input.focus({ preventScroll: true });
+      input.click();
+      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
 
     } else if (item.type === 'typing') {
       // Phần Điền từ: Hiện duy nhất nghĩa tiếng Việt làm câu hỏi, ẩn hoàn toàn phiên âm IPA
@@ -1064,10 +1083,12 @@ class StudyManager {
       typingContainer.style.display = 'flex';
 
       const input = document.getElementById('quiz-typing-input');
-      if (input) {
-        input.value = '';
-        input.focus({ preventScroll: true });
-      }
+      input.value = '';
+
+      input.focus({ preventScroll: true });
+      input.click();
+      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
 
     } else if (item.type === 'ai') {
       // Chế độ 4: Câu điền từ AI theo ngữ cảnh (Điền từ vào câu chứa _____)
@@ -1099,10 +1120,12 @@ class StudyManager {
       typingContainer.style.display = 'flex';
 
       const input = document.getElementById('quiz-typing-input');
-      if (input) {
-        input.value = '';
-        input.focus({ preventScroll: true });
-      }
+      input.value = '';
+
+      input.focus({ preventScroll: true });
+      input.click();
+      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      setTimeout(() => input.focus({ preventScroll: true }), 50);
 
     } else {
       // Phần Chọn nghĩa: Hiện từ tiếng Anh, hiện phiên âm IPA và audio
@@ -1203,6 +1226,7 @@ class StudyManager {
     if (this.waitingForTap) return;
 
     const input = document.getElementById('quiz-typing-input');
+    if (input) input.blur(); // Ẩn bàn phím ảo trên điện thoại
     // Chuẩn hóa: trim và loại bỏ khoảng trắng thừa ở giữa các từ
     const val = input.value.trim().replace(/\s+/g, ' ').toLowerCase();
     const correctWord = this.currentQuizItem.word.word.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -1321,8 +1345,6 @@ class StudyManager {
   // === 4. KHI ÔN TẬP XONG: HIỂN THỊ DANH SÁCH CÁC TỪ VỪA HỌC KÈM NÚT SỬA TRẠNG THÁI ===
   showCompletionScreen() {
     this.setWaitingForTap(false);
-    document.getElementById('quiz-typing-input')?.blur();
-    document.body.classList.remove('keyboard-open');
     
     // Cập nhật DOM nhanh gọn bằng requestAnimationFrame để không giật lag
     requestAnimationFrame(() => {

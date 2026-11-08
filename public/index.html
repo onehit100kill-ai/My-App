@@ -1137,7 +1137,34 @@
           <!-- Render máu & tiến độ -->
         </div>
         <div class="farm-sheet-body" id="farm-quiz-body">
-          <!-- Render câu hỏi động -->
+          <div class="quiz-container farm-quiz-container">
+            <!-- 1. Nghe điền từ -->
+            <div id="farm-quiz-listening-container" style="display: none; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0;">
+              <button type="button" class="btn-audio" id="farm-quiz-play-audio" style="width: 74px; height: 74px; font-size: 32px; border-radius: 50%;">🔊</button>
+              <div style="font-size: 0.85rem; color: var(--text-secondary);">Nghe và gõ từ chính xác</div>
+            </div>
+
+            <!-- 2. Thẻ gợi ý câu hỏi (Điền từ & Trắc nghiệm & AI) -->
+            <div class="farm-quiz-prompt-card" id="farm-quiz-prompt-container">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <div class="farm-quiz-question-word" id="farm-quiz-question-text"></div>
+                <button type="button" class="btn-audio" id="farm-quiz-audio-btn" style="width: 32px; height: 32px; font-size: 14px;">🔊</button>
+              </div>
+              <div style="font-size: 0.88rem; color: #38bdf8; display: none; margin-top: 4px;" id="farm-quiz-question-subtext"></div>
+            </div>
+
+            <!-- 3. Phương án trắc nghiệm -->
+            <div class="farm-quiz-options" id="farm-quiz-options-container" style="display: none;"></div>
+
+            <!-- 4. Khung gõ từ chính tả (Static input trong DOM -> Bàn phím tự động mở ngay trên mobile) -->
+            <div class="quiz-input-box farm-quiz-typing-box" id="farm-quiz-typing-container" style="display: none;">
+              <input type="text" id="farm-quiz-input" class="form-input farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..."
+                autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
+            </div>
+
+            <!-- 5. Hộp gợi ý khi sai / AI hint -->
+            <div id="farm-quiz-hint-box" style="display: none;" class="farm-quiz-hint-box"></div>
+          </div>
         </div>
       </div>
     </div>
