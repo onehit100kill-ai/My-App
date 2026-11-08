@@ -940,7 +940,6 @@
       </div>
 
       <div class="farm-hud-right">
-        <button type="button" class="farm-btn-icon" id="farm-btn-sound" title="Bật/Tắt âm thanh">🔊</button>
         <button type="button" class="farm-btn-icon" id="farm-btn-settings" title="Cài đặt nông trại">⚙️</button>
         <button type="button" class="farm-btn-icon farm-btn-close" id="farm-btn-close" title="Rời nông trại">✕</button>
       </div>
@@ -1117,6 +1116,18 @@
           <button type="button" class="farm-btn-icon farm-sheet-btn-close">✕</button>
         </div>
         <div class="farm-sheet-body">
+          <!-- Nhóm: Âm thanh trò chơi -->
+          <div class="farm-settings-group">
+            <div class="farm-settings-title">🔊 Âm thanh:</div>
+            <label class="farm-toggle-item" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+              <div>
+                <span style="font-weight: 600;">Hiệu ứng âm thanh</span>
+                <small style="display: block; color: var(--text-secondary); font-size: 0.75rem;">Bật/tắt âm thanh khi chăm sóc & thu hoạch</small>
+              </div>
+              <input type="checkbox" id="farm-setting-sound-toggle" checked>
+            </label>
+          </div>
+
           <!-- Nhóm 1: Chọn từ học -->
           <div class="farm-settings-group">
             <div class="farm-settings-title">📚 Chọn nguồn từ vựng:</div>
@@ -1291,9 +1302,14 @@
     <div class="farm-sheet-backdrop" id="farm-sheet-shop">
       <div class="farm-sheet-card">
         <div class="farm-sheet-handle"></div>
-        <div class="farm-sheet-header">
-          <h3 class="farm-sheet-title">🛒 Cửa Hàng Nông Trại</h3>
-          <button type="button" class="farm-btn-icon farm-sheet-btn-close">✕</button>
+        <div class="farm-sheet-header farm-shop-header">
+          <h3 class="farm-sheet-title">🛒 Cửa Hàng</h3>
+          <div class="farm-shop-header-actions">
+            <div class="farm-stat-chip farm-gold-chip" id="farm-shop-gold-chip" title="Số xu vàng hiện có">
+              <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span id="farm-shop-coins-display">0</span>
+            </div>
+            <button type="button" class="farm-btn-icon farm-sheet-btn-close farm-shop-btn-close" title="Đóng cửa hàng">✕</button>
+          </div>
         </div>
         <div class="farm-sheet-body" id="farm-shop-body">
           <!-- Render động mua phân bón & bán nông sản -->

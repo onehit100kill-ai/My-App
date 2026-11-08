@@ -1311,6 +1311,12 @@
       }
 
       if (soundBtn) soundBtn.textContent = this.state.soundEnabled ? '🔊' : '🔇';
+
+      // Cập nhật số vàng trên Shop Header (ghi như trên header và để bên trên)
+      const shopCoinsEl = document.getElementById('farm-shop-coins-display');
+      if (shopCoinsEl) {
+        shopCoinsEl.textContent = this.state.coins || 0;
+      }
     },
 
     renderBottomBar() {
@@ -2611,17 +2617,13 @@
       const fertPrice = this.getFertilizerPrice();
       const currentLevel = Math.max(1, this.state.level || 1);
 
-      body.innerHTML = `
-        <!-- VÍ VÀNG (Không giới hạn lượng đồ có thể bán trong Shop) -->
-        <div class="farm-shop-wallet-box" style="justify-content: center; text-align: center;">
-          <div class="farm-shop-wallet-info" style="align-items: center; width: 100%;">
-            <div class="farm-shop-wallet-label">Ví Của Bạn</div>
-            <div class="farm-shop-wallet-amount" style="display:inline-flex; align-items:center; gap:6px;">
-              ${this.getCoinIcon(24)} <span id="farm-shop-coins-display">${this.state.coins || 0}</span> vàng
-            </div>
-          </div>
-        </div>
+      // Cập nhật số vàng trên Shop Header (ghi như trên header và để bên trên)
+      const shopCoinsEl = document.getElementById('farm-shop-coins-display');
+      if (shopCoinsEl) {
+        shopCoinsEl.textContent = this.state.coins || 0;
+      }
 
+      body.innerHTML = `
         <!-- PHẦN 1: MUA VẬT PHẨM (Chỉ mua Phân bón) -->
         <div style="margin-bottom: 16px;">
           <div class="farm-shop-section-title">
@@ -3409,6 +3411,12 @@
       const sheet = document.getElementById('farm-sheet-settings');
       if (!sheet) return;
 
+      // Đồng bộ toggle âm thanh
+      const soundToggle = document.getElementById('farm-setting-sound-toggle');
+      if (soundToggle) {
+        soundToggle.checked = this.state.soundEnabled !== false;
+      }
+
       // Đồng bộ radio wordSource
       const radio = sheet.querySelector(`input[name="farm-word-source"][value="${this.settings.wordSource}"]`);
       if (radio) radio.checked = true;
@@ -3560,6 +3568,14 @@
       };
 
       this.saveSettings();
+
+      // Lưu cài đặt âm thanh
+      const soundToggle = document.getElementById('farm-setting-sound-toggle');
+      if (soundToggle) {
+        this.state.soundEnabled = soundToggle.checked;
+        this.saveState();
+      }
+
       this.refreshWordsPool().then(() => this.render());
       sheet.classList.remove('active');
 
@@ -3687,13 +3703,13 @@
         }
       });
 
-      // 2. Nút trên HUD
+      // 2. Nút trên HUD & Cài đặt
       document.getElementById('farm-btn-close')?.addEventListener('click', () => this.close());
       document.getElementById('farm-btn-settings')?.addEventListener('click', () => this.openSettingsModal());
-      document.getElementById('farm-btn-sound')?.addEventListener('click', () => {
-        this.state.soundEnabled = !this.state.soundEnabled;
+      document.getElementById('farm-setting-sound-toggle')?.addEventListener('change', (e) => {
+        this.state.soundEnabled = e.target.checked;
         this.saveState();
-        this.renderHUD();
+        if (this.state.soundEnabled) this.playSound('pop');
       });
 
       // Bấm huy hiệu cấp độ hoặc thanh XP mở tooltip Level & XP (2 dòng)

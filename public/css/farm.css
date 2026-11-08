@@ -1034,20 +1034,14 @@
 .farm-sheet-handle {
   display: none; /* Ẩn thanh kéo vì thẻ đã căn giữa màn hình */
 }
-  width: 42px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  margin: 10px auto 6px auto;
-  flex-shrink: 0;
-}
 
 .farm-sheet-header {
-  padding: 10px 18px 14px 18px;
+  padding: 12px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  box-sizing: border-box;
 }
 
 .farm-sheet-title {
@@ -1057,6 +1051,72 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Nút thoát của modal/sheet căn chuẩn */
+.farm-sheet-btn-close {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  color: var(--text-secondary, #94a3b8);
+  background: var(--bg-surface-elevated, #21262d);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.farm-sheet-btn-close:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: scale(1.06);
+}
+
+.farm-sheet-btn-close:active {
+  transform: scale(0.92);
+}
+
+/* Header riêng của Cửa Hàng (Shop): Số vàng & nút thoát căn chuẩn */
+.farm-shop-header {
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  box-sizing: border-box;
+}
+
+.farm-shop-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#farm-shop-gold-chip {
+  cursor: default;
+  font-size: 0.82rem;
+  padding: 3px 9px;
+  height: 28px;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+.farm-shop-btn-close {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .farm-sheet-body {
