@@ -253,10 +253,18 @@
 
 .farm-xp-bar {
   height: 100%;
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
   width: 0%;
   border-radius: 999px;
   transition: width 0.3s ease;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.farm-xp-icon {
+  display: inline-block;
+  vertical-align: middle;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(2, 132, 199, 0.45));
 }
 
 /* TOOLTIP NHỎ HIỂN THỊ EXP & VẬT PHẨM MỞ TIẾP THEO (2 dòng) */

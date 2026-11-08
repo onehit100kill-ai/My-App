@@ -274,6 +274,13 @@
       return `<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin" style="width:${size}px; height:${size}px; object-fit:contain; vertical-align:middle; display:inline-block;" />`;
     },
 
+    // Icon ngôi sao xanh lam nhạt viền đậm đại diện cho EXP
+    getXpIcon(size = 16) {
+      return `<svg class="farm-xp-icon" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+        <path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>`;
+    },
+
     // Icon tim máu cây: kích thước giảm còn 0.6 (~6.5px trên ô đất, ~8.5px trong quiz), khi mất máu giữ lại viền đỏ
     getHeartIcon(isFull = true, size = 6.5) {
       if (isFull) {
@@ -1762,7 +1769,7 @@
             ${word.example ? `<div class="farm-plant-example">"${word.example}"</div>` : ''}
           </div>
           <div style="font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-bottom: 8px;">
-            Cần tưới đúng ${crop.stagesNeeded} lần • Hồi ${crop.cooldownSec}s • Thu hoạch ${crop.name} (giá bán ${crop.sellPrice}🪙) + ${crop.rewardXp} XP
+            Cần tưới đúng ${crop.stagesNeeded} lần • Hồi ${crop.cooldownSec}s • Thu hoạch ${crop.name} (giá bán ${crop.sellPrice}${this.getCoinIcon(13)}) + ${crop.rewardXp}${this.getXpIcon(14)}
           </div>
         `;
       }
@@ -2378,7 +2385,7 @@
         <div class="harvest-title">✨ Đã thuộc lòng!</div>
         <div class="harvest-word">${info.word}</div>
         <div class="harvest-meaning">${info.meaning}</div>
-        <div class="harvest-rewards">+1 ${info.cropIcon || '🌾'} ${info.cropName || ''} vào kho | +${info.rewardXp} XP</div>
+        <div class="harvest-rewards">+1 ${info.cropIcon || '🌾'} ${info.cropName || ''} | +${info.rewardXp} ${this.getXpIcon(15)}</div>
       `;
 
       toast.classList.add('active');
@@ -2520,7 +2527,7 @@
       const xpEl = document.getElementById('farm-tooltip-xp-line');
       const rewardEl = document.getElementById('farm-tooltip-reward-line');
       const rewardIconEl = document.getElementById('farm-tooltip-reward-icon');
-      if (xpEl) xpEl.textContent = `EXP: ${curXp} / ${nextXp} XP (còn thiếu ${missingXp} XP)`;
+      if (xpEl) xpEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px;">${this.getXpIcon(14)} <b>${curXp}</b> / <b>${nextXp}</b> (thiếu ${missingXp})</span>`;
       if (rewardEl) rewardEl.textContent = `Cấp ${nextLvl} mở: ${rewardText}`;
       if (rewardIconEl) rewardIconEl.textContent = rewardIcon;
 
@@ -2874,7 +2881,7 @@
             <div style="font-size: 32px;">${tree.icon}</div>
             <div style="font-size: 1.1rem; font-weight: 700; color: #fff;">Cây ${tree.name} (${tree.rarity})</div>
             <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">
-              Thu hoạch: <b style="color:#34d399;">+${tree.yieldFood} ${tree.icon}</b> + <b style="color:#a5b4fc;">${tree.rewardXp} XP</b>
+              Thu hoạch: <b style="color:#34d399;">+${tree.yieldFood} ${tree.icon}</b> + <b style="color:#7dd3fc; display:inline-flex; align-items:center; gap:2px;">+${tree.rewardXp} ${this.getXpIcon(14)}</b>
             </div>
           </div>
           <div style="font-weight: 600; font-size: 0.85rem; color: #e2e8f0; margin-bottom: 6px;">
