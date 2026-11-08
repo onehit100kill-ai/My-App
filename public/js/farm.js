@@ -15,7 +15,7 @@
       id: 'radish',
       name: 'Củ cải',
       icon: '🥕',
-      seedPrice: 5,
+      seedPrice: 2, // Giảm 1/2 làm tròn xuống: 5 -> 2
       sellPrice: 6,
       stagesNeeded: 2,
       cooldownSec: 5,
@@ -33,7 +33,7 @@
       id: 'strawberry',
       name: 'Dâu tây',
       icon: '🍓',
-      seedPrice: 10,
+      seedPrice: 5, // Giảm 1/2: 10 -> 5
       sellPrice: 10,
       stagesNeeded: 3,
       cooldownSec: 5,
@@ -51,7 +51,7 @@
       id: 'sunflower',
       name: 'Hướng dương',
       icon: '🌻',
-      seedPrice: 15,
+      seedPrice: 7, // Giảm 1/2 làm tròn xuống: 15 -> 7
       sellPrice: 15,
       stagesNeeded: 4,
       cooldownSec: 5,
@@ -279,6 +279,54 @@
       return `<svg class="farm-xp-icon" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
         <path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
       </svg>`;
+    },
+
+    // Icon tim máu cây: kích thước giảm còn 0.6 (~6.5px trên ô đất, ~8.5px trong quiz), khi mất máu giữ lại viền đỏ
+    getHeartIcon(isFull = true, size = 6.5) {
+      if (isFull) {
+        return `<svg class="farm-heart-icon full" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="#ef4444" stroke="#991b1b" stroke-width="1.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      } else {
+        return `<svg class="farm-heart-icon lost" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="rgba(15, 23, 42, 0.65)" stroke="#ef4444" stroke-width="2.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      }
+    },
+
+    // Icon tim máu sâu: khi mất máu giữ lại viền xanh lá
+    getWormHeartIcon(isFull = true, size = 6.5) {
+      if (isFull) {
+        return `<svg class="farm-heart-icon full worm-heart" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="#22c55e" stroke="#15803d" stroke-width="1.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      } else {
+        return `<svg class="farm-heart-icon lost worm-heart" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="rgba(15, 23, 42, 0.65)" stroke="#22c55e" stroke-width="2.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      }
+    },
+
+    // Xáo trộn mảng ngẫu nhiên (Fisher-Yates)
+    shuffle(array) {
+      if (!Array.isArray(array)) return [];
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    },
+
+    // Escape chuỗi HTML chống lỗi và vỡ layout
+    escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     },
 
     // Icon tim máu cây: kích thước giảm còn 0.6 (~6.5px trên ô đất, ~8.5px trong quiz), khi mất máu giữ lại viền đỏ
@@ -1674,22 +1722,23 @@
       sheet.setAttribute('data-target-plot', plotId);
       sheet.setAttribute('data-selected-word-id', word.id);
 
-      // Cập nhật số lượng nông sản trong kho trên thẻ chọn hạt giống
-      const storage = this.state.foodStorage || {};
+      // Cập nhật giá động & trạng thái nút theo số xu hiện có (không hiển thị số lượng kho)
+      const userCoins = this.state.coins || 0;
       const seedCards = sheet.querySelectorAll('.farm-seed-card');
       seedCards.forEach(card => {
         const cType = card.getAttribute('data-crop');
         const cDef = CROP_TYPES[cType];
         if (!cDef) return;
-        const count = storage[cType] || 0;
-        let badgeEl = card.querySelector('.farm-seed-stock-badge');
-        if (!badgeEl) {
-          badgeEl = document.createElement('span');
-          badgeEl.className = 'farm-seed-stock-badge';
-          card.appendChild(badgeEl);
+
+        const priceEl = card.querySelector('.farm-seed-price-val');
+        if (priceEl) priceEl.textContent = cDef.seedPrice;
+
+        const canAfford = userCoins >= cDef.seedPrice;
+        const btn = card.querySelector('.farm-seed-btn');
+        if (btn) {
+          btn.textContent = canAfford ? 'Chọn' : 'Thiếu vàng';
+          btn.style.opacity = canAfford ? '1' : '0.6';
         }
-        badgeEl.className = 'farm-seed-stock-badge in-stock';
-        badgeEl.innerHTML = `Giá: ${cDef.seedPrice}${this.getCoinIcon(12)} • Kho: ×${count} • Bán: +${cDef.sellPrice}${this.getCoinIcon(12)}`;
       });
 
       // Hiển thị danh sách hạt giống ban đầu
@@ -1720,7 +1769,7 @@
       const crop = CROP_TYPES[cropType];
       if (!crop) return;
 
-      const seedPrice = crop.seedPrice || 5;
+      const seedPrice = crop.seedPrice || 2;
       const userCoins = this.state.coins || 0;
       const canAfford = userCoins >= seedPrice;
 
@@ -1729,7 +1778,7 @@
       if (canAfford) {
         costBanner = `
           <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-            <span style="display:inline-flex; align-items:center; gap:4px;">${this.getCoinIcon(16)} Chi phí mua hạt & gieo: <b>${seedPrice} vàng</b></span>
+            <span style="display:inline-flex; align-items:center; gap:4px;">${this.getCoinIcon(16)} Chi phí gieo: <b>${seedPrice} vàng</b></span>
             <span style="font-weight: 700; color: #a7f3d0; display:inline-flex; align-items:center; gap:2px;">Ví của bạn: ${userCoins}${this.getCoinIcon(13)}</span>
           </div>
         `;
@@ -1768,8 +1817,8 @@
             <div class="farm-plant-meaning">${word.meaning}</div>
             ${word.example ? `<div class="farm-plant-example">"${word.example}"</div>` : ''}
           </div>
-          <div style="font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-bottom: 8px;">
-            Cần tưới đúng ${crop.stagesNeeded} lần • Hồi ${crop.cooldownSec}s • Thu hoạch ${crop.name} (giá bán ${crop.sellPrice}${this.getCoinIcon(13)}) + ${crop.rewardXp}${this.getXpIcon(14)}
+          <div style="font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+            <span>📖 ${crop.stagesNeeded} câu</span> • <span>Hồi ${crop.cooldownSec}s</span> • <span>Thu hoạch ${crop.name} (Bán +${crop.sellPrice}${this.getCoinIcon(13)})</span> • <span>+${crop.rewardXp}${this.getXpIcon(14)}</span>
           </div>
         `;
       }
@@ -3700,12 +3749,16 @@
       document.getElementById('farm-btn-shop')?.addEventListener('click', () => this.openShopModal());
 
       // 4. Chọn hạt giống nông sản
-      document.querySelectorAll('.farm-seed-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const crop = card.getAttribute('data-crop');
-          this.selectSeedType(crop);
+      const seedStepSelect = document.getElementById('farm-seed-step-select');
+      if (seedStepSelect) {
+        seedStepSelect.addEventListener('click', (e) => {
+          const card = e.target.closest('.farm-seed-card');
+          if (card) {
+            const crop = card.getAttribute('data-crop');
+            if (crop) this.selectSeedType(crop);
+          }
         });
-      });
+      }
 
       document.getElementById('farm-seed-btn-change-word')?.addEventListener('click', () => this.changeSeedWord());
       document.getElementById('farm-seed-btn-confirm-plant')?.addEventListener('click', () => this.confirmPlant());
