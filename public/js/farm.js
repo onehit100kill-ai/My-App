@@ -678,7 +678,7 @@
 
         html += `
           <div class="farm-chicken-plot ${statusClass}" data-chicken-id="${ch.id}"
-               title="${isReady ? `Gà #${ch.id}: Đã đẻ trứng 🥚, chạm để thu hoạch!` : isFeeding ? `Gà #${ch.id}: Đang ấp trứng (${leftSec}s)` : `Gà #${ch.id}: Đang đói, chạm để cho ăn (-2🪙)`}">
+               title="${isReady ? `Gà #${ch.id}: Đã đẻ trứng 🥚, chạm để thu hoạch!` : isFeeding ? `Gà #${ch.id}: Đang ấp trứng (${leftSec}s)` : `Gà #${ch.id}: Đang đói, chạm để cho ăn (-2🪙, 📖 1 câu)`}">
             <span class="farm-chicken-icon">🐔</span>
             ${isReady ? `
               <div class="farm-chicken-egg-badge" title="Có trứng 🥚">🥚</div>
@@ -688,6 +688,7 @@
             ` : `
               <span class="farm-animal-feed-badge">🌾 -2${this.getCoinIcon(12)}</span>
               <span class="farm-chicken-label" style="color: #86efac;">Cho ăn</span>
+              <span style="font-size: 8px; color: #38bdf8; font-weight: 700; line-height: 1;">📖 1 câu</span>
             `}
           </div>
         `;
@@ -735,7 +736,7 @@
         return;
       }
 
-      // 3. Nếu đang đói -> Cho ăn (-2🪙)
+      // 3. Nếu đang đói -> Cần trả lời 1 câu hỏi ngẫu nhiên để cho ăn (-2🪙)
       const feedCost = 2;
       const userCoins = this.state.coins || 0;
       if (userCoins < feedCost) {
@@ -745,18 +746,7 @@
         return;
       }
 
-      this.state.coins -= feedCost;
-      ch.state = 'feeding';
-      ch.readyAt = now + 5 * 1000; // 5 giây đẻ trứng (tất cả hồi 5s)
-
-      this.saveState();
-      this.renderHUD();
-      this.renderPoultryGrid();
-      this.playSound('pop');
-
-      if (window.showToast) {
-        window.showToast(`🌾 Đã cho Gà #${chickenId} ăn (-${feedCost}🪙)! Gà đang ấp trứng...`);
-      }
+      this.openAnimalQuiz('chicken', chickenId, feedCost);
     },
 
     // 4.5. KHU NUÔI BÒ SỮA: 6 Ô BÒ (Cấp 10 mới mở, mỗi 3 cấp 1 con: Cấp 10, 13, 16, 19, 22, 25)
@@ -806,7 +796,7 @@
 
         html += `
           <div class="farm-cow-plot ${statusClass}" data-cow-id="${cow.id}"
-               title="${isReady ? `Bò #${cow.id}: Đã có sữa 🥛, chạm để vắt sữa!` : isFeeding ? `Bò #${cow.id}: Đang cho sữa (${leftSec}s)` : `Bò #${cow.id}: Đang đói, chạm để cho ăn (-6🪙)`}">
+               title="${isReady ? `Bò #${cow.id}: Đã có sữa 🥛, chạm để vắt sữa!` : isFeeding ? `Bò #${cow.id}: Đang cho sữa (${leftSec}s)` : `Bò #${cow.id}: Đang đói, chạm để cho ăn (-6🪙, 📖 1 câu)`}">
             <span class="farm-cow-icon">🐄</span>
             ${isReady ? `
               <div class="farm-cow-milk-badge" title="Có sữa 🥛">🥛</div>
@@ -816,6 +806,7 @@
             ` : `
               <span class="farm-animal-feed-badge">🌿 -6${this.getCoinIcon(12)}</span>
               <span class="farm-cow-label" style="color: #67e8f9;">Cho ăn</span>
+              <span style="font-size: 8px; color: #38bdf8; font-weight: 700; line-height: 1;">📖 1 câu</span>
             `}
           </div>
         `;
@@ -863,7 +854,7 @@
         return;
       }
 
-      // 3. Nếu đang đói -> Cho ăn (-6🪙)
+      // 3. Nếu đang đói -> Cần trả lời 1 câu hỏi ngẫu nhiên để cho ăn (-6🪙)
       const feedCost = 6;
       const userCoins = this.state.coins || 0;
       if (userCoins < feedCost) {
@@ -873,18 +864,32 @@
         return;
       }
 
-      this.state.coins -= feedCost;
-      cow.state = 'feeding';
-      cow.readyAt = now + 5 * 1000; // 5 giây cho sữa (tất cả hồi 5s)
+      this.openAnimalQuiz('cow', cowId, feedCost);
+    },
 
-      this.saveState();
-      this.renderHUD();
-      this.renderCattleGrid();
-      this.playSound('pop');
+    // Mở Quiz ngẫu nhiên khi cho vật nuôi ăn (Gà / Bò)
+    openAnimalQuiz(animalType, animalId, feedCost) {
+      const mode = this.getZoneQuizMode('poultry', 0);
+      const word = this.pickNextWord();
 
-      if (window.showToast) {
-        window.showToast(`🌿 Đã cho Bò #${cowId} ăn (-${feedCost}🪙)! Bò đang tạo sữa...`);
-      }
+      this.activeQuiz = {
+        isAnimal: true,
+        animalType: animalType,
+        animalId: animalId,
+        feedCost: feedCost,
+        mode: mode,
+        word: {
+          id: word.id,
+          word: word.word,
+          ipa: word.ipa,
+          meaning: word.meaning,
+          example: word.example,
+          audioUrl: word.audioUrl
+        },
+        failCount: 0
+      };
+
+      this.renderQuizModal();
     },
 
     // =========================================================================
@@ -1724,9 +1729,7 @@
       const sheet = document.getElementById('farm-sheet-seed');
       if (!sheet) return;
 
-      const word = this.pickNextWord();
       sheet.setAttribute('data-target-plot', plotId);
-      sheet.setAttribute('data-selected-word-id', word.id);
 
       // Cập nhật giá động & trạng thái nút theo số xu hiện có (không hiển thị số lượng kho)
       const userCoins = this.state.coins || 0;
@@ -1742,7 +1745,7 @@
         const canAfford = userCoins >= cDef.seedPrice;
         const btn = card.querySelector('.farm-seed-btn');
         if (btn) {
-          btn.textContent = canAfford ? 'Chọn' : 'Thiếu vàng';
+          btn.textContent = canAfford ? 'Gieo hạt' : 'Thiếu vàng';
           btn.style.opacity = canAfford ? '1' : '0.6';
         }
       });
@@ -1756,15 +1759,44 @@
       sheet.classList.add('active');
     },
 
+    // Khi trồng không cần chọn từ mà gieo ngay, khi tưới sẽ bốc câu hỏi ngẫu nhiên
     selectSeedType(cropType) {
       const sheet = document.getElementById('farm-sheet-seed');
       if (!sheet) return;
 
-      sheet.setAttribute('data-selected-crop', cropType);
-      const wordId = parseInt(sheet.getAttribute('data-selected-word-id'), 10);
-      let word = this.cachedWordsPool.find(w => w.id === wordId) || this.pickNextWord();
+      const plotId = parseInt(sheet.getAttribute('data-target-plot'), 10);
+      const crop = CROP_TYPES[cropType];
+      const plot = this.state.plots.find(p => p.id === plotId);
+      if (!plot || !crop) return;
 
-      this.showSeedConfirmCard(cropType, word);
+      const seedPrice = crop.seedPrice || 2;
+      const userCoins = this.state.coins || 0;
+      if (userCoins < seedPrice) {
+        if (window.showToast) {
+          window.showToast(`Không đủ vàng để mua hạt giống! Cần ${seedPrice}🪙 (Ví có: ${userCoins}🪙). Hãy bán nông sản để kiếm vàng!`);
+        }
+        return;
+      }
+
+      this.state.coins -= seedPrice;
+      plot.cropType = cropType;
+      plot.state = 'growing';
+      plot.stage = 0;
+      plot.stagesNeeded = crop.stagesNeeded;
+      plot.maxHp = crop.maxHp;
+      plot.hp = crop.maxHp;
+      plot.cooldownUntil = 0;
+      plot.plantedAt = Date.now();
+
+      this.saveState();
+      sheet.classList.remove('active');
+      this.renderHUD();
+      this.renderCropGrid();
+      this.playSound('pop');
+
+      if (window.showToast) {
+        window.showToast(`🌱 Đã gieo ${crop.name} (-${seedPrice}🪙)! Cần trả lời ${crop.stagesNeeded} câu hỏi ngẫu nhiên khi tưới để thu hoạch.`);
+      }
     },
 
     showSeedConfirmCard(cropType, word) {
@@ -1905,18 +1937,21 @@
       // Lấy dạng quiz từ cài đặt riêng cho Vườn Nông Sản (có hỗ trợ ngẫu nhiên)
       const mode = this.getZoneQuizMode('crops', plot.stage);
 
+      // Bốc từ ngẫu nhiên trong danh sách từ đang học
+      const word = this.pickNextWord();
+
       this.activeQuiz = {
         plotId: plot.id,
         cropType: plot.cropType,
         isWormQuiz: isWormQuiz,
         mode: mode,
         word: {
-          id: plot.wordId,
-          word: plot.word,
-          ipa: plot.ipa,
-          meaning: plot.meaning,
-          example: plot.example,
-          audioUrl: plot.audioUrl
+          id: word.id,
+          word: word.word,
+          ipa: word.ipa,
+          meaning: word.meaning,
+          example: word.example,
+          audioUrl: word.audioUrl
         },
         failCount: 0
       };
@@ -1929,6 +1964,20 @@
       if (!statusEl || !this.activeQuiz) return;
 
       const q = this.activeQuiz;
+
+      // Xử lý quiz cho vật nuôi ăn (Gà / Bò)
+      if (q.isAnimal) {
+        const animalName = q.animalType === 'chicken' ? `Gà #${q.animalId}` : `Bò #${q.animalId}`;
+        const animalIcon = q.animalType === 'chicken' ? '🐔' : '🐄';
+        statusEl.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 2px;">
+            <span style="font-size: 0.88rem; font-weight: 700; color: #fde047;">${animalIcon} Cho ${animalName} Ăn</span>
+            <span style="font-size: 0.8rem; color: #38bdf8; font-weight: 600;">📖 Cần trả lời: <b>1 câu</b> • Chi phí: ${q.feedCost}🪙</span>
+          </div>
+        `;
+        return;
+      }
+
       const plot = this.state.plots.find(p => p.id === q.plotId);
       if (!plot) return;
       const crop = CROP_TYPES[q.cropType] || {};
@@ -1984,13 +2033,17 @@
       if (!sheet || !this.activeQuiz) return;
 
       const q = this.activeQuiz;
-      const plot = this.state.plots.find(p => p.id === q.plotId);
-      const crop = CROP_TYPES[q.cropType];
+      const plot = !q.isAnimal ? this.state.plots.find(p => p.id === q.plotId) : null;
+      const crop = (!q.isAnimal && plot) ? CROP_TYPES[q.cropType] : null;
 
       // Tiêu đề
       const titleEl = document.getElementById('farm-quiz-title');
       if (titleEl) {
-        titleEl.textContent = q.isWormQuiz ? 'Bắt sâu! 🐛' : `Tưới cây — ${crop.name}`;
+        if (q.isAnimal) {
+          titleEl.textContent = q.animalType === 'chicken' ? `Cho Gà #${q.animalId} Ăn 🐔` : `Cho Bò #${q.animalId} Ăn 🐄`;
+        } else {
+          titleEl.textContent = q.isWormQuiz ? 'Bắt sâu! 🐛' : `Tưới cây — ${crop ? crop.name : 'Nông sản'} (Câu ${plot ? plot.stage + 1 : 1}/${plot ? plot.stagesNeeded : 2})`;
+        }
       }
 
       // Trạng thái máu cây / máu sâu & số lần tưới (Cập nhật trực tiếp)
@@ -2140,18 +2193,76 @@
     checkQuizAnswer(userAnswer, targetBtnEl = null) {
       if (!this.activeQuiz) return;
       const q = this.activeQuiz;
-      const plot = this.state.plots.find(p => p.id === q.plotId);
-      if (!plot) return;
 
-      const crop = CROP_TYPES[q.cropType];
       let isCorrect = false;
-
       if (q.mode === 'choice') {
         isCorrect = (userAnswer.toLowerCase() === q.word.meaning.toLowerCase());
       } else {
         // Gõ từ tiếng Anh (cho cả typing và listening)
         isCorrect = (userAnswer.trim().toLowerCase() === q.word.word.trim().toLowerCase());
       }
+
+      // 1. QUIZ CHO VẬT NUÔI ĂN (GÀ, BÒ)
+      if (q.isAnimal) {
+        if (isCorrect) {
+          if (targetBtnEl) targetBtnEl.classList.add('correct');
+          this.playSound('pop');
+
+          this.state.coins -= q.feedCost;
+          if (q.animalType === 'chicken') {
+            const ch = this.state.chickenPlots?.find(p => p.id === q.animalId);
+            if (ch) {
+              ch.state = 'feeding';
+              ch.readyAt = Date.now() + 5000;
+            }
+            this.gainXp(3);
+            if (window.showToast) {
+              window.showToast(`🌾 Trả lời đúng! Đã cho Gà #${q.animalId} ăn (-${q.feedCost}🪙)! Gà đang ấp trứng (5s)...`);
+            }
+          } else {
+            const cow = this.state.cowPlots?.find(p => p.id === q.animalId);
+            if (cow) {
+              cow.state = 'feeding';
+              cow.readyAt = Date.now() + 5000;
+            }
+            this.gainXp(5);
+            if (window.showToast) {
+              window.showToast(`🌿 Trả lời đúng! Đã cho Bò #${q.animalId} ăn (-${q.feedCost}🪙)! Bò đang tạo sữa (5s)...`);
+            }
+          }
+
+          this.saveState();
+          this.render();
+
+          setTimeout(() => {
+            document.getElementById('farm-sheet-quiz')?.classList.remove('active');
+            this.activeQuiz = null;
+          }, 650);
+        } else {
+          // Trả lời sai khi cho ăn: Không trừ tiền, hiển thị gợi ý
+          if (targetBtnEl) targetBtnEl.classList.add('incorrect');
+          q.failCount = (q.failCount || 0) + 1;
+          const hintBox = document.getElementById('farm-quiz-hint-box');
+          if (hintBox) {
+            hintBox.style.display = 'block';
+            if (q.failCount === 1) {
+              const firstLetter = q.word.word.charAt(0).toUpperCase();
+              hintBox.innerHTML = `💡 <b>Gợi ý:</b> Từ bắt đầu bằng chữ <b>"${firstLetter}..."</b> • Nghĩa: <i>"${q.word.meaning}"</i>`;
+            } else {
+              hintBox.innerHTML = `📖 <b>Đáp án:</b> <b style="color:#34d399;">${q.word.word}</b> [${q.word.ipa || ''}] = <i>${q.word.meaning}</i><br>Đã chuyển câu hỏi sang dạng dễ hơn để bạn ôn lại!`;
+              q.mode = 'choice';
+              setTimeout(() => this.renderQuizModal(), 1200);
+            }
+          }
+        }
+        return;
+      }
+
+      // 2. QUIZ CÂY TRỒNG NÔNG SẢN
+      const plot = this.state.plots.find(p => p.id === q.plotId);
+      if (!plot) return;
+
+      const crop = CROP_TYPES[q.cropType];
 
       if (isCorrect) {
         // ================= TRẢ LỜI ĐÚNG =================
