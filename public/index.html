@@ -498,7 +498,8 @@
           <div class="study-progress-bar-wrap" style="flex: 1; height: 10px; margin: 0;">
             <div class="study-progress-fill" id="study-progress-fill"></div>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="btn-study-reading-passage" style="display: none; padding: 4px 10px; font-size: 0.85rem; white-space: nowrap;">📖 Bài đọc</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-study-reading-passage"
+            style="display: none; padding: 4px 10px; font-size: 0.85rem; white-space: nowrap;">📖 Bài đọc</button>
           <button type="button" class="icon-btn-mini" id="btn-close-study-room" title="Rời phòng học">✕</button>
         </div>
       </div>
@@ -537,7 +538,7 @@
             <!-- Khung gõ từ chính tả (Tự động focus ngay lập tức, nhấn Enter để kiểm tra) -->
             <div class="quiz-input-box" id="quiz-typing-container" style="display: none;">
               <input type="text" id="quiz-typing-input" class="form-input" placeholder="Gõ từ tiếng Anh tại đây..."
-                autocomplete="new-password" autocorrect="off" autocapitalize="none" spellcheck="false"
+                autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text"
                 enterkeyhint="go">
             </div>
 
@@ -624,7 +625,8 @@
         <button type="button" class="icon-btn-mini btn-close-modal" data-target="modal-study-reading">✕</button>
       </div>
       <div class="modal-body" style="padding: 20px; position: relative;">
-        <div id="study-reading-content" class="reading-passage-text" style="font-size: 1.05rem; line-height: 1.85; color: var(--text-primary); margin-bottom: 20px; word-break: break-word;">
+        <div id="study-reading-content" class="reading-passage-text"
+          style="font-size: 1.05rem; line-height: 1.85; color: var(--text-primary); margin-bottom: 20px; word-break: break-word;">
           <!-- Nội dung bài đọc từ AI -->
         </div>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
@@ -632,17 +634,23 @@
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
           <button type="button" class="btn btn-secondary" id="btn-study-refresh-passage">🔄 Tạo lại bài đọc</button>
-          <button type="button" class="btn btn-primary btn-close-modal" data-target="modal-study-reading">Đã hiểu</button>
+          <button type="button" class="btn btn-primary btn-close-modal" data-target="modal-study-reading">Đã
+            hiểu</button>
         </div>
 
         <!-- Tooltip tra từ nổi trong bài đọc -->
         <div id="reading-word-popup" class="reading-word-popup" style="display: none;">
-          <div class="reading-popup-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <span id="popup-word-text" class="popup-word-title" style="font-weight: 700; color: var(--accent-blue);">word</span>
-            <button type="button" id="popup-audio-btn" class="btn-audio" style="width: 28px; height: 28px; font-size: 14px;">🔊</button>
+          <div class="reading-popup-header"
+            style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span id="popup-word-text" class="popup-word-title"
+              style="font-weight: 700; color: var(--accent-blue);">word</span>
+            <button type="button" id="popup-audio-btn" class="btn-audio"
+              style="width: 28px; height: 28px; font-size: 14px;">🔊</button>
           </div>
-          <div id="popup-word-ipa" class="popup-word-ipa" style="color: var(--accent-cyan); font-size: 0.85rem; margin-top: 2px;"></div>
-          <div id="popup-word-meaning" class="popup-word-meaning" style="font-weight: 600; margin-top: 6px; color: #fff;"></div>
+          <div id="popup-word-ipa" class="popup-word-ipa"
+            style="color: var(--accent-cyan); font-size: 0.85rem; margin-top: 2px;"></div>
+          <div id="popup-word-meaning" class="popup-word-meaning"
+            style="font-weight: 600; margin-top: 6px; color: #fff;"></div>
         </div>
       </div>
     </div>
@@ -908,8 +916,10 @@
     <!-- Thanh HUD trên cùng -->
     <header class="farm-hud">
       <div class="farm-hud-left">
-        <div class="farm-level-badge" id="farm-hud-level" title="Nhấn xem EXP & phần thưởng cấp sau" style="cursor: pointer;">🌱 Cấp 1</div>
-        <div class="farm-xp-track" id="farm-hud-xp-track" title="Nhấn xem EXP & phần thưởng cấp sau" style="cursor: pointer;">
+        <div class="farm-level-badge" id="farm-hud-level" title="Nhấn xem EXP & phần thưởng cấp sau"
+          style="cursor: pointer;">🌱 Cấp 1</div>
+        <div class="farm-xp-track" id="farm-hud-xp-track" title="Nhấn xem EXP & phần thưởng cấp sau"
+          style="cursor: pointer;">
           <div class="farm-xp-bar" id="farm-hud-xp-bar"></div>
         </div>
         <!-- Tooltip nhỏ hiển thị EXP & Vật phẩm mở khoá tiếp theo (2 dòng) -->
@@ -925,11 +935,15 @@
 
       <div class="farm-hud-center">
         <div class="farm-stat-chip farm-words-chip" id="farm-hud-words" title="Số từ vựng sẵn sàng để học">📖 0 từ</div>
-        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Túi phân bón (chạm để mở Shop)" style="cursor: pointer;">
-          <img class="farm-fert-icon-img" src="assets/farm/fertilizer-bag.png" alt="fert"> <span id="farm-hud-fert-count">0</span>
+        <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Túi phân bón (chạm để mở Shop)"
+          style="cursor: pointer;">
+          <img class="farm-fert-icon-img" src="assets/farm/fertilizer-bag.png" alt="fert"> <span
+            id="farm-hud-fert-count">0</span>
         </div>
-        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Số xu vàng hiện có (chạm để mở Shop)" style="cursor: pointer;">
-          <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span id="farm-hud-coins-count">0</span>
+        <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Số xu vàng hiện có (chạm để mở Shop)"
+          style="cursor: pointer;">
+          <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span
+            id="farm-hud-coins-count">0</span>
         </div>
       </div>
 
@@ -952,12 +966,14 @@
             <!-- Render động 16 ô đất bằng farm.js -->
           </div>
           <!-- Nút Tưới Tất Cả: Chỉ hiện khi có cây đang cần tưới -->
-          <button type="button" class="farm-btn-water-all" id="farm-btn-water-all" title="Tưới tất cả cây đang cần tưới" style="display: none;">
+          <button type="button" class="farm-btn-water-all" id="farm-btn-water-all" title="Tưới tất cả cây đang cần tưới"
+            style="display: none;">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-              <path d="M12 2.8C10.5 4.8 6.5 10.2 6.5 14.5A5.5 5.5 0 0 0 17.5 14.5C17.5 10.2 13.5 4.8 12 2.8Z" fill="#38bdf8" stroke="#0284c7" stroke-width="1.6" stroke-linejoin="round"/>
-              <path d="M9.5 11.5A3 3 0 0 1 11.5 8" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M18.5 3.5L19 5.5L21 6L19 6.5L18.5 8.5L18 6.5L16 6L18 5.5Z" fill="#38bdf8"/>
-              <circle cx="20.5" cy="11.5" r="1.2" fill="#38bdf8"/>
+              <path d="M12 2.8C10.5 4.8 6.5 10.2 6.5 14.5A5.5 5.5 0 0 0 17.5 14.5C17.5 10.2 13.5 4.8 12 2.8Z"
+                fill="#38bdf8" stroke="#0284c7" stroke-width="1.6" stroke-linejoin="round" />
+              <path d="M9.5 11.5A3 3 0 0 1 11.5 8" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M18.5 3.5L19 5.5L21 6L19 6.5L18.5 8.5L18 6.5L16 6L18 5.5Z" fill="#38bdf8" />
+              <circle cx="20.5" cy="11.5" r="1.2" fill="#38bdf8" />
             </svg>
             <span class="farm-water-all-badge" id="farm-water-all-badge">0</span>
           </button>
@@ -1021,60 +1037,72 @@
           <div id="farm-seed-step-select">
             <div class="farm-seed-grid">
               <div class="farm-seed-card" data-crop="radish">
+                <div class="farm-seed-name">Củ cải</div>
                 <div class="farm-seed-icon-wrap">
                   <img class="farm-seed-thumb" src="assets/farm/seed-radish.png" onerror="this.style.display='none'"
                     alt="Củ cải">
                   <span class="farm-crop-emoji" style="display:none; font-size:30px;">🥕</span>
                 </div>
-                <div class="farm-seed-name">Củ cải</div>
-                <div class="farm-seed-stages">💧 <b>2 lần tưới</b></div>
-                <div class="farm-seed-questions">📖 <b>1 câu / lần</b></div>
-                <div class="farm-seed-meta">❤️ 3 • Hồi 5s</div>
-                <div class="farm-seed-price">
-                  Giá: <b class="farm-seed-price-val">2</b> <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin">
+                <div class="farm-seed-stats-row">
+                  <div class="farm-seed-stages"><b>2</b>💧</div>
+                  <div class="farm-seed-questions"><b>1</b>📖</div>
                 </div>
+                <div class="farm-seed-meta">3❤️ • 5s⏳</div>
                 <div class="farm-seed-reward">
-                  +10<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> +10<svg class="farm-xp-icon" viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; display: inline-block;"><path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  +10<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> +10<svg class="farm-xp-icon"
+                    viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; display: inline-block;">
+                    <path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round"
+                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
                 </div>
-                <button type="button" class="btn btn-primary farm-seed-btn">Gieo hạt</button>
+                <button type="button" class="btn btn-primary farm-seed-btn">2 <img class="farm-coin-icon-img"
+                    src="assets/farm/coin.png" alt="coin"></button>
               </div>
 
               <div class="farm-seed-card" data-crop="strawberry">
+                <div class="farm-seed-name">Dâu tây</div>
                 <div class="farm-seed-icon-wrap">
                   <img class="farm-seed-thumb" src="assets/farm/seed-strawberry.png" onerror="this.style.display='none'"
                     alt="Dâu tây">
                   <span class="farm-crop-emoji" style="display:none; font-size:30px;">🍓</span>
                 </div>
-                <div class="farm-seed-name">Dâu tây</div>
-                <div class="farm-seed-stages">💧 <b>3 lần tưới</b></div>
-                <div class="farm-seed-questions">📖 <b>2 câu / lần</b></div>
-                <div class="farm-seed-meta">❤️ 4 • Hồi 5s</div>
-                <div class="farm-seed-price">
-                  Giá: <b class="farm-seed-price-val">5</b> <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin">
+                <div class="farm-seed-stats-row">
+                  <div class="farm-seed-stages"><b>3</b>💧</div>
+                  <div class="farm-seed-questions"><b>2</b>📖</div>
                 </div>
+                <div class="farm-seed-meta">4❤️ • 5s⏳</div>
                 <div class="farm-seed-reward">
-                  +20<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> +15<svg class="farm-xp-icon" viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; display: inline-block;"><path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  +20<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> +15<svg class="farm-xp-icon"
+                    viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; display: inline-block;">
+                    <path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round"
+                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
                 </div>
-                <button type="button" class="btn btn-primary farm-seed-btn">Gieo hạt</button>
+                <button type="button" class="btn btn-primary farm-seed-btn">5 <img class="farm-coin-icon-img"
+                    src="assets/farm/coin.png" alt="coin"></button>
               </div>
 
               <div class="farm-seed-card" data-crop="sunflower">
+                <div class="farm-seed-name">Hướng dương</div>
                 <div class="farm-seed-icon-wrap">
                   <img class="farm-seed-thumb" src="assets/farm/seed-sunflower.png" onerror="this.style.display='none'"
                     alt="Hướng dương">
                   <span class="farm-crop-emoji" style="display:none; font-size:30px;">🌻</span>
                 </div>
-                <div class="farm-seed-name">Hướng dương</div>
-                <div class="farm-seed-stages">💧 <b>4 lần tưới</b></div>
-                <div class="farm-seed-questions">📖 <b>3 câu / lần</b></div>
-                <div class="farm-seed-meta">❤️ 5 • Hồi 5s</div>
-                <div class="farm-seed-price">
-                  Giá: <b class="farm-seed-price-val">7</b> <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin">
+                <div class="farm-seed-stats-row">
+                  <div class="farm-seed-stages"><b>4</b>💧</div>
+                  <div class="farm-seed-questions"><b>3</b>📖</div>
                 </div>
+                <div class="farm-seed-meta">5❤️ • 5s⏳</div>
                 <div class="farm-seed-reward">
-                  +35<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> +25<svg class="farm-xp-icon" viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; display: inline-block;"><path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  +35<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> +25<svg class="farm-xp-icon"
+                    viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; display: inline-block;">
+                    <path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round"
+                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
                 </div>
-                <button type="button" class="btn btn-primary farm-seed-btn">Gieo hạt</button>
+                <button type="button" class="btn btn-primary farm-seed-btn">7 <img class="farm-coin-icon-img"
+                    src="assets/farm/coin.png" alt="coin"></button>
               </div>
             </div>
           </div>
@@ -1126,10 +1154,12 @@
           <!-- Nhóm: Âm thanh trò chơi -->
           <div class="farm-settings-group">
             <div class="farm-settings-title">🔊 Âm thanh:</div>
-            <label class="farm-toggle-item" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+            <label class="farm-toggle-item"
+              style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
               <div>
                 <span style="font-weight: 600;">Hiệu ứng âm thanh</span>
-                <small style="display: block; color: var(--text-secondary); font-size: 0.75rem;">Bật/tắt âm thanh khi chăm sóc & thu hoạch</small>
+                <small style="display: block; color: var(--text-secondary); font-size: 0.75rem;">Bật/tắt âm thanh khi
+                  chăm sóc & thu hoạch</small>
               </div>
               <input type="checkbox" id="farm-setting-sound-toggle" checked>
             </label>
@@ -1138,19 +1168,25 @@
           <!-- Nhóm: Đồng bộ dữ liệu mọi thiết bị (Cloud Sync) -->
           <div class="farm-settings-group">
             <div class="farm-settings-title">☁️ Đồng bộ mọi thiết bị:</div>
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; font-size: 0.82rem;">
+            <div
+              style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; font-size: 0.82rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                 <span style="color: #34d399; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                  <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #34d399;"></span> Đang tự động đồng bộ
+                  <span
+                    style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #34d399;"></span>
+                  Đang tự động đồng bộ
                 </span>
                 <span id="farm-sync-status-time" style="color: #94a3b8; font-size: 0.75rem;">vừa xong</span>
               </div>
               <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 8px; line-height: 1.4;">
-                Dữ liệu nông trại tự động lưu lên máy chủ và đồng bộ tức thì trên mọi điện thoại, máy tính và trình duyệt.
+                Dữ liệu nông trại tự động lưu lên máy chủ và đồng bộ tức thì trên mọi điện thoại, máy tính và trình
+                duyệt.
               </div>
               <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn btn-secondary btn-sm" id="farm-btn-force-sync" style="flex: 1; padding: 5px 8px; font-size: 0.78rem;">🔄 Đồng bộ ngay</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="farm-btn-backup-export" style="padding: 5px 8px; font-size: 0.78rem;" title="Tải file sao lưu về máy">💾 Sao lưu</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="farm-btn-force-sync"
+                  style="flex: 1; padding: 5px 8px; font-size: 0.78rem;">🔄 Đồng bộ ngay</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="farm-btn-backup-export"
+                  style="padding: 5px 8px; font-size: 0.78rem;" title="Tải file sao lưu về máy">💾 Sao lưu</button>
               </div>
             </div>
           </div>
@@ -1203,14 +1239,17 @@
                 <label class="farm-toggle-item">
                   <div>
                     <span>4. Câu điền từ AI</span>
-                    <small class="farm-ai-status-crops" style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+                    <small class="farm-ai-status-crops"
+                      style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh
+                      AI</small>
                   </div>
                   <input type="checkbox" id="farm-setting-crops-ai" checked>
                 </label>
                 <label class="farm-toggle-item farm-toggle-random">
                   <div>
                     <span style="font-weight: 700; color: #fde047;">🎲 Ngẫu nhiên loại câu hỏi</span>
-                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên các cách học đã bật thay vì theo giai đoạn</small>
+                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên các cách học đã
+                      bật thay vì theo giai đoạn</small>
                   </div>
                   <input type="checkbox" id="farm-setting-crops-random" checked>
                 </label>
@@ -1239,14 +1278,17 @@
                 <label class="farm-toggle-item">
                   <div>
                     <span>4. Câu điền từ AI</span>
-                    <small class="farm-ai-status-orchard" style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+                    <small class="farm-ai-status-orchard"
+                      style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh
+                      AI</small>
                   </div>
                   <input type="checkbox" id="farm-setting-orchard-ai" checked>
                 </label>
                 <label class="farm-toggle-item farm-toggle-random">
                   <div>
                     <span style="font-weight: 700; color: #fde047;">🎲 Ngẫu nhiên loại câu hỏi</span>
-                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên các cách học đã bật</small>
+                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên các cách học đã
+                      bật</small>
                   </div>
                   <input type="checkbox" id="farm-setting-orchard-random" checked>
                 </label>
@@ -1275,14 +1317,17 @@
                 <label class="farm-toggle-item">
                   <div>
                     <span>4. Câu điền từ AI</span>
-                    <small class="farm-ai-status-poultry" style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh AI</small>
+                    <small class="farm-ai-status-poultry"
+                      style="display: block; color: var(--text-muted); font-size: 0.75rem;">Điền từ vào câu ngữ cảnh
+                      AI</small>
                   </div>
                   <input type="checkbox" id="farm-setting-poultry-ai" checked>
                 </label>
                 <label class="farm-toggle-item farm-toggle-random">
                   <div>
                     <span style="font-weight: 700; color: #fde047;">🎲 Ngẫu nhiên loại câu hỏi</span>
-                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên câu hỏi khi chăm sóc vật nuôi</small>
+                    <small style="display: block; color: #94a3b8; font-size: 0.73rem;">Trộn ngẫu nhiên câu hỏi khi chăm
+                      sóc vật nuôi</small>
                   </div>
                   <input type="checkbox" id="farm-setting-poultry-random" checked>
                 </label>
@@ -1333,9 +1378,11 @@
           <h3 class="farm-sheet-title">🛒 Cửa Hàng</h3>
           <div class="farm-shop-header-actions">
             <div class="farm-stat-chip farm-gold-chip" id="farm-shop-gold-chip" title="Số xu vàng hiện có">
-              <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span id="farm-shop-coins-display">0</span>
+              <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span
+                id="farm-shop-coins-display">0</span>
             </div>
-            <button type="button" class="farm-btn-icon farm-sheet-btn-close farm-shop-btn-close" title="Đóng cửa hàng">✕</button>
+            <button type="button" class="farm-btn-icon farm-sheet-btn-close farm-shop-btn-close"
+              title="Đóng cửa hàng">✕</button>
           </div>
         </div>
         <div class="farm-sheet-body" id="farm-shop-body">
@@ -1376,11 +1423,14 @@
           <div id="farm-fruit-step-confirm" style="display: none;">
             <div id="farm-fruit-confirm-body"></div>
             <div style="display: flex; gap: 10px; margin-top: 14px;">
-              <button type="button" class="btn btn-secondary" id="farm-fruit-btn-reshuffle" style="flex: 1;">🎲 Đổi bộ từ khác</button>
-              <button type="button" class="btn btn-primary" id="farm-fruit-btn-confirm-plant" style="flex: 1;">🌳 Trồng Cây</button>
+              <button type="button" class="btn btn-secondary" id="farm-fruit-btn-reshuffle" style="flex: 1;">🎲 Đổi bộ
+                từ khác</button>
+              <button type="button" class="btn btn-primary" id="farm-fruit-btn-confirm-plant" style="flex: 1;">🌳 Trồng
+                Cây</button>
             </div>
             <div style="text-align: center; margin-top: 10px;">
-              <button type="button" class="btn btn-secondary" id="farm-fruit-btn-back" style="font-size: 0.8rem; padding: 4px 10px;">← Chọn cây khác</button>
+              <button type="button" class="btn btn-secondary" id="farm-fruit-btn-back"
+                style="font-size: 0.8rem; padding: 4px 10px;">← Chọn cây khác</button>
             </div>
           </div>
         </div>

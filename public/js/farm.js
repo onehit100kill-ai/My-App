@@ -1302,7 +1302,19 @@
       this.closeAllSheets();
     },
 
+    hideQuizKeyboard() {
+      const el1 = document.getElementById('farm-quiz-input');
+      if (el1) el1.blur();
+      const el2 = document.getElementById('farm-fruit-input');
+      if (el2) el2.blur();
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        document.activeElement.blur();
+      }
+      document.body.classList.remove('keyboard-open');
+    },
+
     closeAllSheets() {
+      this.hideQuizKeyboard();
       document.querySelectorAll('.farm-sheet-backdrop').forEach(el => el.classList.remove('active'));
     },
 
@@ -1757,7 +1769,7 @@
               ? `<button type="button" class="farm-tree-btn btn-harvest" data-harvest-tree="${type}">🧺 Thu hoạch (+1 ${def.icon})</button>`
               : isCooldown
                 ? `<div class="farm-tree-cooldown">Đang hồi (${treeState.cooldown}s)</div>`
-                : `<button type="button" class="farm-tree-btn btn-water" data-water-tree="${type}">💧 Tưới (${def.maxWords} từ)</button>`
+                : `<button type="button" class="farm-tree-btn btn-water" data-water-tree="${type}">${def.maxWords}💧</button>`
           }
             </div>
           </div>
@@ -1965,20 +1977,36 @@
         const cDef = CROP_TYPES[cType];
         if (!cDef) return;
 
-        const priceEl = card.querySelector('.farm-seed-price-val');
-        if (priceEl) priceEl.textContent = cDef.seedPrice;
-
+        // Dòng 1: {số nước}{icon nước} {số từ}{icon sách} (thống nhất icon sau số, không viền và nền)
         const stagesEl = card.querySelector('.farm-seed-stages');
-        if (stagesEl) stagesEl.innerHTML = `💧 <b>${cDef.wateringsNeeded} lần tưới</b>`;
-
         const questionsEl = card.querySelector('.farm-seed-questions');
-        if (questionsEl) questionsEl.innerHTML = `📖 <b>${cDef.questionsPerWater} câu / lần</b>`;
 
+        let statsRow = card.querySelector('.farm-seed-stats-row');
+        if (!statsRow && stagesEl && questionsEl) {
+          statsRow = document.createElement('div');
+          statsRow.className = 'farm-seed-stats-row';
+          stagesEl.parentNode.insertBefore(statsRow, stagesEl);
+          statsRow.appendChild(stagesEl);
+          statsRow.appendChild(questionsEl);
+        }
+
+        if (stagesEl) stagesEl.innerHTML = `<b>${cDef.wateringsNeeded}</b>💧`;
+        if (questionsEl) questionsEl.innerHTML = `<b>${cDef.questionsPerWater}</b>📖`;
+
+        // Dòng 2: Máu và thời gian (thống nhất icon sau số: {máu}❤️ • {thời gian}⏳)
+        const metaEl = card.querySelector('.farm-seed-meta');
+        if (metaEl) {
+          metaEl.innerHTML = `${cDef.maxHp || 3}❤️ • ${cDef.cooldownSec || 5}s⏳`;
+        }
+
+        // Nút bấm: Giá chuyển xuống thay cho chữ gieo hạt (giữ viền và nền của button)
         const canAfford = userCoins >= cDef.seedPrice;
         const btn = card.querySelector('.farm-seed-btn');
         if (btn) {
-          btn.textContent = canAfford ? 'Gieo hạt' : 'Thiếu vàng';
-          btn.style.opacity = canAfford ? '1' : '0.6';
+          btn.innerHTML = `${cDef.seedPrice} <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin">`;
+          btn.style.opacity = canAfford ? '1' : '0.5';
+          btn.style.cursor = canAfford ? 'pointer' : 'not-allowed';
+          btn.title = canAfford ? `Gieo hạt (${cDef.seedPrice} xu)` : 'Không đủ vàng để gieo hạt';
         }
       });
 
@@ -2278,10 +2306,10 @@
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 4px;">
           <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml} ${fertBtnHtml}</div>
           <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 600;">
-            ${q.isWormQuiz 
-              ? `<span style="color: #34d399;">🐛 Đánh bại sâu (Hiệp ${q.questionIndex}/${q.totalQuestions})</span>` 
-              : `<span style="color: #38bdf8;">💧 Lần tưới: ${plot.stage + 1}/${totalWaterings}</span> <span style="color: #34d399;">📖 Câu hỏi: ${q.questionIndex}/${q.totalQuestions}</span>`
-            }
+            ${q.isWormQuiz
+          ? `<span style="color: #34d399;">🐛 Đánh bại sâu (Hiệp ${q.questionIndex}/${q.totalQuestions})</span>`
+          : `<span style="color: #38bdf8;">💧 Lần tưới: ${plot.stage + 1}/${totalWaterings}</span> <span style="color: #34d399;">📖 Câu hỏi: ${q.questionIndex}/${q.totalQuestions}</span>`
+        }
           </div>
         </div>
       `;
@@ -2348,7 +2376,7 @@
                 </div>
                 ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
               </div>
-              <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+              <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
               <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
             `;
           } else {
@@ -2362,7 +2390,7 @@
               <span style="font-size: 0.82rem; color: var(--text-secondary);">Gõ từ tiếng Anh có nghĩa:</span>
               <div class="farm-quiz-question-word" style="color: #38bdf8;">"${q.word.meaning}"</div>
             </div>
-            <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+            <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
             <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
           `;
         }
@@ -2373,7 +2401,7 @@
             <button type="button" class="btn-audio" id="farm-quiz-play-audio" style="width: 72px; height: 72px; font-size: 32px; border-radius: 50%;">🔊</button>
             <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">Nghe và gõ từ chính xác</div>
           </div>
-          <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ bạn nghe được..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+          <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ bạn nghe được..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
           <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
         `;
       } else if (q.mode === 'typing') {
@@ -2383,7 +2411,7 @@
             <span style="font-size: 0.82rem; color: var(--text-secondary);">Gõ từ tiếng Anh có nghĩa:</span>
             <div class="farm-quiz-question-word" style="color: #38bdf8;">"${q.word.meaning}"</div>
           </div>
-          <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+          <input type="text" id="farm-quiz-input" class="farm-quiz-input" placeholder="Gõ từ tiếng Anh tại đây..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" enterkeyhint="go">
           <button type="button" class="btn btn-primary" id="farm-quiz-submit-btn" style="width: 100%; min-height: 48px;">Kiểm tra</button>
         `;
       } else {
@@ -2418,19 +2446,36 @@
 
       sheet.classList.add('active');
 
-      // Tự động focus ô nhập nếu là chế độ gõ
+      // Tự động trỏ vào ô nhập nếu là chế độ gõ (sao chép y hệt cơ chế bên phòng học chính study.js)
       const inputEl = document.getElementById('farm-quiz-input');
       if (inputEl) {
-        setTimeout(() => {
-          inputEl.focus();
-          inputEl.click();
-        }, 280);
+        inputEl.value = '';
+        inputEl.focus({ preventScroll: true });
+        
+        // Fix lỗi giật viewport trên mobile khi mất focus (giống study.js)
+        inputEl.addEventListener('blur', () => {
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 50);
+        });
+
+        // Chạm vào khung câu hỏi để kích hoạt focus mở bàn phím nếu chưa mở
+        document.querySelector('.farm-quiz-body')?.addEventListener('click', (e) => {
+          if (e.target.closest('button, .farm-quiz-opt-btn')) return;
+          inputEl.focus({ preventScroll: true });
+        });
+
+        // Nhấn Enter nộp bài ngay lập tức (ngăn reload/form submit)
         inputEl.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
-            inputEl.blur(); // Ẩn bàn phím ảo trên điện thoại khi nhấn Enter
-            this.checkQuizAnswer(inputEl.value.trim());
+            e.preventDefault();
+            e.stopPropagation();
+            this.checkQuizAnswer(inputEl.value);
           }
         });
+      } else {
+        // Nếu là trắc nghiệm, chắc chắn thu gọn bàn phím ảo ngay lập tức (giống study.js)
+        this.hideQuizKeyboard();
       }
 
       // Phát âm thanh ngay nếu là chế độ nghe
@@ -2441,16 +2486,27 @@
       }
 
       // Bắt sự kiện nộp bài
-      document.getElementById('farm-quiz-submit-btn')?.addEventListener('click', () => {
+      document.getElementById('farm-quiz-submit-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         const inp = document.getElementById('farm-quiz-input');
-        if (inp) inp.blur(); // Ẩn bàn phím ảo trên điện thoại
         const val = inp?.value || '';
-        this.checkQuizAnswer(val.trim());
+        this.checkQuizAnswer(val);
       });
 
-      document.getElementById('farm-quiz-play-audio')?.addEventListener('click', () => {
-        window.wordsManager?.playPronunciation(q.word.word, q.word.audioUrl);
-      });
+      // Phát âm thanh: dùng mousedown & touchstart để chặn mất focus input (giống study.js)
+      const playAudioBtn = document.getElementById('farm-quiz-play-audio');
+      if (playAudioBtn) {
+        const onAudio = (e) => {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          window.wordsManager?.playPronunciation(q.word.word, q.word.audioUrl);
+        };
+        playAudioBtn.addEventListener('mousedown', onAudio);
+        playAudioBtn.addEventListener('touchstart', onAudio, { passive: false });
+        playAudioBtn.addEventListener('click', onAudio);
+      }
 
       // Bắt sự kiện chọn đáp án trắc nghiệm
       document.querySelectorAll('.farm-quiz-opt-btn').forEach(btn => {
@@ -2466,12 +2522,21 @@
       if (!this.activeQuiz) return;
       const q = this.activeQuiz;
 
+      // Chuẩn hoá đáp án giống study.js: trim và loại bỏ khoảng trắng thừa ở giữa
+      const cleanUserAns = (userAnswer || '').trim().replace(/\s+/g, ' ').toLowerCase();
       let isCorrect = false;
       if (q.mode === 'choice') {
-        isCorrect = (userAnswer.toLowerCase() === q.word.meaning.toLowerCase());
+        const cleanMeaning = (q.word.meaning || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        isCorrect = (cleanUserAns === cleanMeaning);
       } else {
-        // Gõ từ tiếng Anh (cho cả typing và listening)
-        isCorrect = (userAnswer.trim().toLowerCase() === q.word.word.trim().toLowerCase());
+        // Gõ từ tiếng Anh (cho cả typing, listening, ai)
+        const cleanWord = (q.word.word || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        isCorrect = (cleanUserAns === cleanWord);
+      }
+
+      // Phát âm từ ngay khi trả lời đúng (giống study.js), trừ listening để tránh đè âm thanh
+      if (isCorrect && window.wordsManager && q.mode !== 'listening') {
+        window.wordsManager.playPronunciation(q.word.word, q.word.audioUrl);
       }
 
       // 0. QUIZ TƯỚI TẤT CẢ (WATER ALL)
@@ -2511,6 +2576,9 @@
             window.showToast(`💧 Đã tưới nước thành công cho tất cả ${count} cây!`);
           }
 
+          // Hoàn thành tưới: Ẩn ngay bàn phím ảo
+          this.hideQuizKeyboard();
+
           setTimeout(() => {
             document.getElementById('farm-sheet-quiz')?.classList.remove('active');
             this.activeQuiz = null;
@@ -2535,9 +2603,15 @@
             if (q.failCount === 1) {
               const firstLetter = q.word.word.charAt(0).toUpperCase();
               hintBox.innerHTML = `💡 <b>Gợi ý:</b> Từ bắt đầu bằng chữ <b>"${firstLetter}..."</b> • Nghĩa: <i>"${q.word.meaning}"</i>`;
+              const inp = document.getElementById('farm-quiz-input');
+              if (inp) {
+                inp.value = '';
+                inp.focus({ preventScroll: true });
+              }
             } else {
               hintBox.innerHTML = `📖 <b>Đáp án:</b> <b style="color:#34d399;">${q.word.word}</b> [${q.word.ipa || ''}] = <i>${q.word.meaning}</i><br>Đã chuyển câu hỏi sang dạng trắc nghiệm dễ hơn!`;
               q.mode = 'choice';
+              this.hideQuizKeyboard();
               setTimeout(() => this.renderQuizModal(), 1200);
             }
           }
@@ -2577,6 +2651,9 @@
           this.saveState();
           this.render();
 
+          // Hoàn thành cho ăn: Ẩn ngay bàn phím ảo
+          this.hideQuizKeyboard();
+
           setTimeout(() => {
             document.getElementById('farm-sheet-quiz')?.classList.remove('active');
             this.activeQuiz = null;
@@ -2591,9 +2668,15 @@
             if (q.failCount === 1) {
               const firstLetter = q.word.word.charAt(0).toUpperCase();
               hintBox.innerHTML = `💡 <b>Gợi ý:</b> Từ bắt đầu bằng chữ <b>"${firstLetter}..."</b> • Nghĩa: <i>"${q.word.meaning}"</i>`;
+              const inp = document.getElementById('farm-quiz-input');
+              if (inp) {
+                inp.value = '';
+                inp.focus({ preventScroll: true });
+              }
             } else {
               hintBox.innerHTML = `📖 <b>Đáp án:</b> <b style="color:#34d399;">${q.word.word}</b> [${q.word.ipa || ''}] = <i>${q.word.meaning}</i><br>Đã chuyển câu hỏi sang dạng dễ hơn để bạn ôn lại!`;
               q.mode = 'choice';
+              this.hideQuizKeyboard();
               setTimeout(() => this.renderQuizModal(), 1200);
             }
           }
@@ -2618,7 +2701,9 @@
           q.questionIndex = (plot.worm.maxHp || (crop.id === 'radish' ? 2 : 3)) - plot.worm.hp + 1;
           this.updateQuizHeaderStatus();
           if (plot.worm.hp <= 0) {
-            // Đã bắt xong sâu!
+            // Đã bắt xong sâu! Ẩn bàn phím ảo ngay
+            this.hideQuizKeyboard();
+
             plot.worm = null;
             this.state.coins += 10;
             this.gainXp(10);
@@ -2633,7 +2718,7 @@
               this.activeQuiz = null;
             }, 650);
           } else {
-            // Sâu còn máu -> Tiếp tục hỏi câu tiếp theo ngay trong modal, không đóng modal
+            // Sâu còn máu -> Tiếp tục hỏi câu tiếp theo, giữ bàn phím mở để gõ tiếp
             if (window.showToast) window.showToast(`Đúng rồi! Sâu còn ${plot.worm.hp} máu. Hãy tiếp tục!`);
             this.saveState();
             this.render();
@@ -2675,13 +2760,17 @@
             q.failCount = 0;
             q.mode = this.getZoneQuizMode('crops', plot.stage);
 
+            // Giữ bàn phím mở để gõ câu tiếp theo liên tục (giống study.js)
             setTimeout(() => {
               this.renderQuizModal();
             }, 450);
             return;
           }
 
-          // Đã hoàn thành hết số câu hỏi trong lần tưới này!
+          // ĐÃ HOÀN THÀNH HẾT SỐ CÂU HỎI TRONG LẦN TƯỚI NÀY!
+          // Ẩn bàn phím ảo trên điện thoại ngay lập tức theo yêu cầu!
+          this.hideQuizKeyboard();
+
           // Nếu đang héo (1 HP): hồi 1 máu trước, sau đó mới lớn
           if (plot.hp === 1) {
             plot.hp = Math.min(plot.maxHp || 3, 2);
@@ -2734,7 +2823,9 @@
         this.updateQuizHeaderStatus();
 
         if (plot.hp <= 0) {
-          // Cây chết
+          // Cây chết: Ẩn bàn phím ảo ngay lập tức
+          this.hideQuizKeyboard();
+
           plot.state = 'withered';
           if (plot.worm) plot.worm = null;
           this.saveState();
@@ -2763,10 +2854,16 @@
           if (q.failCount === 1) {
             const firstLetter = q.word.word.charAt(0).toUpperCase();
             hintBox.innerHTML = `💡 <b>Gợi ý lần 1:</b> Từ bắt đầu bằng chữ <b>"${firstLetter}..."</b> • Nghĩa: <i>"${q.word.meaning}"</i>`;
+            const inp = document.getElementById('farm-quiz-input');
+            if (inp) {
+              inp.value = '';
+              inp.focus({ preventScroll: true });
+            }
           } else {
             hintBox.innerHTML = `📖 <b>Đáp án:</b> <b style="color:#34d399;">${q.word.word}</b> [${q.word.ipa || ''}] = <i>${q.word.meaning}</i><br>Đã chuyển câu hỏi sang dạng dễ hơn để bạn ôn lại!`;
-            // Chuyển sang dạng trắc nghiệm
+            // Chuyển sang dạng trắc nghiệm: Ẩn bàn phím ảo ngay lập tức
             q.mode = 'choice';
+            this.hideQuizKeyboard();
             setTimeout(() => this.renderQuizModal(), 1200);
           }
         }
@@ -3744,23 +3841,37 @@
       const submitBtn = document.getElementById('farm-fruit-submit-btn');
 
       if (inputEl) {
-        setTimeout(() => {
-          if (typeof inputEl.focus === 'function') {
-            inputEl.focus();
-            inputEl.click();
-          }
-        }, 280);
+        inputEl.value = '';
+        inputEl.focus({ preventScroll: true });
+
+        inputEl.addEventListener('blur', () => {
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 50);
+        });
+
         const submitAction = () => {
-          inputEl.blur(); // Ẩn bàn phím ảo trên điện thoại
-          const isCorrect = inputEl.value.trim().toLowerCase() === (currentWord.word || '').trim().toLowerCase();
+          const cleanVal = (inputEl.value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+          const cleanCorrect = (currentWord.word || '').trim().replace(/\s+/g, ' ').toLowerCase();
+          const isCorrect = cleanVal === cleanCorrect;
           this.handleFruitQuizAnswer(isCorrect);
         };
+
         inputEl.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') submitAction();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            submitAction();
+          }
         });
         if (submitBtn) {
-          submitBtn.addEventListener('click', submitAction);
+          submitBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            submitAction();
+          });
         }
+      } else {
+        this.hideQuizKeyboard();
       }
 
       bodyEl.querySelectorAll('.farm-quiz-opt-btn').forEach(btn => {
@@ -3788,9 +3899,12 @@
         // Tưới cây không tăng EXP, chỉ thu hoạch mới tăng EXP
         q.wordIndex += 1;
         if (q.wordIndex < q.words.length) {
+          // Chưa xong đợt tưới: giữ bàn phím mở để gõ từ tiếp theo
           this.renderFruitTreeQuizModal();
         } else {
-          // Hoàn thành tưới đủ từ của giai đoạn này
+          // Hoàn thành tưới đủ từ của giai đoạn này: Ẩn ngay bàn phím ảo!
+          this.hideQuizKeyboard();
+
           const growth = tree.hasFertilizer ? 2 : 1;
           tree.hasFertilizer = false;
           tree.stage = Math.min(3, (tree.stage || 1) + growth);
@@ -3824,6 +3938,9 @@
         this.saveState();
 
         if (tree.hearts <= 0) {
+          // Hết tim: Ẩn ngay bàn phím ảo
+          this.hideQuizKeyboard();
+
           tree.hearts = def.maxHp;
           tree.cooldown = 5;
           const sheet = document.getElementById('farm-sheet-fruit-quiz');
@@ -3957,6 +4074,10 @@
 
       // Tải danh sách ngày nếu chọn chế độ Tuỳ chọn
       await this.renderCustomDaysChecklist();
+
+      // Reset vị trí cuộn về đầu khi mở
+      const bodyEl = sheet.querySelector('.farm-sheet-body');
+      if (bodyEl) bodyEl.scrollTop = 0;
 
       sheet.classList.add('active');
     },
@@ -4311,17 +4432,27 @@
         document.getElementById('farm-fruit-step-confirm').style.display = 'none';
       });
 
-      // 5. Đóng các sheet khi click nút close hoặc backdrop
+      // 5. Đóng các sheet khi click nút close hoặc backdrop, đồng thời chống cuộn nền khu vườn
       document.querySelectorAll('.farm-sheet-backdrop').forEach(backdrop => {
         backdrop.addEventListener('click', (e) => {
           if (e.target === backdrop) {
             backdrop.classList.remove('active');
           }
         });
+
+        // Cho phép cuộn mượt nội dung sheet/danh sách ngày, chỉ chặn touchmove trên backdrop ngoài thẻ
+        backdrop.addEventListener('touchmove', (e) => {
+          if (!backdrop.classList.contains('active')) return;
+          const scrollable = e.target.closest('.farm-sheet-body, .farm-custom-days-list');
+          if (scrollable) return;
+          e.preventDefault();
+        }, { passive: false });
       });
 
       document.querySelectorAll('.farm-sheet-btn-close').forEach(btn => {
         btn.addEventListener('click', () => {
+          document.getElementById('farm-quiz-input')?.blur();
+          document.body.classList.remove('keyboard-open');
           btn.closest('.farm-sheet-backdrop')?.classList.remove('active');
         });
       });

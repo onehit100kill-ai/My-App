@@ -214,7 +214,7 @@ html.farm-active {
   overflow: hidden !important;
   height: 100% !important;
   height: 100dvh !important;
-  touch-action: none !important;
+  overscroll-behavior: none !important;
 }
 
 #farm-view[hidden] {
@@ -1075,6 +1075,8 @@ html.farm-active {
   transition: opacity 0.25s ease;
   padding: 16px;
   box-sizing: border-box;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .farm-sheet-backdrop.active {
@@ -1097,57 +1099,25 @@ html.farm-active {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
   overflow: hidden;
   margin: auto; /* Luôn căn chính giữa màn hình */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .farm-sheet-backdrop.active .farm-sheet-card {
   transform: scale(1);
 }
 
-/* Khi hiển thị bàn phím ảo trên mobile: căn lại vị trí thẻ để không bị đẩy cao lên trên */
-body.keyboard-open .farm-sheet-backdrop,
-.farm-sheet-backdrop:has(.farm-quiz-input:focus) {
-  align-items: flex-start !important;
-  padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
-  padding-bottom: 8px !important;
-  overflow-y: auto !important;
+/* Thẻ Bottom Sheet & Modal Nông trại luôn căn giữa tự nhiên như bên học chính, không ghim lên đầu */
+body.keyboard-open .farm-sheet-backdrop {
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
 }
 
-body.keyboard-open .farm-sheet-card,
-.farm-sheet-backdrop:has(.farm-quiz-input:focus) .farm-sheet-card {
-  margin: 0 auto !important;
-  max-height: calc(100dvh - 12px) !important;
+body.keyboard-open .farm-sheet-card {
+  margin: auto !important;
+  align-self: center !important;
   transform: none !important;
-  align-self: flex-start !important;
-}
-
-body.keyboard-open .farm-quiz-body,
-.farm-sheet-backdrop:has(.farm-quiz-input:focus) .farm-quiz-body {
-  padding: 8px 12px !important;
-}
-
-body.keyboard-open .farm-sheet-header,
-.farm-sheet-backdrop:has(.farm-quiz-input:focus) .farm-sheet-header {
-  padding: 8px 14px !important;
-}
-
-@media (max-height: 540px) {
-  .farm-sheet-backdrop {
-    align-items: flex-start !important;
-    padding-top: calc(6px + env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: 6px !important;
-    overflow-y: auto !important;
-  }
-  .farm-sheet-card {
-    margin: 0 auto !important;
-    max-height: calc(100dvh - 8px) !important;
-    transform: none !important;
-  }
-  .farm-quiz-body {
-    padding: 8px 12px !important;
-  }
-  .farm-sheet-header {
-    padding: 6px 12px !important;
-  }
 }
 
 @media (min-width: 768px) {
@@ -1171,6 +1141,7 @@ body.keyboard-open .farm-sheet-header,
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .farm-sheet-title {
@@ -1251,8 +1222,31 @@ body.keyboard-open .farm-sheet-header,
 .farm-sheet-body {
   padding: 16px 18px;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.farm-sheet-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.farm-sheet-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.farm-sheet-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+
+.farm-sheet-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .farm-sheet-footer {
@@ -1261,6 +1255,7 @@ body.keyboard-open .farm-sheet-header,
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 /* 7.1. BẢNG CHỌN HẠT GIỐNG (DẠNG LƯỚI TƯƠNG TỰ SHOP) */
@@ -1333,18 +1328,27 @@ body.keyboard-open .farm-sheet-header,
   margin-bottom: 2px;
 }
 
+.farm-seed-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
 .farm-seed-stages {
   font-size: 0.74rem;
   font-weight: 700;
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 6px;
-  padding: 2px 6px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   white-space: nowrap;
 }
 
@@ -1352,14 +1356,14 @@ body.keyboard-open .farm-sheet-header,
   font-size: 0.74rem;
   font-weight: 700;
   color: #34d399;
-  background: rgba(52, 211, 153, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-  border-radius: 6px;
-  padding: 2px 6px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   white-space: nowrap;
 }
 
@@ -1399,7 +1403,7 @@ body.keyboard-open .farm-sheet-header,
   width: 100%;
   margin-top: 4px;
   padding: 5px 2px;
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   font-weight: 700;
   border-radius: 6px;
   border: 1px solid rgba(16, 185, 129, 0.4);
@@ -1407,6 +1411,16 @@ body.keyboard-open .farm-sheet-header,
   color: #34d399;
   cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.farm-seed-btn .farm-coin-icon-img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }
 
 .farm-seed-btn:hover {
@@ -1693,6 +1707,9 @@ body.keyboard-open .farm-sheet-header,
 .farm-custom-days-list {
   max-height: 180px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 8px;
   padding: 8px 12px;
@@ -1701,6 +1718,21 @@ body.keyboard-open .farm-sheet-header,
   display: flex;
   flex-direction: column;
   gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.farm-custom-days-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.farm-custom-days-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.farm-custom-days-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 .farm-toggle-item {
