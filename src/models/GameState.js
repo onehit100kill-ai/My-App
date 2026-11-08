@@ -35,3 +35,4 @@ const GameState = sequelize.define('GameState', {
 });
 
 module.exports = GameState;
+

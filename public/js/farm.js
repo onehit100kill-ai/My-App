@@ -1437,9 +1437,9 @@
       if (fertEl) {
         const fertCountEl = document.getElementById('farm-hud-fert-count');
         if (fertCountEl) {
-          fertCountEl.textContent = `×${this.state.fertilizer || 0}`;
+          fertCountEl.textContent = `${this.state.fertilizer || 0}`;
         } else {
-          fertEl.innerHTML = `${this.getFertilizerBagIcon(18)} <span id="farm-hud-fert-count">×${this.state.fertilizer || 0}</span>`;
+          fertEl.innerHTML = `${this.getFertilizerBagIcon(18)} <span id="farm-hud-fert-count">${this.state.fertilizer || 0}</span>`;
         }
         fertEl.title = 'Túi phân bón (chạm để mở Shop)';
       }
@@ -1614,6 +1614,67 @@
       }
 
       grid.innerHTML = html;
+      this.updateWaterAllButton();
+    },
+
+    // =========================================================================
+    // CHỨC NĂNG TƯỚI TẤT CẢ (CHỈ HIỆN KHI CÓ CÂY ĐANG CẦN TƯỚI)
+    // =========================================================================
+    getWaterablePlots() {
+      const now = Date.now();
+      return (this.state.plots || []).filter(plot => 
+        plot && 
+        plot.state === 'growing' && 
+        plot.stage < (plot.stagesNeeded || 2) && 
+        (!plot.cooldownUntil || plot.cooldownUntil <= now) && 
+        !plot.worm && 
+        plot.hp > 0
+      );
+    },
+
+    updateWaterAllButton() {
+      const btn = document.getElementById('farm-btn-water-all');
+      if (!btn) return;
+
+      const waterablePlots = this.getWaterablePlots();
+      if (waterablePlots.length > 0) {
+        btn.style.display = 'flex';
+        const badge = btn.querySelector('.farm-water-all-badge');
+        if (badge) {
+          badge.textContent = waterablePlots.length;
+        }
+        btn.title = `Tưới tất cả (${waterablePlots.length} cây đang cần tưới)`;
+      } else {
+        btn.style.display = 'none';
+      }
+    },
+
+    waterAll() {
+      const waterablePlots = this.getWaterablePlots();
+      if (!waterablePlots || waterablePlots.length === 0) {
+        if (window.showToast) window.showToast('Không có cây nào đang cần tưới lúc này!');
+        return;
+      }
+
+      const mode = this.getZoneQuizMode('crops', 0);
+      const word = this.pickNextWord();
+
+      this.activeQuiz = {
+        isWaterAll: true,
+        waterablePlotIds: waterablePlots.map(p => p.id),
+        mode: mode,
+        word: {
+          id: word.id,
+          word: word.word,
+          ipa: word.ipa,
+          meaning: word.meaning,
+          example: word.example,
+          audioUrl: word.audioUrl
+        },
+        failCount: 0
+      };
+
+      this.renderQuizModal();
     },
 
     // 5.10. RENDER KHU CÂY ĂN QUẢ (CÓ SẴN TRÊN SÂN, BỊ MỜ NẾU CHƯA ĐỦ CẤP)
@@ -1808,6 +1869,8 @@
             cdEl.textContent = `⏳ ${leftSec}s`;
           }
         });
+
+        this.updateWaterAllButton();
       }
     },
 
@@ -2100,6 +2163,18 @@
 
       const q = this.activeQuiz;
 
+      // Xử lý quiz Tưới Tất Cả
+      if (q.isWaterAll) {
+        const count = q.waterablePlotIds?.length || 1;
+        statusEl.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 2px;">
+            <span style="font-size: 0.88rem; font-weight: 700; color: #38bdf8;">💧 Tưới Tất Cả (${count} cây)</span>
+            <span style="font-size: 0.8rem; color: #34d399; font-weight: 600;">📖 Trả lời đúng để tưới toàn bộ</span>
+          </div>
+        `;
+        return;
+      }
+
       // Xử lý quiz cho vật nuôi ăn (Gà / Bò)
       if (q.isAnimal) {
         const animalName = q.animalType === 'chicken' ? `Gà #${q.animalId}` : `Bò #${q.animalId}`;
@@ -2147,9 +2222,9 @@
       let fertBtnHtml = '';
       if (!q.isWormQuiz && plot.stage < plot.stagesNeeded) {
         if (plot.hasFertilizer) {
-          fertBtnHtml = '<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px;">🌻 Đã bón phân</span>';
+          fertBtnHtml = `<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px; display:inline-flex; align-items:center; gap:3px;">${this.getFertilizerBagIcon(14)} Đã bón phân</span>`;
         } else {
-          fertBtnHtml = `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px;" onclick="FarmGame.fertilizePlot(${plot.id}); FarmGame.updateQuizHeaderStatus();">🌻 Bón phân (${this.state.fertilizer})</button>`;
+          fertBtnHtml = `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px; display:inline-flex; align-items:center; gap:4px;" onclick="FarmGame.fertilizePlot(${plot.id}); FarmGame.updateQuizHeaderStatus();">${this.getFertilizerBagIcon(14)} Bón phân (${this.state.fertilizer || 0})</button>`;
         }
       }
 
@@ -2174,7 +2249,9 @@
       // Tiêu đề
       const titleEl = document.getElementById('farm-quiz-title');
       if (titleEl) {
-        if (q.isAnimal) {
+        if (q.isWaterAll) {
+          titleEl.textContent = `💧 Tưới Tất Cả (${q.waterablePlotIds?.length || 1} Cây)`;
+        } else if (q.isAnimal) {
           titleEl.textContent = q.animalType === 'chicken' ? `Cho Gà #${q.animalId} Ăn 🐔` : `Cho Bò #${q.animalId} Ăn 🐄`;
         } else {
           titleEl.textContent = q.isWormQuiz ? 'Bắt sâu! 🐛' : `Tưới cây — ${crop ? crop.name : 'Nông sản'} (Câu ${plot ? plot.stage + 1 : 1}/${plot ? plot.stagesNeeded : 2})`;
@@ -2292,9 +2369,15 @@
       // Tự động focus ô nhập nếu là chế độ gõ
       const inputEl = document.getElementById('farm-quiz-input');
       if (inputEl) {
-        setTimeout(() => inputEl.focus(), 250);
+        setTimeout(() => {
+          inputEl.focus();
+          inputEl.click();
+        }, 280);
         inputEl.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') this.checkQuizAnswer(inputEl.value.trim());
+          if (e.key === 'Enter') {
+            inputEl.blur(); // Ẩn bàn phím ảo trên điện thoại khi nhấn Enter
+            this.checkQuizAnswer(inputEl.value.trim());
+          }
         });
       }
 
@@ -2307,7 +2390,9 @@
 
       // Bắt sự kiện nộp bài
       document.getElementById('farm-quiz-submit-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('farm-quiz-input')?.value || '';
+        const inp = document.getElementById('farm-quiz-input');
+        if (inp) inp.blur(); // Ẩn bàn phím ảo trên điện thoại
+        const val = inp?.value || '';
         this.checkQuizAnswer(val.trim());
       });
 
@@ -2335,6 +2420,76 @@
       } else {
         // Gõ từ tiếng Anh (cho cả typing và listening)
         isCorrect = (userAnswer.trim().toLowerCase() === q.word.word.trim().toLowerCase());
+      }
+
+      // 0. QUIZ TƯỚI TẤT CẢ (WATER ALL)
+      if (q.isWaterAll) {
+        if (isCorrect) {
+          if (targetBtnEl) targetBtnEl.classList.add('correct');
+          this.playSound('pop');
+
+          const now = Date.now();
+          let count = 0;
+          (q.waterablePlotIds || []).forEach(plotId => {
+            const plot = this.state.plots.find(p => p.id === plotId);
+            if (!plot || plot.state !== 'growing' || plot.stage >= plot.stagesNeeded) return;
+
+            const crop = CROP_TYPES[plot.cropType] || {};
+            if (plot.hp === 1) {
+              plot.hp = Math.min(plot.maxHp || 3, 2);
+            }
+
+            const growth = plot.hasFertilizer ? 2 : 1;
+            plot.stage = Math.min(plot.stagesNeeded, plot.stage + growth);
+            plot.hasFertilizer = false;
+
+            plot.cooldownUntil = now + (crop.cooldownSec || 5) * 1000;
+            this.maybeSpawnWorm(plot.id);
+            count++;
+          });
+
+          this.gainXp(5 * Math.max(1, count));
+          this.state.quests.watered = (this.state.quests.watered || 0) + count;
+
+          this.saveState();
+          this.render();
+
+          if (window.showToast) {
+            window.showToast(`💧 Đã tưới nước thành công cho tất cả ${count} cây!`);
+          }
+
+          setTimeout(() => {
+            document.getElementById('farm-sheet-quiz')?.classList.remove('active');
+            this.activeQuiz = null;
+          }, 650);
+        } else {
+          if (targetBtnEl) targetBtnEl.classList.add('incorrect');
+          this.playSound('wrong');
+
+          (q.waterablePlotIds || []).forEach(plotId => {
+            const plot = this.state.plots.find(p => p.id === plotId);
+            if (plot && plot.hp > 1) {
+              plot.hp -= 1;
+            }
+          });
+          this.saveState();
+          this.render();
+
+          q.failCount = (q.failCount || 0) + 1;
+          const hintBox = document.getElementById('farm-quiz-hint-box');
+          if (hintBox) {
+            hintBox.style.display = 'block';
+            if (q.failCount === 1) {
+              const firstLetter = q.word.word.charAt(0).toUpperCase();
+              hintBox.innerHTML = `💡 <b>Gợi ý:</b> Từ bắt đầu bằng chữ <b>"${firstLetter}..."</b> • Nghĩa: <i>"${q.word.meaning}"</i>`;
+            } else {
+              hintBox.innerHTML = `📖 <b>Đáp án:</b> <b style="color:#34d399;">${q.word.word}</b> [${q.word.ipa || ''}] = <i>${q.word.meaning}</i><br>Đã chuyển câu hỏi sang dạng trắc nghiệm dễ hơn!`;
+              q.mode = 'choice';
+              setTimeout(() => this.renderQuizModal(), 1200);
+            }
+          }
+        }
+        return;
       }
 
       // 1. QUIZ CHO VẬT NUÔI ĂN (GÀ, BÒ)
@@ -2875,7 +3030,7 @@
               </div>
               <div class="farm-shop-buy-info">
                 <span class="farm-shop-buy-name">Phân bón</span>
-                <span class="farm-shop-buy-stock">(Có: ×${this.state.fertilizer || 0})</span>
+                <span class="farm-shop-buy-stock">(Có: ${this.state.fertilizer || 0})</span>
               </div>
             </div>
             <button type="button" class="btn btn-primary farm-shop-buy-btn" id="farm-shop-btn-buy-fert"
@@ -2903,7 +3058,7 @@
                   </div>
                   <div class="farm-shop-grid-name" title="${it.name}">${it.name}</div>
                   <div class="farm-shop-grid-stock">
-                    Đang có: <b style="color: ${stock > 0 ? '#34d399' : '#94a3b8'};">×${stock}</b>
+                    Đang có: <b style="color: ${stock > 0 ? '#34d399' : '#94a3b8'};">${stock}</b>
                   </div>
                   <div class="farm-shop-grid-price" style="display:inline-flex; align-items:center; justify-content:center; gap:2px;">
                     Đơn giá: <b style="color: #fbbf24;">+${it.price}${this.getCoinIcon(14)}</b>
@@ -2983,7 +3138,7 @@
           ${iconHtml}
           <div style="font-weight: 800; font-size: 1.05rem; color: #fff;">${it.name}</div>
           <div style="font-size: 0.82rem; color: #94a3b8; display:flex; align-items:center; gap:4px;">
-            Đang có: <b style="color: #34d399;">×${stock}</b> • Đơn giá: <b style="color: #fbbf24; display:inline-flex; align-items:center; gap:2px;">+${it.price}${this.getCoinIcon(14)}</b>
+            Đang có: <b style="color: #34d399;">${stock}</b> • Đơn giá: <b style="color: #fbbf24; display:inline-flex; align-items:center; gap:2px;">+${it.price}${this.getCoinIcon(14)}</b>
           </div>
         </div>
 
@@ -3330,7 +3485,7 @@
       this.saveState();
       this.renderFruitTreeQuizModal();
       this.playSound('ting');
-      if (window.showToast) window.showToast('🌻 Đã bón phân cho cây! Hoàn thành phiên tưới này cây sẽ lớn +2 giai đoạn.');
+      if (window.showToast) window.showToast('🌱 Đã bón phân cho cây! Hoàn thành phiên tưới này cây sẽ lớn +2 giai đoạn.');
     },
 
     generateDistractors(targetWord, pool) {
@@ -3380,8 +3535,8 @@
       }
 
       const fertStatusHtml = tree.hasFertilizer
-        ? '<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px;">🌻 Đã bón phân (+2 cấp)</span>'
-        : `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px;" onclick="FarmGame.fertilizeFruitTree('${q.treeType}')">🌻 Bón phân (${this.state.fertilizer || 0})</button>`;
+        ? `<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px; display:inline-flex; align-items:center; gap:3px;">${this.getFertilizerBagIcon(14)} Đã bón phân (+2 cấp)</span>`
+        : `<button type="button" class="btn btn-secondary" style="padding: 2px 7px; font-size: 11px; border-color: #8b5cf6; color: #a78bfa; margin-left: 8px; display:inline-flex; align-items:center; gap:4px;" onclick="FarmGame.fertilizeFruitTree('${q.treeType}')">${this.getFertilizerBagIcon(14)} Bón phân (${this.state.fertilizer || 0})</button>`;
 
       statusEl.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
@@ -3501,8 +3656,14 @@
       const submitBtn = document.getElementById('farm-fruit-submit-btn');
 
       if (inputEl) {
-        if (typeof inputEl.focus === 'function') inputEl.focus();
+        setTimeout(() => {
+          if (typeof inputEl.focus === 'function') {
+            inputEl.focus();
+            inputEl.click();
+          }
+        }, 280);
         const submitAction = () => {
+          inputEl.blur(); // Ẩn bàn phím ảo trên điện thoại
           const isCorrect = inputEl.value.trim().toLowerCase() === (currentWord.word || '').trim().toLowerCase();
           this.handleFruitQuizAnswer(isCorrect);
         };
@@ -3905,6 +4066,12 @@
           const id = parseInt(plotEl.getAttribute('data-plot-id'), 10);
           this.handlePlotClick(id);
         }
+      });
+
+      // 1a. Nút Tưới Tất Cả (Chỉ hiện khi có cây đang cần tưới)
+      document.getElementById('farm-btn-water-all')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.waterAll();
       });
 
       // 1b. Chạm ô cây ăn quả (Cây có sẵn trên sân: tưới cây, thu hoạch, xem thông tin)

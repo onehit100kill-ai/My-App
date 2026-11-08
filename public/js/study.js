@@ -383,6 +383,7 @@ class StudyManager {
         if (this.waitingForTap) {
           this.advanceToNextQuestion();
         } else {
+          document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím ảo trên điện thoại khi submit
           this.handleTypingSubmit();
         }
       }
@@ -1225,6 +1226,7 @@ class StudyManager {
     if (this.waitingForTap) return;
 
     const input = document.getElementById('quiz-typing-input');
+    if (input) input.blur(); // Ẩn bàn phím ảo trên điện thoại
     // Chuẩn hóa: trim và loại bỏ khoảng trắng thừa ở giữa các từ
     const val = input.value.trim().replace(/\s+/g, ' ').toLowerCase();
     const correctWord = this.currentQuizItem.word.word.trim().replace(/\s+/g, ' ').toLowerCase();

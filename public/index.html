@@ -926,7 +926,7 @@
       <div class="farm-hud-center">
         <div class="farm-stat-chip farm-words-chip" id="farm-hud-words" title="Số từ vựng sẵn sàng để học">📖 0 từ</div>
         <div class="farm-stat-chip farm-fertilizer-chip" id="farm-hud-fert" title="Túi phân bón (chạm để mở Shop)" style="cursor: pointer;">
-          <img class="farm-fert-icon-img" src="assets/farm/fertilizer-bag.png" alt="fert"> <span id="farm-hud-fert-count">×0</span>
+          <img class="farm-fert-icon-img" src="assets/farm/fertilizer-bag.png" alt="fert"> <span id="farm-hud-fert-count">0</span>
         </div>
         <div class="farm-stat-chip farm-gold-chip" id="farm-hud-coins" title="Số xu vàng hiện có (chạm để mở Shop)" style="cursor: pointer;">
           <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin"> <span id="farm-hud-coins-count">0</span>
@@ -951,6 +951,16 @@
           <div class="farm-grid" id="farm-grid">
             <!-- Render động 16 ô đất bằng farm.js -->
           </div>
+          <!-- Nút Tưới Tất Cả: Chỉ hiện khi có cây đang cần tưới -->
+          <button type="button" class="farm-btn-water-all" id="farm-btn-water-all" title="Tưới tất cả cây đang cần tưới" style="display: none;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+              <path d="M12 2.8C10.5 4.8 6.5 10.2 6.5 14.5A5.5 5.5 0 0 0 17.5 14.5C17.5 10.2 13.5 4.8 12 2.8Z" fill="#38bdf8" stroke="#0284c7" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M9.5 11.5A3 3 0 0 1 11.5 8" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M18.5 3.5L19 5.5L21 6L19 6.5L18.5 8.5L18 6.5L16 6L18 5.5Z" fill="#38bdf8"/>
+              <circle cx="20.5" cy="11.5" r="1.2" fill="#38bdf8"/>
+            </svg>
+            <span class="farm-water-all-badge" id="farm-water-all-badge">0</span>
+          </button>
         </section>
 
         <!-- Khu 2: Khu Cây Ăn Quả (Có sẵn trên sân) -->
