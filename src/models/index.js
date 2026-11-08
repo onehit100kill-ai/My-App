@@ -2,6 +2,7 @@ const sequelize = require('../config/database');
 const Section = require('./Section');
 const Day = require('./Day');
 const Word = require('./Word');
+const GameState = require('./GameState');
 
 // Thiết lập quan hệ: Section 1-N Day
 Section.hasMany(Day, {
@@ -29,5 +30,6 @@ module.exports = {
   sequelize,
   Section,
   Day,
-  Word
+  Word,
+  GameState
 };

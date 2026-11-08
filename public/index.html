@@ -915,16 +915,10 @@
         <!-- Tooltip nhỏ hiển thị EXP & Vật phẩm mở khoá tiếp theo (2 dòng) -->
         <div class="farm-level-tooltip" id="farm-level-tooltip" hidden>
           <div class="farm-tooltip-row">
-            <span class="farm-tooltip-icon">
-              <svg class="farm-xp-icon" viewBox="0 0 24 24" width="16" height="16" style="vertical-align: middle; display: inline-block;">
-                <path fill="#7dd3fc" stroke="#0284c7" stroke-width="1.8" stroke-linejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </span>
             <span class="farm-tooltip-text" id="farm-tooltip-xp-line">0 / 100</span>
           </div>
           <div class="farm-tooltip-row">
-            <span class="farm-tooltip-icon" id="farm-tooltip-reward-icon">🎁</span>
-            <span class="farm-tooltip-text" id="farm-tooltip-reward-line">Cấp 2: +4 Ô đất hàng 2 & Cây Cam</span>
+            <span class="farm-tooltip-text" id="farm-tooltip-reward-line">Cấp 2 mở: ...</span>
           </div>
         </div>
       </div>
@@ -1126,6 +1120,26 @@
               </div>
               <input type="checkbox" id="farm-setting-sound-toggle" checked>
             </label>
+          </div>
+
+          <!-- Nhóm: Đồng bộ dữ liệu mọi thiết bị (Cloud Sync) -->
+          <div class="farm-settings-group">
+            <div class="farm-settings-title">☁️ Đồng bộ mọi thiết bị:</div>
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; font-size: 0.82rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="color: #34d399; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                  <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #34d399;"></span> Đang tự động đồng bộ
+                </span>
+                <span id="farm-sync-status-time" style="color: #94a3b8; font-size: 0.75rem;">vừa xong</span>
+              </div>
+              <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 8px; line-height: 1.4;">
+                Dữ liệu nông trại tự động lưu lên máy chủ và đồng bộ tức thì trên mọi điện thoại, máy tính và trình duyệt.
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="farm-btn-force-sync" style="flex: 1; padding: 5px 8px; font-size: 0.78rem;">🔄 Đồng bộ ngay</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="farm-btn-backup-export" style="padding: 5px 8px; font-size: 0.78rem;" title="Tải file sao lưu về máy">💾 Sao lưu</button>
+              </div>
+            </div>
           </div>
 
           <!-- Nhóm 1: Chọn từ học -->

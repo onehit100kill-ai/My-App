@@ -26,6 +26,7 @@
     // Khởi tạo các sự kiện giao diện
     init() {
       this.bindEvents();
+      this.syncCloudBestRecord();
     },
 
     bindEvents() {
@@ -431,6 +432,19 @@
       return null;
     },
 
+    async syncCloudBestRecord() {
+      if (!window.api || typeof window.api.getMatchingCloudRecords !== 'function') return;
+      try {
+        const res = await window.api.getMatchingCloudRecords();
+        if (res && res.success && res.exists && res.records) {
+          const current = this.getBestRecord();
+          if (!current || res.records.timeSec < current.timeSec) {
+            localStorage.setItem('vm_matching_records', JSON.stringify(res.records));
+          }
+        }
+      } catch (e) {}
+    },
+
     saveBestRecord(timeSec, moves) {
       const current = this.getBestRecord();
       let isNewRecord = false;
@@ -447,6 +461,9 @@
         const record = { timeSec, moves, date: new Date().toISOString() };
         try {
           localStorage.setItem('vm_matching_records', JSON.stringify(record));
+          if (window.api && typeof window.api.saveMatchingCloudRecords === 'function') {
+            window.api.saveMatchingCloudRecords(record);
+          }
         } catch (e) {}
         return { isNewRecord: true, record };
       }

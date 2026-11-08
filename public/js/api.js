@@ -294,6 +294,64 @@ const api = {
 
   async generateAiSentence(word, meaning) {
     return await this.aiGenerate([{ word, meaning }], 'sentence');
+  },
+
+  // === Game State Cloud Sync (Đồng bộ mọi thiết bị) ===
+  async getFarmCloudState(slot = 'default') {
+    try {
+      const res = await fetch(`${API_BASE}/game/farm-state?slot=${encodeURIComponent(slot)}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('[Sync] Không thể kết nối máy chủ để tải farm state:', e);
+      return { success: false, offline: true };
+    }
+  },
+
+  async saveFarmCloudState(state, settings, clientUpdatedAt = Date.now(), slot = 'default') {
+    try {
+      const res = await fetch(`${API_BASE}/game/farm-state`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slot, state, settings, clientUpdatedAt })
+      });
+      return await res.json();
+    } catch (e) {
+      console.warn('[Sync] Không thể lưu farm state lên máy chủ:', e);
+      return { success: false, offline: true };
+    }
+  },
+
+  async getMatchingCloudRecords(slot = 'default') {
+    try {
+      const res = await fetch(`${API_BASE}/game/matching-records?slot=${encodeURIComponent(slot)}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('[Sync] Không thể lấy matching records từ máy chủ:', e);
+      return { success: false, offline: true };
+    }
+  },
+
+  async saveMatchingCloudRecords(records, clientUpdatedAt = Date.now(), slot = 'default') {
+    try {
+      const res = await fetch(`${API_BASE}/game/matching-records`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slot, records, clientUpdatedAt })
+      });
+      return await res.json();
+    } catch (e) {
+      console.warn('[Sync] Không thể lưu matching records lên máy chủ:', e);
+      return { success: false, offline: true };
+    }
+  },
+
+  async syncAllGameData(slot = 'default') {
+    try {
+      const res = await fetch(`${API_BASE}/game/sync-all?slot=${encodeURIComponent(slot)}`);
+      return await res.json();
+    } catch (e) {
+      return { success: false, offline: true };
+    }
   }
 };
 

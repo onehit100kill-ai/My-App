@@ -384,6 +384,130 @@
       this.initBubble();
       this.initGameMenuEvents();
       this.initUIEvents();
+      this.initCloudSync();
+    },
+
+    // =========================================================================
+    // HỆ THỐNG ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ (CROSS-DEVICE CLOUD SYNC)
+    // =========================================================================
+    getSlot() {
+      return localStorage.getItem('vm_game_slot') || 'default';
+    },
+
+    setSlot(newSlot) {
+      const clean = (newSlot || 'default').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'default';
+      localStorage.setItem('vm_game_slot', clean);
+      this.fetchCloudState(true);
+      return clean;
+    },
+
+    initCloudSync() {
+      this._cloudSyncInProgress = false;
+      this._cloudSyncDebounce = null;
+      this._lastCloudSyncTime = 0;
+
+      // 1. Tải dữ liệu từ máy chủ ngay khi mở app
+      this.fetchCloudState();
+
+      // 2. Tự động đồng bộ khi chuyển qua lại tab hoặc thiết bị mở khóa
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.fetchCloudState();
+        }
+      });
+
+      window.addEventListener('focus', () => {
+        this.fetchCloudState();
+      });
+
+      // 3. Tự động đẩy khi có mạng online
+      window.addEventListener('online', () => {
+        this.pushCloudState();
+      });
+    },
+
+    updateSyncStatusUI(text = 'vừa xong') {
+      const timeEl = document.getElementById('farm-sync-status-time');
+      if (timeEl) {
+        timeEl.textContent = text;
+      }
+    },
+
+    async fetchCloudState(isForce = false) {
+      if (!window.api || typeof window.api.getFarmCloudState !== 'function') return;
+      if (this._cloudSyncInProgress) return;
+
+      const now = Date.now();
+      if (!isForce && now - this._lastCloudSyncTime < 3000) return;
+
+      try {
+        const slot = this.getSlot();
+        const res = await window.api.getFarmCloudState(slot);
+        this._lastCloudSyncTime = Date.now();
+
+        if (res && res.success && res.exists && res.state) {
+          const serverTime = Number(res.clientUpdatedAt) || 0;
+          const localTime = Number(this.state.updatedAt) || 0;
+
+          const localHasProgress = (this.state.level && this.state.level > 1) || (this.state.xp && this.state.xp > 0) || (this.state.coins && this.state.coins > 20);
+          const serverHasProgress = (res.state.level && res.state.level > 1) || (res.state.xp && res.state.xp > 0) || (res.state.coins && res.state.coins > 20);
+
+          if (serverTime > localTime || (!localHasProgress && serverHasProgress) || isForce) {
+            console.log('[FarmSync] Đồng bộ dữ liệu nông trại mới nhất từ máy chủ:', res);
+            this.state = Object.assign({}, DEFAULT_STATE, res.state);
+            if (res.settings) {
+              this.settings = Object.assign({}, DEFAULT_SETTINGS, res.settings);
+              this.saveSettings(false);
+            }
+            this.state.updatedAt = Math.max(serverTime, Date.now());
+            this.saveState(false);
+
+            this.render();
+            this.updateSyncStatusUI('vừa xong');
+            window.showToast?.('☁️ Đã đồng bộ dữ liệu nông trại từ máy chủ!');
+          } else if (localTime > serverTime && localHasProgress) {
+            this.pushCloudState();
+          } else {
+            this.updateSyncStatusUI('vừa xong');
+          }
+        } else if (res && res.success && !res.exists) {
+          this.pushCloudState();
+        }
+      } catch (err) {
+        console.warn('[FarmSync] Lỗi tải dữ liệu:', err);
+      }
+    },
+
+    pushCloudState() {
+      if (!window.api || typeof window.api.saveFarmCloudState !== 'function') return;
+      clearTimeout(this._cloudSyncDebounce);
+
+      this._cloudSyncDebounce = setTimeout(async () => {
+        if (this._cloudSyncInProgress) return;
+        this._cloudSyncInProgress = true;
+
+        try {
+          const slot = this.getSlot();
+          const timestamp = this.state.updatedAt || Date.now();
+          const res = await window.api.saveFarmCloudState(this.state, this.settings, timestamp, slot);
+
+          if (res && res.success) {
+            this._lastCloudSyncTime = Date.now();
+            this.updateSyncStatusUI('vừa xong');
+            if (res.conflict && res.serverIsNewer && res.state) {
+              this.state = Object.assign({}, DEFAULT_STATE, res.state);
+              if (res.settings) this.settings = Object.assign({}, DEFAULT_SETTINGS, res.settings);
+              this.saveState(false);
+              this.render();
+              window.showToast?.('☁️ Dữ liệu từ thiết bị khác vừa được cập nhật!');
+            }
+          }
+        } catch (e) {
+          console.warn('[FarmSync] Lỗi đẩy dữ liệu:', e);
+        } finally {
+          this._cloudSyncInProgress = false;
+        }
+      }, 600);
     },
 
     // Lưu / Đọc State
@@ -475,9 +599,13 @@
       this.checkDailyReset();
     },
 
-    saveState() {
+    saveState(triggerPush = true) {
       try {
+        this.state.updatedAt = Date.now();
         localStorage.setItem('vm_farm_state_v1', JSON.stringify(this.state));
+        if (triggerPush) {
+          this.pushCloudState();
+        }
       } catch (e) {
         console.error('Lỗi lưu farm state:', e);
       }
@@ -536,9 +664,12 @@
       }
     },
 
-    saveSettings() {
+    saveSettings(triggerPush = true) {
       try {
         localStorage.setItem('vm_farm_settings', JSON.stringify(this.settings));
+        if (triggerPush) {
+          this.pushCloudState();
+        }
       } catch (e) {
         console.error('Lỗi lưu farm settings:', e);
       }
@@ -601,12 +732,16 @@
       }
     },
 
+    // Icon ô đất hiển thị gọn gàng, không bị vỡ font chữ trên các thiết bị
+    getSoilPlotIcon(size = 16) {
+      return `<img src="assets/farm/soil-empty.png" style="width:${size}px; height:${size}px; vertical-align:middle; image-rendering:pixelated; border-radius:2px; display:inline-block;" alt="Ô đất" title="Ô đất">`;
+    },
+
     // =========================================================================
     // HỆ THỐNG GIÁ & CHỐNG LẠM PHÁT THƯƠNG LÁI (PROMPT #10)
     // =========================================================================
     getFertilizerPrice() {
-      const lvl = Math.max(1, this.state.level || 1);
-      return 15 + 2 * (lvl - 1);
+      return 15; // Phân bón giá cố định 15 vàng theo yêu cầu
     },
 
     getMerchantRemainingGold() {
@@ -2621,22 +2756,20 @@
       const lvl = this.state.level;
       let bonuses = [];
       if (lvl <= 16) {
-        bonuses.push(`<b style="color:#34d399;">+ Mở khóa Ô đất #${lvl}</b>`);
+        bonuses.push(`<span style="display:inline-flex; align-items:center; gap:4px; color:#34d399;">+ Mở khóa ${this.getSoilPlotIcon(18)}</span>`);
       }
-      if (lvl === 3) bonuses.push('<b style="color:#38bdf8;">+ Mở khóa Cây Táo 🍎</b>');
-      else if (lvl === 6) bonuses.push('<b style="color:#38bdf8;">+ Mở khóa Cây Cam 🍊</b>');
-      else if (lvl === 9) bonuses.push('<b style="color:#38bdf8;">+ Mở khóa Cây Đào 🍑</b>');
-      else if (lvl === 12) bonuses.push('<b style="color:#38bdf8;">+ Mở khóa Cây Lê 🍐</b>');
-      else if (lvl === 15) bonuses.push('<b style="color:#38bdf8;">+ Mở khóa Cây Anh đào 🍒</b>');
+      if (lvl === 3) bonuses.push('<span style="color:#38bdf8;">+ Mở khóa 🍎</span>');
+      else if (lvl === 6) bonuses.push('<span style="color:#38bdf8;">+ Mở khóa 🍊</span>');
+      else if (lvl === 9) bonuses.push('<span style="color:#38bdf8;">+ Mở khóa 🍑</span>');
+      else if (lvl === 12) bonuses.push('<span style="color:#38bdf8;">+ Mở khóa 🍐</span>');
+      else if (lvl === 15) bonuses.push('<span style="color:#38bdf8;">+ Mở khóa 🍒</span>');
 
-      if (lvl === 5) bonuses.push('<b style="color:#fde047;">+ Mở khóa Chuồng Gà #1 🐔</b>');
-      else if (lvl > 5 && lvl <= 19 && (lvl - 5) % 2 === 0) {
-        bonuses.push(`<b style="color:#fde047;">+ Mở khóa Gà #${1 + (lvl - 5) / 2} 🐔</b>`);
+      if (lvl === 5 || (lvl > 5 && lvl <= 19 && (lvl - 5) % 2 === 0)) {
+        bonuses.push('<span style="color:#fde047;">+ Mở khóa 🥚</span>');
       }
 
-      if (lvl === 10) bonuses.push('<b style="color:#67e8f9;">+ Mở khóa Chuồng Bò Sữa #1 🐄</b>');
-      else if (lvl > 10 && lvl <= 25 && (lvl - 10) % 3 === 0) {
-        bonuses.push(`<b style="color:#67e8f9;">+ Mở khóa Bò #${1 + (lvl - 10) / 3} 🐄</b>`);
+      if (lvl === 10 || (lvl > 10 && lvl <= 25 && (lvl - 10) % 3 === 0)) {
+        bonuses.push('<span style="color:#67e8f9;">+ Mở khóa 🥛</span>');
       }
 
       const bonusStr = bonuses.join('<br>');
@@ -2664,38 +2797,36 @@
       const missingXp = Math.max(0, nextXp - curXp);
 
       const nextLvl = lvl + 1;
-      let rewardIcon = '🪴';
       let rewards = [];
       if (nextLvl <= 16) {
-        rewards.push(`Ô đất #${nextLvl}`);
+        rewards.push(this.getSoilPlotIcon(16));
       }
-      if (nextLvl === 3) { rewardIcon = '🍎'; rewards.push('🍎 Cây Táo'); }
-      else if (nextLvl === 6) { rewardIcon = '🍊'; rewards.push('🍊 Cây Cam'); }
-      else if (nextLvl === 9) { rewardIcon = '🍑'; rewards.push('🍑 Cây Đào'); }
-      else if (nextLvl === 12) { rewardIcon = '🍐'; rewards.push('🍐 Cây Lê'); }
-      else if (nextLvl === 15) { rewardIcon = '🍒'; rewards.push('🍒 Cây Anh đào'); }
+      if (nextLvl === 3) rewards.push('🍎');
+      else if (nextLvl === 6) rewards.push('🍊');
+      else if (nextLvl === 9) rewards.push('🍑');
+      else if (nextLvl === 12) rewards.push('🍐');
+      else if (nextLvl === 15) rewards.push('🍒');
 
-      if (nextLvl === 5) { rewardIcon = '🐔'; rewards.push('🐔 Chuồng Gà'); }
-      else if (nextLvl > 5 && nextLvl <= 19 && (nextLvl - 5) % 2 === 0) {
-        rewardIcon = '🐔';
-        rewards.push(`🐔 Gà #${1 + (nextLvl - 5) / 2}`);
+      if (nextLvl === 5 || (nextLvl > 5 && nextLvl <= 19 && (nextLvl - 5) % 2 === 0)) {
+        rewards.push('🥚');
       }
 
-      if (nextLvl === 10) { rewardIcon = '🐄'; rewards.push('🐄 Chuồng Bò'); }
-      else if (nextLvl > 10 && nextLvl <= 25 && (nextLvl - 10) % 3 === 0) {
-        rewardIcon = '🐄';
-        rewards.push(`🐄 Bò #${1 + (nextLvl - 10) / 3}`);
+      if (nextLvl === 10 || (nextLvl > 10 && nextLvl <= 25 && (nextLvl - 10) % 3 === 0)) {
+        rewards.push('🥛');
       }
-
-      let rewardText = rewards.length ? ('+ ' + rewards.join(' & ')) : 'Đạt cấp độ tối đa!';
-      if (!rewards.length) rewardIcon = '👑';
 
       const xpEl = document.getElementById('farm-tooltip-xp-line');
       const rewardEl = document.getElementById('farm-tooltip-reward-line');
       const rewardIconEl = document.getElementById('farm-tooltip-reward-icon');
-      if (xpEl) xpEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:3px;">${this.getXpIcon(14)} <b>${curXp}</b> / <b>${nextXp}</b> (thiếu ${missingXp})</span>`;
-      if (rewardEl) rewardEl.textContent = `Cấp ${nextLvl} mở: ${rewardText}`;
-      if (rewardIconEl) rewardIconEl.textContent = rewardIcon;
+      if (xpEl) xpEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:4px;">${this.getXpIcon(14)} <b>${curXp}</b> / <b>${nextXp}</b> (thiếu ${missingXp})</span>`;
+      if (rewardEl) {
+        if (rewards.length) {
+          rewardEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px;">Cấp ${nextLvl} mở: ${rewards.join(' ')}</span>`;
+        } else {
+          rewardEl.innerHTML = `<span>Đạt cấp độ tối đa! 👑</span>`;
+        }
+      }
+      if (rewardIconEl) rewardIconEl.textContent = '';
 
       tooltip.removeAttribute('hidden');
     },
@@ -2725,7 +2856,7 @@
       const body = document.getElementById('farm-shop-body');
       if (!body) return;
 
-      const fertPrice = this.getFertilizerPrice();
+      const fertPrice = 15;
       const currentLevel = Math.max(1, this.state.level || 1);
 
       // Cập nhật số vàng trên Shop Header (ghi như trên header và để bên trên)
@@ -2735,27 +2866,22 @@
       }
 
       body.innerHTML = `
-        <!-- PHẦN 1: MUA VẬT PHẨM (Chỉ mua Phân bón) -->
-        <div style="margin-bottom: 16px;">
-          <div class="farm-shop-section-title">
-            <span>🛒 Mua Phân Bón</span>
-          </div>
-
+        <!-- PHẦN 1: MUA VẬT PHẨM (Chỉ mua Phân bón - Thu nhỏ, bỏ dữ liệu thừa) -->
+        <div style="margin-bottom: 12px;">
           <div class="farm-shop-buy-card">
-            <div class="farm-shop-buy-icon">
-              ${this.getFertilizerBagIcon(40)}
-            </div>
-            <div class="farm-shop-buy-details">
-              <div class="farm-shop-buy-name">Túi Phân Bón Tăng Trưởng</div>
-              <div class="farm-shop-buy-desc">Rút ngắn thời gian & Lớn x2 giai đoạn cây trồng</div>
-              <div class="farm-shop-buy-stock">
-                Đang có: ×${this.state.fertilizer || 0} túi • Cấp ${currentLevel}: <b>${fertPrice} vàng</b>
+            <div class="farm-shop-buy-left">
+              <div class="farm-shop-buy-icon">
+                ${this.getFertilizerBagIcon(28)}
+              </div>
+              <div class="farm-shop-buy-info">
+                <span class="farm-shop-buy-name">Phân bón</span>
+                <span class="farm-shop-buy-stock">(Có: ×${this.state.fertilizer || 0})</span>
               </div>
             </div>
             <button type="button" class="btn btn-primary farm-shop-buy-btn" id="farm-shop-btn-buy-fert"
               style="display:inline-flex; align-items:center; gap:4px;"
-              ${(this.state.coins || 0) < fertPrice ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
-              ${fertPrice}${this.getCoinIcon(16)} Mua
+              ${(this.state.coins || 0) < 15 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+              15${this.getCoinIcon(14)} Mua
             </button>
           </div>
         </div>
@@ -3821,6 +3947,37 @@
         this.state.soundEnabled = e.target.checked;
         this.saveState();
         if (this.state.soundEnabled) this.playSound('pop');
+      });
+
+      // Nút đồng bộ ngay & sao lưu trong Cài đặt
+      document.getElementById('farm-btn-force-sync')?.addEventListener('click', async () => {
+        window.showToast?.('🔄 Đang đồng bộ với máy chủ...');
+        await this.fetchCloudState(true);
+        await this.pushCloudState();
+        window.showToast?.('✅ Đã đồng bộ dữ liệu nông trại!');
+      });
+
+      document.getElementById('farm-btn-backup-export')?.addEventListener('click', () => {
+        try {
+          const exportData = {
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            state: this.state,
+            settings: this.settings
+          };
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `vocabmaster_farm_backup_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          window.showToast?.('💾 Đã tải file sao lưu nông trại!');
+        } catch (err) {
+          console.error('Lỗi xuất file backup:', err);
+        }
       });
 
       // Bấm huy hiệu cấp độ hoặc thanh XP mở tooltip Level & XP (2 dòng)
