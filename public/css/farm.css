@@ -628,12 +628,27 @@
   pointer-events: none;
 }
 
+.farm-heart-icon {
+  display: inline-block;
+  vertical-align: middle;
+  pointer-events: none;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.farm-heart-icon.full {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7));
+}
+
+.farm-heart-icon.lost {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7));
+}
+
 .farm-plot-hearts {
-  display: flex;
-  gap: 2px;
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
 }
 
 .farm-plot-progress-dots {
@@ -769,9 +784,10 @@
   position: absolute;
   bottom: 6px;
   left: 6px;
-  display: flex;
-  gap: 1px;
-  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+  line-height: 1;
   z-index: 5;
 }
 
@@ -1175,13 +1191,11 @@
 }
 
 .farm-quiz-hearts {
-  display: flex;
-  gap: 3px;
-  font-size: 14px;
-}
-
-.farm-quiz-hearts .lost-heart {
-  filter: grayscale(1) opacity(0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  font-size: 0.82rem;
+  line-height: 1;
 }
 
 .farm-quiz-prompt-card {

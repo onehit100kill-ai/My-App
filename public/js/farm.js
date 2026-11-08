@@ -274,6 +274,32 @@
       return `<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin" style="width:${size}px; height:${size}px; object-fit:contain; vertical-align:middle; display:inline-block;" />`;
     },
 
+    // Icon tim máu cây: kích thước giảm còn 0.6 (~6.5px trên ô đất, ~8.5px trong quiz), khi mất máu giữ lại viền đỏ
+    getHeartIcon(isFull = true, size = 6.5) {
+      if (isFull) {
+        return `<svg class="farm-heart-icon full" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="#ef4444" stroke="#991b1b" stroke-width="1.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      } else {
+        return `<svg class="farm-heart-icon lost" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="rgba(15, 23, 42, 0.65)" stroke="#ef4444" stroke-width="2.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      }
+    },
+
+    // Icon tim máu sâu: khi mất máu giữ lại viền xanh lá
+    getWormHeartIcon(isFull = true, size = 6.5) {
+      if (isFull) {
+        return `<svg class="farm-heart-icon full worm-heart" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="#22c55e" stroke="#15803d" stroke-width="1.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      } else {
+        return `<svg class="farm-heart-icon lost worm-heart" viewBox="0 0 24 24" width="${size}" height="${size}" style="vertical-align: middle; display: inline-block;">
+          <path fill="rgba(15, 23, 42, 0.65)" stroke="#22c55e" stroke-width="2.2" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>`;
+      }
+    },
+
     // Khởi tạo
     init() {
       this.loadSettings();
@@ -1279,10 +1305,10 @@
         if (isReady) spriteIdx = crop.sprites.length - 1;
         const spriteSrc = isWitheredDead ? 'assets/farm/crop-withered.png' : crop.sprites[spriteIdx];
 
-        // Tim máu cây
+        // Tim máu cây (giảm còn 0.6 kích thước cũ ~6.5px, khi mất máu giữ lại viền)
         let heartsHtml = '';
         for (let h = 0; h < plot.maxHp; h++) {
-          heartsHtml += h < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+          heartsHtml += this.getHeartIcon(h < plot.hp, 6.5);
         }
 
         // Chấm tiến độ giai đoạn
@@ -1335,7 +1361,7 @@
             ${hasWorm && !isWitheredDead ? `
               <img class="farm-worm-sprite" src="assets/farm/worm.png" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" alt="worm">
               <span class="farm-crop-emoji" style="display:none; font-size:24px; position:absolute; bottom:18px; left:8px;">🐛</span>
-              <div class="farm-worm-hearts">${'💚'.repeat(plot.worm.hp)}</div>
+              <div class="farm-worm-hearts">${Array.from({ length: plot.worm.maxHp || plot.worm.hp }, (_, wh) => this.getWormHeartIcon(wh < plot.worm.hp, 6.5)).join('')}</div>
             ` : ''}
 
             <!-- Đồng hồ đếm ngược đang hồi -->
@@ -1826,14 +1852,14 @@
       const maxPlantHp = plot.maxHp || crop.maxHp || 3;
       let plantHeartsHtml = '';
       for (let i = 0; i < maxPlantHp; i++) {
-        plantHeartsHtml += i < plot.hp ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+        plantHeartsHtml += this.getHeartIcon(i < plot.hp, 8.5);
       }
 
       if (q.isWormQuiz && plot.worm) {
         const maxWormHp = plot.worm.maxHp || (crop.id === 'radish' ? 2 : 3);
         let wormHeartsHtml = '';
         for (let i = 0; i < maxWormHp; i++) {
-          wormHeartsHtml += i < plot.worm.hp ? '💚' : '<span style="filter:grayscale(1) opacity(0.35);">💚</span>';
+          wormHeartsHtml += this.getWormHeartIcon(i < plot.worm.hp, 8.5);
         }
         statusEl.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; padding-bottom: 2px;">
@@ -3033,7 +3059,7 @@
 
       let plantHeartsHtml = '';
       for (let i = 0; i < def.maxHp; i++) {
-        plantHeartsHtml += i < (tree.hearts || def.maxHp) ? '❤️' : '<span style="filter:grayscale(1) opacity(0.35);">❤️</span>';
+        plantHeartsHtml += this.getHeartIcon(i < (tree.hearts || def.maxHp), 8.5);
       }
 
       const fertStatusHtml = tree.hasFertilizer
