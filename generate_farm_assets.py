@@ -408,5 +408,9 @@ if __name__ == "__main__":
     gen_coin()
     gen_heart()
     gen_basket()
-    print("ALL 21 ASSETS GENERATED SUCCESSFULLY!")
+    print("ALL 21 BASE ASSETS GENERATED SUCCESSFULLY!")
+    
+    # Generate all growth stage sprites (crop-radish-0..2, crop-strawberry-0..3, crop-sunflower-0..4)
+    import subprocess, sys
+    subprocess.run([sys.executable, "generate_crop_stages.py"], check=True)
 

@@ -109,7 +109,7 @@ window.showConfirmDialog = function({
 document.addEventListener('DOMContentLoaded', async () => {
   // Lắng nghe sự thay đổi class 'active' trên tất cả các modal để vô hiệu hóa cuộn nền
   const modalObserver = new MutationObserver(() => {
-    const anyModalOpen = document.querySelector('.modal-backdrop.active');
+    const anyModalOpen = document.querySelector('.modal-backdrop.active, .farm-sheet-backdrop.active');
     if (anyModalOpen) {
       document.body.classList.add('modal-open');
     } else {
@@ -117,9 +117,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  document.querySelectorAll('.modal-backdrop').forEach(modal => {
+  document.querySelectorAll('.modal-backdrop, .farm-sheet-backdrop').forEach(modal => {
     modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
   });
+
+  // Quản lý trạng thái bàn phím ảo trên điện thoại: chống đẩy modal/thẻ lên quá cao
+  const handleInputFocusIn = (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      document.body.classList.add('keyboard-open');
+    }
+  };
+  const handleInputFocusOut = (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+      setTimeout(() => {
+        const activeEl = document.activeElement;
+        if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+          document.body.classList.remove('keyboard-open');
+        }
+      }, 120);
+    }
+  };
+  document.addEventListener('focusin', handleInputFocusIn);
+  document.addEventListener('focusout', handleInputFocusOut);
+
+  if (window.visualViewport) {
+    let initialH = window.visualViewport.height;
+    window.visualViewport.addEventListener('resize', () => {
+      const currentH = window.visualViewport.height;
+      if (currentH < initialH * 0.78) {
+        document.body.classList.add('keyboard-open');
+      } else {
+        document.body.classList.remove('keyboard-open');
+        initialH = Math.max(initialH, currentH);
+      }
+    });
+  }
 
   // Đóng modal khi bấm nút close hoặc click bên ngoài
   document.querySelectorAll('.btn-close-modal').forEach(btn => {

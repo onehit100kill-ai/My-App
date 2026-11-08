@@ -10,6 +10,7 @@
   'use strict';
 
   // Định nghĩa 3 loại cây trồng chuẩn theo spec (thời gian hồi 5s)
+  // Phân biệt rõ: Số lần tưới nước (💧) khác với Số câu hỏi cần làm trong mỗi lần tưới (📖)
   const CROP_TYPES = {
     radish: {
       id: 'radish',
@@ -17,16 +18,18 @@
       icon: '🥕',
       seedPrice: 2, // Giảm 1/2 làm tròn xuống: 5 -> 2
       sellPrice: 6,
-      stagesNeeded: 2,
+      wateringsNeeded: 2,   // 💧 2 lần tưới để chín thu hoạch
+      stagesNeeded: 2,      // giữ tương thích ngược
+      questionsPerWater: 1, // 📖 1 câu hỏi trong mỗi lần tưới
       cooldownSec: 5,
       maxHp: 3,
       rewardCoins: 10,
       rewardXp: 10,
       seedImg: 'assets/farm/seed-radish.png',
       sprites: [
-        'assets/farm/crop-radish-1.png',
-        'assets/farm/crop-radish-2.png',
-        'assets/farm/crop-radish-3.png'
+        'assets/farm/crop-radish-0.png', // Mới gieo (0 lần tưới)
+        'assets/farm/crop-radish-1.png', // Lớn lần 1 (1 lần tưới)
+        'assets/farm/crop-radish-2.png'  // Chín thu hoạch (2 lần tưới)
       ]
     },
     strawberry: {
@@ -35,16 +38,19 @@
       icon: '🍓',
       seedPrice: 5, // Giảm 1/2: 10 -> 5
       sellPrice: 10,
-      stagesNeeded: 3,
+      wateringsNeeded: 3,   // 💧 3 lần tưới để chín thu hoạch
+      stagesNeeded: 3,      // giữ tương thích ngược
+      questionsPerWater: 2, // 📖 2 câu hỏi trong mỗi lần tưới
       cooldownSec: 5,
       maxHp: 4,
       rewardCoins: 20,
       rewardXp: 15,
       seedImg: 'assets/farm/seed-strawberry.png',
       sprites: [
-        'assets/farm/crop-strawberry-1.png',
-        'assets/farm/crop-strawberry-2.png',
-        'assets/farm/crop-strawberry-3.png'
+        'assets/farm/crop-strawberry-0.png', // Mới gieo (0 lần tưới)
+        'assets/farm/crop-strawberry-1.png', // Cây con nhú lá (1 lần tưới)
+        'assets/farm/crop-strawberry-2.png', // Bụi hoa trắng nở rộ (2 lần tưới)
+        'assets/farm/crop-strawberry-3.png'  // Quả dâu chín đỏ rực thu hoạch (3 lần tưới)
       ]
     },
     sunflower: {
@@ -53,16 +59,20 @@
       icon: '🌻',
       seedPrice: 7, // Giảm 1/2 làm tròn xuống: 15 -> 7
       sellPrice: 15,
-      stagesNeeded: 4,
+      wateringsNeeded: 4,   // 💧 4 lần tưới để chín thu hoạch
+      stagesNeeded: 4,      // giữ tương thích ngược
+      questionsPerWater: 3, // 📖 3 câu hỏi trong mỗi lần tưới
       cooldownSec: 5,
       maxHp: 5,
       rewardCoins: 35,
       rewardXp: 25,
       seedImg: 'assets/farm/seed-sunflower.png',
       sprites: [
-        'assets/farm/crop-sunflower-1.png',
-        'assets/farm/crop-sunflower-2.png',
-        'assets/farm/crop-sunflower-3.png'
+        'assets/farm/crop-sunflower-0.png', // Mới gieo (0 lần tưới)
+        'assets/farm/crop-sunflower-1.png', // Cây mầm 2 lá cotyledon (1 lần tưới)
+        'assets/farm/crop-sunflower-2.png', // Thân cao phát triển tầng lá (2 lần tưới)
+        'assets/farm/crop-sunflower-3.png', // Búp nụ hoa lớn chuẩn bị nở (3 lần tưới)
+        'assets/farm/crop-sunflower-4.png'  // Bông hướng dương nở rộ rực rỡ thu hoạch (4 lần tưới)
       ]
     }
   };
@@ -1058,7 +1068,7 @@
           bubble.style.bottom = 'auto';
           bubble.style.right = 'auto';
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // Xử lý kéo thả (Pointer Events: chuột + touch di động)
       let isDragging = false;
@@ -1214,6 +1224,8 @@
     // =========================================================================
     async open() {
       this.isOpen = true;
+      document.body.classList.add('farm-active');
+      document.documentElement.classList.add('farm-active');
       const farmView = document.getElementById('farm-view');
       const bubble = document.getElementById('game-bubble');
       const appHeader = document.querySelector('.app-header');
@@ -1228,6 +1240,18 @@
       if (farmView) {
         farmView.removeAttribute('hidden');
         farmView.style.display = 'flex';
+      }
+
+      // Đảm bảo các ô đất có đầy đủ wateringsNeeded và questionsPerWater
+      if (Array.isArray(this.state.plots)) {
+        this.state.plots.forEach(p => {
+          if (p.cropType && CROP_TYPES[p.cropType]) {
+            const def = CROP_TYPES[p.cropType];
+            if (!p.wateringsNeeded) p.wateringsNeeded = p.stagesNeeded || def.wateringsNeeded || 2;
+            p.stagesNeeded = p.wateringsNeeded;
+            if (!p.questionsPerWater) p.questionsPerWater = def.questionsPerWater || 1;
+          }
+        });
       }
 
       // Đảm bảo 8 ô nuôi gà (Cấp 5 mới mở, mỗi 2 cấp 1 con)
@@ -1256,6 +1280,8 @@
 
     close() {
       this.isOpen = false;
+      document.body.classList.remove('farm-active');
+      document.documentElement.classList.remove('farm-active');
       clearInterval(this.tickInterval);
 
       const farmView = document.getElementById('farm-view');
@@ -1322,7 +1348,7 @@
           osc1.stop(ctx.currentTime + 0.35);
           osc2.stop(ctx.currentTime + 0.35);
         }
-      } catch (e) {}
+      } catch (e) { }
     },
 
     // =========================================================================
@@ -1509,9 +1535,10 @@
         }
 
         const crop = CROP_TYPES[plot.cropType] || CROP_TYPES.radish;
+        const totalWaterings = plot.wateringsNeeded || plot.stagesNeeded || crop.wateringsNeeded || 2;
         const isCooldown = plot.cooldownUntil && plot.cooldownUntil > now;
         const cooldownRemaining = isCooldown ? Math.ceil((plot.cooldownUntil - now) / 1000) : 0;
-        const isReady = plot.stage >= plot.stagesNeeded;
+        const isReady = plot.stage >= totalWaterings;
         const isWitherWarning = plot.hp === 1 && !isReady;
         const isWitheredDead = plot.state === 'withered' || plot.hp <= 0;
         const hasWorm = !!plot.worm;
@@ -1523,8 +1550,8 @@
         else if (isReady) classes.push('farm-plot-ready');
         else if (isCooldown) classes.push('farm-plot-cooling');
 
-        // Sprite cây
-        let spriteIdx = Math.min(crop.sprites.length - 1, Math.max(0, plot.stage - 1));
+        // Sprite cây: mỗi giai đoạn phát triển (plot.stage từ 0 đến totalWaterings) có 1 hình ảnh tương ứng
+        let spriteIdx = Math.min(crop.sprites.length - 1, Math.max(0, plot.stage));
         if (isReady) spriteIdx = crop.sprites.length - 1;
         const spriteSrc = isWitheredDead ? 'assets/farm/crop-withered.png' : crop.sprites[spriteIdx];
 
@@ -1534,9 +1561,9 @@
           heartsHtml += this.getHeartIcon(h < plot.hp, 6.5);
         }
 
-        // Chấm tiến độ giai đoạn
+        // Chấm tiến độ số lần tưới nước
         let dotsHtml = '';
-        for (let d = 0; d < plot.stagesNeeded; d++) {
+        for (let d = 0; d < totalWaterings; d++) {
           dotsHtml += d < plot.stage ? '●' : '○';
         }
 
@@ -1555,7 +1582,7 @@
 
             <!-- Huy hiệu giọt nước tưới -->
             ${!isCooldown && !isReady && !hasWorm && !isWitheredDead ? `
-              <div class="farm-water-badge" title="Tưới cây">💧</div>
+              <div class="farm-water-badge" title="Tưới cây (Lần ${plot.stage + 1}/${totalWaterings} • ${crop.questionsPerWater || 1} câu)">💧</div>
             ` : ''}
 
             <!-- Huy hiệu phân bón (Túi phân bón) -->
@@ -1622,12 +1649,12 @@
     // =========================================================================
     getWaterablePlots() {
       const now = Date.now();
-      return (this.state.plots || []).filter(plot => 
-        plot && 
-        plot.state === 'growing' && 
-        plot.stage < (plot.stagesNeeded || 2) && 
-        (!plot.cooldownUntil || plot.cooldownUntil <= now) && 
-        !plot.worm && 
+      return (this.state.plots || []).filter(plot =>
+        plot &&
+        plot.state === 'growing' &&
+        plot.stage < (plot.wateringsNeeded || plot.stagesNeeded || 2) &&
+        (!plot.cooldownUntil || plot.cooldownUntil <= now) &&
+        !plot.worm &&
         plot.hp > 0
       );
     },
@@ -1709,14 +1736,14 @@
           <div class="${cardClasses.join(' ')}" data-tree-type="${type}" title="${isLocked ? `Cần Cấp ${def.unlockLevel} để mở Cây ${def.name}` : `Cây ${def.name}`}">
             <div class="farm-tree-header">
               <span class="farm-tree-name">${def.icon} Cây ${def.name}</span>
-              ${isLocked 
-                ? `<span class="farm-tree-lock-badge">🔒 Cấp ${def.unlockLevel}</span>`
-                : isReady 
-                  ? `<span class="farm-tree-stage-badge" style="background:rgba(245,158,11,0.25); color:#fde047;">🧺 Chín rộ</span>`
-                  : isCooldown 
-                    ? `<span class="farm-tree-stage-badge" style="background:rgba(148,163,184,0.2); color:#cbd5e1;">⏳ ${treeState.cooldown}s</span>`
-                    : `<span class="farm-tree-stage-badge">🌱 Giai đoạn ${treeState.stage}/3</span>`
-              }
+              ${isLocked
+            ? `<span class="farm-tree-lock-badge">🔒 Cấp ${def.unlockLevel}</span>`
+            : isReady
+              ? `<span class="farm-tree-stage-badge" style="background:rgba(245,158,11,0.25); color:#fde047;">🧺 Chín rộ</span>`
+              : isCooldown
+                ? `<span class="farm-tree-stage-badge" style="background:rgba(148,163,184,0.2); color:#cbd5e1;">⏳ ${treeState.cooldown}s</span>`
+                : `<span class="farm-tree-stage-badge">🌱 Giai đoạn ${treeState.stage}/3</span>`
+          }
             </div>
 
             <div class="farm-tree-visual">
@@ -1724,14 +1751,14 @@
             </div>
 
             <div style="width:100%; text-align:center;">
-              ${isLocked 
-                ? `<div class="farm-tree-locked-hint">Mở ở Cấp ${def.unlockLevel} • Cần học ${def.maxWords} từ/lần</div>`
-                : isReady 
-                  ? `<button type="button" class="farm-tree-btn btn-harvest" data-harvest-tree="${type}">🧺 Thu hoạch (+1 ${def.icon})</button>`
-                  : isCooldown 
-                    ? `<div class="farm-tree-cooldown">Đang hồi (${treeState.cooldown}s)</div>`
-                    : `<button type="button" class="farm-tree-btn btn-water" data-water-tree="${type}">💧 Tưới (${def.maxWords} từ)</button>`
-              }
+              ${isLocked
+            ? `<div class="farm-tree-locked-hint">Mở ở Cấp ${def.unlockLevel} • Cần học ${def.maxWords} từ/lần</div>`
+            : isReady
+              ? `<button type="button" class="farm-tree-btn btn-harvest" data-harvest-tree="${type}">🧺 Thu hoạch (+1 ${def.icon})</button>`
+              : isCooldown
+                ? `<div class="farm-tree-cooldown">Đang hồi (${treeState.cooldown}s)</div>`
+                : `<button type="button" class="farm-tree-btn btn-water" data-water-tree="${type}">💧 Tưới (${def.maxWords} từ)</button>`
+          }
             </div>
           </div>
         `;
@@ -1896,7 +1923,8 @@
       }
 
       // 3. Cây chín -> Thu hoạch
-      if (plot.stage >= plot.stagesNeeded) {
+      const totalWaterings = plot.wateringsNeeded || plot.stagesNeeded || (CROP_TYPES[plot.cropType]?.wateringsNeeded) || 2;
+      if (plot.stage >= totalWaterings) {
         this.harvest(plotId);
         return;
       }
@@ -1940,6 +1968,12 @@
         const priceEl = card.querySelector('.farm-seed-price-val');
         if (priceEl) priceEl.textContent = cDef.seedPrice;
 
+        const stagesEl = card.querySelector('.farm-seed-stages');
+        if (stagesEl) stagesEl.innerHTML = `💧 <b>${cDef.wateringsNeeded} lần tưới</b>`;
+
+        const questionsEl = card.querySelector('.farm-seed-questions');
+        if (questionsEl) questionsEl.innerHTML = `📖 <b>${cDef.questionsPerWater} câu / lần</b>`;
+
         const canAfford = userCoins >= cDef.seedPrice;
         const btn = card.querySelector('.farm-seed-btn');
         if (btn) {
@@ -1980,7 +2014,9 @@
       plot.cropType = cropType;
       plot.state = 'growing';
       plot.stage = 0;
-      plot.stagesNeeded = crop.stagesNeeded;
+      plot.wateringsNeeded = crop.wateringsNeeded;
+      plot.stagesNeeded = crop.wateringsNeeded;
+      plot.questionsPerWater = crop.questionsPerWater;
       plot.maxHp = crop.maxHp;
       plot.hp = crop.maxHp;
       plot.cooldownUntil = 0;
@@ -1993,7 +2029,7 @@
       this.playSound('pop');
 
       if (window.showToast) {
-        window.showToast(`🌱 Đã gieo ${crop.name} (-${seedPrice}🪙)! Cần trả lời ${crop.stagesNeeded} câu hỏi ngẫu nhiên khi tưới để thu hoạch.`);
+        window.showToast(`🌱 Đã gieo ${crop.name} (-${seedPrice}🪙)! Cần ${crop.wateringsNeeded} lần tưới (mỗi lần ${crop.questionsPerWater} câu) để thu hoạch.`);
       }
     },
 
@@ -2054,7 +2090,7 @@
             ${word.example ? `<div class="farm-plant-example">"${word.example}"</div>` : ''}
           </div>
           <div style="font-size: 0.82rem; color: var(--text-secondary); text-align: center; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
-            <span>📖 ${crop.stagesNeeded} câu</span> • <span>Hồi ${crop.cooldownSec}s</span> • <span>Thu hoạch ${crop.name} (Bán +${crop.sellPrice}${this.getCoinIcon(13)})</span> • <span>+${crop.rewardXp}${this.getXpIcon(14)}</span>
+            <span>💧 ${crop.wateringsNeeded} lần tưới</span> • <span>📖 ${crop.questionsPerWater} câu/lần</span> • <span>Hồi ${crop.cooldownSec}s</span> • <span>Thu hoạch ${crop.name} (Bán +${crop.sellPrice}${this.getCoinIcon(13)})</span> • <span>+${crop.rewardXp}${this.getXpIcon(14)}</span>
           </div>
         `;
       }
@@ -2138,11 +2174,20 @@
       // Bốc từ ngẫu nhiên trong danh sách từ đang học
       const word = this.pickNextWord();
 
+      const totalQ = isWormQuiz
+        ? (plot.worm?.maxHp || plot.worm?.hp || 2)
+        : (crop?.questionsPerWater || 1);
+      const curQ = isWormQuiz
+        ? ((plot.worm?.maxHp || plot.worm?.hp || 2) - (plot.worm?.hp || 1) + 1)
+        : 1;
+
       this.activeQuiz = {
         plotId: plot.id,
         cropType: plot.cropType,
         isWormQuiz: isWormQuiz,
         mode: mode,
+        questionIndex: curQ,
+        totalQuestions: totalQ,
         word: {
           id: word.id,
           word: word.word,
@@ -2191,6 +2236,7 @@
       const plot = this.state.plots.find(p => p.id === q.plotId);
       if (!plot) return;
       const crop = CROP_TYPES[q.cropType] || {};
+      const totalWaterings = plot.wateringsNeeded || plot.stagesNeeded || (crop.wateringsNeeded || 2);
 
       const maxPlantHp = plot.maxHp || crop.maxHp || 3;
       let plantHeartsHtml = '';
@@ -2220,7 +2266,7 @@
       }
 
       let fertBtnHtml = '';
-      if (!q.isWormQuiz && plot.stage < plot.stagesNeeded) {
+      if (!q.isWormQuiz && plot.stage < totalWaterings) {
         if (plot.hasFertilizer) {
           fertBtnHtml = `<span style="color:#a78bfa; font-size:11px; font-weight:700; margin-left: 8px; display:inline-flex; align-items:center; gap:3px;">${this.getFertilizerBagIcon(14)} Đã bón phân</span>`;
         } else {
@@ -2229,11 +2275,14 @@
       }
 
       statusEl.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 4px;">
           <div class="farm-quiz-hearts">Máu: ${plantHeartsHtml} ${fertBtnHtml}</div>
-          <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">
-            ${q.isWormQuiz ? 'Đánh bại sâu' : `Lần tưới: ${plot.stage + 1}/${plot.stagesNeeded}`}
-          </span>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 600;">
+            ${q.isWormQuiz 
+              ? `<span style="color: #34d399;">🐛 Đánh bại sâu (Hiệp ${q.questionIndex}/${q.totalQuestions})</span>` 
+              : `<span style="color: #38bdf8;">💧 Lần tưới: ${plot.stage + 1}/${totalWaterings}</span> <span style="color: #34d399;">📖 Câu hỏi: ${q.questionIndex}/${q.totalQuestions}</span>`
+            }
+          </div>
         </div>
       `;
     },
@@ -2253,8 +2302,11 @@
           titleEl.textContent = `💧 Tưới Tất Cả (${q.waterablePlotIds?.length || 1} Cây)`;
         } else if (q.isAnimal) {
           titleEl.textContent = q.animalType === 'chicken' ? `Cho Gà #${q.animalId} Ăn 🐔` : `Cho Bò #${q.animalId} Ăn 🐄`;
+        } else if (q.isWormQuiz) {
+          titleEl.textContent = `Bắt sâu! 🐛 (Hiệp ${q.questionIndex}/${q.totalQuestions})`;
         } else {
-          titleEl.textContent = q.isWormQuiz ? 'Bắt sâu! 🐛' : `Tưới cây — ${crop ? crop.name : 'Nông sản'} (Câu ${plot ? plot.stage + 1 : 1}/${plot ? plot.stagesNeeded : 2})`;
+          const totalWaterings = plot ? (plot.wateringsNeeded || plot.stagesNeeded || (crop?.wateringsNeeded || 2)) : 2;
+          titleEl.textContent = `Tưới cây — ${crop ? crop.name : 'Nông sản'} (Lần ${plot ? plot.stage + 1 : 1}/${totalWaterings})`;
         }
       }
 
@@ -2432,7 +2484,8 @@
           let count = 0;
           (q.waterablePlotIds || []).forEach(plotId => {
             const plot = this.state.plots.find(p => p.id === plotId);
-            if (!plot || plot.state !== 'growing' || plot.stage >= plot.stagesNeeded) return;
+            const totalWaterings = plot ? (plot.wateringsNeeded || plot.stagesNeeded || 2) : 2;
+            if (!plot || plot.state !== 'growing' || plot.stage >= totalWaterings) return;
 
             const crop = CROP_TYPES[plot.cropType] || {};
             if (plot.hp === 1) {
@@ -2440,7 +2493,7 @@
             }
 
             const growth = plot.hasFertilizer ? 2 : 1;
-            plot.stage = Math.min(plot.stagesNeeded, plot.stage + growth);
+            plot.stage = Math.min(totalWaterings, plot.stage + growth);
             plot.hasFertilizer = false;
 
             plot.cooldownUntil = now + (crop.cooldownSec || 5) * 1000;
@@ -2562,6 +2615,7 @@
         if (q.isWormQuiz && plot.worm) {
           // Bắt sâu: Trừ 1 máu sâu
           plot.worm.hp -= 1;
+          q.questionIndex = (plot.worm.maxHp || (crop.id === 'radish' ? 2 : 3)) - plot.worm.hp + 1;
           this.updateQuizHeaderStatus();
           if (plot.worm.hp <= 0) {
             // Đã bắt xong sâu!
@@ -2603,36 +2657,71 @@
           return;
         } else {
           // Tưới cây bình thường:
+          // Nếu còn câu hỏi trong lần tưới này (q.questionIndex < q.totalQuestions)
+          if (q.questionIndex < q.totalQuestions) {
+            q.questionIndex += 1;
+            this.saveState();
+            this.render();
+
+            const nextWord = this.pickNextWord(q.word.id);
+            q.word = {
+              id: nextWord.id,
+              word: nextWord.word,
+              ipa: nextWord.ipa,
+              meaning: nextWord.meaning,
+              example: nextWord.example,
+              audioUrl: nextWord.audioUrl
+            };
+            q.failCount = 0;
+            q.mode = this.getZoneQuizMode('crops', plot.stage);
+
+            setTimeout(() => {
+              this.renderQuizModal();
+            }, 450);
+            return;
+          }
+
+          // Đã hoàn thành hết số câu hỏi trong lần tưới này!
           // Nếu đang héo (1 HP): hồi 1 máu trước, sau đó mới lớn
           if (plot.hp === 1) {
-            plot.hp = Math.min(plot.maxHp, 2);
+            plot.hp = Math.min(plot.maxHp || 3, 2);
             if (window.showToast) window.showToast('🌿 Cây đã hồi phục, thoát trạng thái héo!');
           }
 
           // Tăng giai đoạn (+2 nếu đã bón phân)
           const growth = plot.hasFertilizer ? 2 : 1;
-          plot.stage = Math.min(plot.stagesNeeded, plot.stage + growth);
+          const totalWaterings = plot.wateringsNeeded || plot.stagesNeeded || (crop ? crop.wateringsNeeded : 2);
+          plot.stage = Math.min(totalWaterings, plot.stage + growth);
           plot.hasFertilizer = false; // Tiêu thụ bón phân
 
           // Thời gian hồi sau tưới
-          plot.cooldownUntil = Date.now() + crop.cooldownSec * 1000;
+          plot.cooldownUntil = Date.now() + (crop ? crop.cooldownSec : 5) * 1000;
 
           // Cộng XP và nhiệm vụ
-          this.gainXp(5);
-          this.state.quests.watered += 1;
+          this.gainXp(5 * (crop ? crop.questionsPerWater : 1));
+          this.state.quests.watered = (this.state.quests.watered || 0) + 1;
 
           // 20% tỉ lệ xuất hiện sâu sau khi tưới
           this.maybeSpawnWorm(plot.id);
+
+          this.saveState();
+          this.render();
+
+          if (window.showToast) {
+            if (plot.stage >= totalWaterings) {
+              window.showToast(`✨ ${crop ? crop.name : 'Cây'} đã chín rộ! Hãy chạm để thu hoạch! 🧺`);
+            } else {
+              window.showToast(`💧 Đã hoàn thành lần tưới ${plot.stage}/${totalWaterings}!`);
+            }
+          }
+
+          // Tự động đóng modal sau 650ms
+          setTimeout(() => {
+            document.getElementById('farm-sheet-quiz')?.classList.remove('active');
+            this.activeQuiz = null;
+          }, 650);
+          return;
         }
-
-        this.saveState();
-        this.render();
-
-        // Tự động đóng modal sau 600ms
-        setTimeout(() => {
-          document.getElementById('farm-sheet-quiz')?.classList.remove('active');
-          this.activeQuiz = null;
-        }, 650);
 
       } else {
         // ================= TRẢ LỜI SAI =================
@@ -2691,10 +2780,10 @@
       if (activeWormsCount >= 2) return; // Tối đa 2 sâu
 
       if (Math.random() <= 0.20) {
-        const candidates = this.state.plots.filter(p => 
+        const candidates = this.state.plots.filter(p =>
           p.id !== currentWateredPlotId &&
           p.state === 'growing' &&
-          p.stage < p.stagesNeeded &&
+          p.stage < (p.wateringsNeeded || p.stagesNeeded || 2) &&
           p.hp > 0 &&
           !p.worm
         );
@@ -2738,7 +2827,7 @@
 
     fertilizePlot(plotId) {
       const plot = this.state.plots.find(p => p.id === plotId);
-      if (!plot || plot.state !== 'growing' || plot.stage >= plot.stagesNeeded) return;
+      if (!plot || plot.state !== 'growing' || plot.stage >= (plot.wateringsNeeded || plot.stagesNeeded || 2)) return;
 
       if (this.state.fertilizer <= 0) {
         const price = this.getFertilizerPrice();
@@ -2769,7 +2858,7 @@
     // =========================================================================
     async harvest(plotId) {
       const plot = this.state.plots.find(p => p.id === plotId);
-      if (!plot || plot.stage < plot.stagesNeeded) return;
+      if (!plot || plot.stage < (plot.wateringsNeeded || plot.stagesNeeded || 2)) return;
 
       const crop = CROP_TYPES[plot.cropType];
 
@@ -2806,7 +2895,7 @@
       if (plot.wordId && window.api?.toggleWordLearned) {
         try {
           await window.api.toggleWordLearned(plot.wordId);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Đưa ô trở lại trống
@@ -2973,7 +3062,7 @@
       const xpEl = document.getElementById('farm-tooltip-xp-line');
       const rewardEl = document.getElementById('farm-tooltip-reward-line');
       const rewardIconEl = document.getElementById('farm-tooltip-reward-icon');
-      if (xpEl) xpEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:4px;">${this.getXpIcon(14)} <b>${curXp}</b> / <b>${nextXp}</b> (thiếu ${missingXp})</span>`;
+      if (xpEl) xpEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:4px;">${this.getXpIcon(14)} <b>${curXp}</b> / <b>${nextXp}</b></span>`;
       if (rewardEl) {
         if (rewards.length) {
           rewardEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px;">Cấp ${nextLvl} mở: ${rewards.join(' ')}</span>`;
@@ -3049,9 +3138,9 @@
 
           <div class="farm-shop-grid">
             ${SHOP_SELL_ITEMS.map(it => {
-              const stock = this.getItemStock(it.id);
+        const stock = this.getItemStock(it.id);
 
-              return `
+        return `
                 <div class="farm-shop-grid-card ${stock === 0 ? 'empty-stock' : ''}">
                   <div class="farm-shop-grid-icon">
                     ${it.icon}
@@ -3071,7 +3160,7 @@
                   </div>
                 </div>
               `;
-            }).join('')}
+      }).join('')}
           </div>
         </div>
       `;
@@ -3831,7 +3920,7 @@
       try {
         aiStatus = await window.api.getAiStatus();
         aiEnabled = !!aiStatus?.enabled;
-      } catch (e) {}
+      } catch (e) { }
 
       // Đồng bộ toggle modes riêng cho 3 vùng: Vườn Nông Sản, Cây Ăn Quả, Khu Chăn Nuôi
       const zones = ['crops', 'orchard', 'poultry'];
