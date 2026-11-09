@@ -1393,78 +1393,92 @@ class StudyManager {
     this.setWaitingForTap(false);
     document.getElementById('quiz-typing-input')?.blur();
     document.body.classList.remove('keyboard-open');
+
+    // Phát nhạc chúc mừng "teo tèo teo téo teooo" vui nhộn khi giao diện xuất hiện
+    this.playVictoryFanfare();
     
     // Cập nhật DOM nhanh gọn bằng requestAnimationFrame để không giật lag
     requestAnimationFrame(() => {
       document.getElementById('view-quiz').style.display = 'none';
       const congratsView = document.getElementById('view-congrats');
-      congratsView.style.display = 'flex';
-      congratsView.style.flexDirection = 'column';
-      congratsView.style.maxHeight = 'calc(100vh - 140px)';
+      if (congratsView) {
+        congratsView.style.display = 'flex';
+        congratsView.style.flexDirection = 'column';
+      }
 
       const fill = document.getElementById('study-progress-fill');
       if (fill) fill.style.width = '100%';
 
-      const tbody = document.getElementById('summary-words-tbody');
-      
-      // Render các từ đúng
       const correctList = this.words.filter(w => !this.wrongWords || !this.wrongWords.has(w.id));
-      let correctHtml = '';
-      if (correctList.length === 0) {
-        correctHtml = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">Không có từ nào đúng hoàn toàn. Cố lên nhé!</td></tr>`;
-      } else {
-        for (let i = 0; i < correctList.length; i++) {
-          const w = correctList[i];
-          correctHtml += `
-            <tr>
-              <td style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
-              <td>
-                <div style="font-weight: 700; color: #ffffff; font-size: 1rem;">${this.escapeHtml(w.word)}</div>
-                ${w.ipa ? `<div style="font-size: 0.82rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
-              </td>
-              <td style="text-align: center;">
-                <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
-                  <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
-                  <span class="ios-slider"></span>
-                </label>
-              </td>
-              <td style="text-align: center;">
-                <button type="button" class="btn ${w.isIntensive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 12px; font-size: 1.2rem; border-radius: 4px; font-weight: bold; line-height: 1;" onclick="studyManager.toggleWordIntensiveSummary(${w.id}, this)">
-                  ${w.isIntensive ? '-' : '+'}
-                </button>
-              </td>
-            </tr>
-          `;
-        }
-      }
-      tbody.innerHTML = correctHtml;
+      const wrongList = this.words.filter(w => this.wrongWords && this.wrongWords.has(w.id));
 
-      // Render các từ sai
-      const wrongTbody = document.getElementById('summary-wrong-words-tbody');
-      if (wrongTbody) {
-        let wrongHtml = '';
-        const wrongList = this.words.filter(w => this.wrongWords && this.wrongWords.has(w.id));
-        
-        if (wrongList.length === 0) {
-          wrongHtml = `<tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">Tuyệt vời! Bạn không sai từ nào.</td></tr>`;
+      // Cập nhật thống kê và badge số lượng
+      const badgeCorrect = document.getElementById('summary-badge-correct');
+      if (badgeCorrect) badgeCorrect.textContent = `✅ ${correctList.length} đúng`;
+      const badgeWrong = document.getElementById('summary-badge-wrong');
+      if (badgeWrong) badgeWrong.textContent = `❌ ${wrongList.length} cần ôn lại`;
+      const countCorrect = document.getElementById('summary-count-correct');
+      if (countCorrect) countCorrect.textContent = `${correctList.length} từ`;
+      const countWrong = document.getElementById('summary-count-wrong');
+      if (countWrong) countWrong.textContent = `${wrongList.length} từ`;
+
+      const tbody = document.getElementById('summary-words-tbody');
+      if (tbody) {
+        let correctHtml = '';
+        if (correctList.length === 0) {
+          correctHtml = `<tr class="summary-empty-row"><td colspan="4" class="summary-empty-cell">Chưa có từ nào đúng hoàn toàn. Cố lên nhé!</td></tr>`;
         } else {
-          for (let i = 0; i < wrongList.length; i++) {
-            const w = wrongList[i];
-            wrongHtml += `
+          for (let i = 0; i < correctList.length; i++) {
+            const w = correctList[i];
+            correctHtml += `
               <tr>
-                <td style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
-                <td>
-                  <div style="font-weight: 700; color: #ffffff; font-size: 1rem;">${this.escapeHtml(w.word)}</div>
-                  ${w.ipa ? `<div style="font-size: 0.82rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
+                <td class="col-idx" style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+                <td class="col-word">
+                  <div style="font-weight: 700; color: #ffffff; font-size: 0.95rem; line-height: 1.3;">${this.escapeHtml(w.word)}</div>
+                  ${w.ipa ? `<div style="font-size: 0.8rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
                 </td>
-                <td style="text-align: center;">
+                <td class="col-status">
                   <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
                     <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
                     <span class="ios-slider"></span>
                   </label>
                 </td>
-                <td style="text-align: center;">
-                  <button type="button" class="btn ${w.isIntensive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 12px; font-size: 1.2rem; border-radius: 4px; font-weight: bold; line-height: 1;" onclick="studyManager.toggleWordIntensiveSummary(${w.id}, this)">
+                <td class="col-action">
+                  <button type="button" class="btn ${w.isIntensive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 12px; font-size: 1.1rem; border-radius: 4px; font-weight: bold; line-height: 1;" onclick="studyManager.toggleWordIntensiveSummary(${w.id}, this)">
+                    ${w.isIntensive ? '-' : '+'}
+                  </button>
+                </td>
+              </tr>
+            `;
+          }
+        }
+        tbody.innerHTML = correctHtml;
+      }
+
+      // Render các từ sai
+      const wrongTbody = document.getElementById('summary-wrong-words-tbody');
+      if (wrongTbody) {
+        let wrongHtml = '';
+        if (wrongList.length === 0) {
+          wrongHtml = `<tr class="summary-empty-row"><td colspan="4" class="summary-empty-cell">🎉 Tuyệt vời! Bạn không sai từ nào.</td></tr>`;
+        } else {
+          for (let i = 0; i < wrongList.length; i++) {
+            const w = wrongList[i];
+            wrongHtml += `
+              <tr>
+                <td class="col-idx" style="color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+                <td class="col-word">
+                  <div style="font-weight: 700; color: #ffffff; font-size: 0.95rem; line-height: 1.3;">${this.escapeHtml(w.word)}</div>
+                  ${w.ipa ? `<div style="font-size: 0.8rem; color: var(--accent-cyan); font-family: monospace;">${this.escapeHtml(w.ipa)}</div>` : ''}
+                </td>
+                <td class="col-status">
+                  <label class="ios-switch ios-switch-sm" title="Gạt để chuyển trạng thái">
+                    <input type="checkbox" ${w.isLearned ? 'checked' : ''} onchange="studyManager.toggleWordLearnedSummary(${w.id}, this.checked, this)">
+                    <span class="ios-slider"></span>
+                  </label>
+                </td>
+                <td class="col-action">
+                  <button type="button" class="btn ${w.isIntensive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 12px; font-size: 1.1rem; border-radius: 4px; font-weight: bold; line-height: 1;" onclick="studyManager.toggleWordIntensiveSummary(${w.id}, this)">
                     ${w.isIntensive ? '-' : '+'}
                   </button>
                 </td>
@@ -1475,6 +1489,58 @@ class StudyManager {
         wrongTbody.innerHTML = wrongHtml;
       }
     });
+  }
+
+  // === ÂM THANH CHÚC MỪNG "TEO TÈO TEO" (VICTORY FANFARE) ===
+  playVictoryFanfare() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+      // Giai điệu chúc mừng tươi vui "tèo teo téo teooo!"
+      // Nốt: Sol4 -> Đô5 -> Mi5 -> Sol5 -> Đô6 (kèm Mi6 hòa âm)
+      const notes = [
+        { f: 392.00, start: 0.00, dur: 0.12, gain: 0.22 }, // G4  (tèo)
+        { f: 523.25, start: 0.12, dur: 0.12, gain: 0.26 }, // C5  (teo)
+        { f: 659.25, start: 0.24, dur: 0.12, gain: 0.26 }, // E5  (tèo)
+        { f: 783.99, start: 0.36, dur: 0.14, gain: 0.28 }, // G5  (téo)
+        { f: 1046.50, start: 0.50, dur: 0.55, gain: 0.32 }, // C6  (teooo!)
+        { f: 1318.51, start: 0.50, dur: 0.55, gain: 0.18 }  // E6  (hoà âm vang ấm)
+      ];
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.35, now);
+      masterGain.connect(ctx.destination);
+
+      notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const noteGain = ctx.createGain();
+
+        // Âm sắc triangle mềm mại, vui nhộn kiểu retro game/marimba
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(n.f, now + n.start);
+
+        noteGain.gain.setValueAtTime(0.001, now + n.start);
+        noteGain.gain.linearRampToValueAtTime(n.gain, now + n.start + 0.02);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, now + n.start + n.dur);
+
+        osc.connect(noteGain);
+        noteGain.connect(masterGain);
+
+        osc.start(now + n.start);
+        osc.stop(now + n.start + n.dur);
+      });
+
+      // Tự động đóng AudioContext sau khi âm thanh kết thúc
+      setTimeout(() => {
+        try { ctx.close(); } catch (e) { }
+      }, 1300);
+    } catch (e) { }
   }
 
   async toggleWordIntensiveSummary(wordId, buttonElement) {

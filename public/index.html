@@ -551,49 +551,37 @@
         </div>
 
         <!-- ================= QUIZ CONGRATS & SUMMARY VIEW ================= -->
-        <div id="view-congrats" class="study-view-panel"
-          style="display: none; padding: 0; display: flex; flex-direction: column; height: 100%; max-height: calc(100vh - 140px);">
+        <div id="view-congrats" class="study-view-panel congrats-view-panel" style="display: none;">
 
-          <div class="summary-split-container"
-            style="display: flex; flex: 1; overflow: hidden; gap: 20px; flex-direction: column; width: 100%; padding-right: 4px;">
-
-            <!-- Cột 2: Các từ sai -->
-            <div class="summary-wrong-words-container"
-              style="display: flex; flex-direction: column; margin-bottom: 10px; flex: 1 1 50%; max-height: max-content; min-height: 0;">
-              <h4 style="text-align: center; margin-bottom: 10px; color: #ff6b6b; font-size: 0.95rem; flex-shrink: 0;">
-                Các từ sai</h4>
-              <div
-                style="border-radius: 8px; border: 1px solid rgba(255, 107, 107, 0.3); background: rgba(255, 107, 107, 0.05); flex: 1 1 auto; overflow-y: auto; min-height: 0;">
-                <table class="summary-words-table" style="width: 100%; border-collapse: collapse;">
-                  <thead style="background: rgba(255, 107, 107, 0.1); position: sticky; top: 0; z-index: 1;">
-                    <tr>
-                      <th style="width: 40px; padding: 10px; color: #ff6b6b;">#</th>
-                      <th style="padding: 10px; text-align: left; color: #ff6b6b;">Từ vựng & IPA</th>
-                      <th style="width: 90px; text-align: center; padding: 10px; color: #ff6b6b;">Đã thuộc</th>
-                      <th style="width: 100px; text-align: center; padding: 10px; color: #ff6b6b;">Chuyên sâu</th>
-                    </tr>
-                  </thead>
-                  <tbody id="summary-wrong-words-tbody">
-                    <!-- Render các từ sai -->
-                  </tbody>
-                </table>
-              </div>
+          <!-- Tiêu đề & thống kê tổng kết -->
+          <div class="summary-congrats-header">
+            <div class="summary-congrats-title">🎉 Tổng Kết Kết Quả Học Tập</div>
+            <div class="summary-congrats-stats" id="summary-congrats-stats">
+              <span class="summary-stat-badge stat-correct" id="summary-badge-correct">✅ 0 đúng</span>
+              <span class="summary-stat-badge stat-wrong" id="summary-badge-wrong">❌ 0 cần ôn lại</span>
             </div>
+          </div>
 
-            <!-- Cột 1: Các từ đúng -->
-            <div class="summary-words-container"
-              style="display: flex; flex-direction: column; margin-bottom: 20px; flex: 1 1 50%; max-height: max-content; min-height: 0;">
-              <h4 style="text-align: center; margin-bottom: 10px; color: #34c759; font-size: 0.95rem; flex-shrink: 0;">
-                Các từ đúng</h4>
-              <div
-                style="border-radius: 8px; border: 1px solid rgba(52, 199, 89, 0.3); background: rgba(52, 199, 89, 0.05); flex: 1 1 auto; overflow-y: auto; min-height: 0;">
-                <table class="summary-words-table" style="width: 100%; border-collapse: collapse;">
-                  <thead style="background: rgba(52, 199, 89, 0.1); position: sticky; top: 0; z-index: 1;">
+          <!-- Khung chứa 2 phần: Từ đúng & Từ sai được đồng bộ 100% bố cục -->
+          <div class="summary-split-container">
+
+            <!-- Phần 1: Các từ đúng -->
+            <div class="summary-section-card summary-correct-card">
+              <div class="summary-section-header">
+                <span class="summary-section-title">
+                  <span class="summary-indicator indicator-correct"></span>
+                  Các từ đúng
+                </span>
+                <span class="summary-pill pill-correct" id="summary-count-correct">0 từ</span>
+              </div>
+              <div class="summary-table-wrapper">
+                <table class="summary-words-table">
+                  <thead>
                     <tr>
-                      <th style="width: 40px; padding: 10px; color: #34c759;">#</th>
-                      <th style="padding: 10px; text-align: left; color: #34c759;">Từ vựng & IPA</th>
-                      <th style="width: 90px; text-align: center; padding: 10px; color: #34c759;">Đã thuộc</th>
-                      <th style="width: 100px; text-align: center; padding: 10px; color: #34c759;">Chuyên sâu</th>
+                      <th class="col-idx">#</th>
+                      <th class="col-word">Từ vựng & IPA</th>
+                      <th class="col-status">Đã thuộc</th>
+                      <th class="col-action">Chuyên sâu</th>
                     </tr>
                   </thead>
                   <tbody id="summary-words-tbody">
@@ -603,10 +591,37 @@
               </div>
             </div>
 
+            <!-- Phần 2: Các từ sai -->
+            <div class="summary-section-card summary-wrong-card">
+              <div class="summary-section-header">
+                <span class="summary-section-title">
+                  <span class="summary-indicator indicator-wrong"></span>
+                  Các từ sai (cần ôn lại)
+                </span>
+                <span class="summary-pill pill-wrong" id="summary-count-wrong">0 từ</span>
+              </div>
+              <div class="summary-table-wrapper">
+                <table class="summary-words-table">
+                  <thead>
+                    <tr>
+                      <th class="col-idx">#</th>
+                      <th class="col-word">Từ vựng & IPA</th>
+                      <th class="col-status">Đã thuộc</th>
+                      <th class="col-action">Chuyên sâu</th>
+                    </tr>
+                  </thead>
+                  <tbody id="summary-wrong-words-tbody">
+                    <!-- Render các từ sai -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
-          <div style="display: flex; justify-content: center; gap: 14px; flex-shrink: 0; padding-bottom: 20px;">
-            <button class="btn btn-secondary" id="btn-restart-quiz">🔄 Luyện tập lại</button>
+          <!-- Thanh nút hành động ghim đáy thẻ: Luôn hiển thị cố định, không bị đẩy ra ngoài -->
+          <div class="summary-actions-bar">
+            <button type="button" class="btn btn-secondary" id="btn-restart-quiz">🔄 Luyện tập lại</button>
             <button type="button" class="btn btn-primary" id="btn-finish-study">Hoàn tất</button>
           </div>
         </div>
