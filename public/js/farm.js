@@ -1034,8 +1034,12 @@
 
     // Mở Quiz ngẫu nhiên khi cho vật nuôi ăn (Gà / Bò)
     openAnimalQuiz(animalType, animalId, feedCost) {
-      this.prepareFocusForMobile();
       const mode = this.getZoneQuizMode('poultry', 0);
+      if (mode !== 'choice') {
+        this.prepareFocusForMobile();
+      } else {
+        this.hideQuizKeyboard();
+      }
       const word = this.pickNextWord();
 
       this.activeQuiz = {
@@ -1354,6 +1358,131 @@
       document.querySelectorAll('.farm-sheet-backdrop').forEach(el => {
         el.classList.remove('active');
         el.style.opacity = '';
+      });
+    },
+
+    // === XÁC NHẬN THOÁT QUIZ NÔNG TRẠI (TRỪ 1 MÁU CÂY) ===
+    requestExitQuiz(sheetId) {
+      const isFruitQuiz = sheetId === 'farm-sheet-fruit-quiz';
+
+      if (!isFruitQuiz && !this.activeQuiz) {
+        document.getElementById(sheetId)?.classList.remove('active');
+        return;
+      }
+      if (isFruitQuiz && !this.activeTreeQuiz) {
+        document.getElementById(sheetId)?.classList.remove('active');
+        return;
+      }
+
+      // Tạm thời blur input để bàn phím hạ xuống trong khi hiển thị xác nhận
+      document.getElementById('farm-quiz-input')?.blur();
+      document.getElementById('farm-fruit-input')?.blur();
+      document.body.classList.remove('keyboard-open');
+
+      window.showConfirmDialog({
+        title: 'Thoát phiên chăm sóc?',
+        message: 'Nếu thoát bây giờ, cây sẽ bị trừ 1 máu (HP). Bạn có chắc chắn muốn thoát không?',
+        confirmText: 'Thoát (-1 máu)',
+        cancelText: 'Tiếp tục làm',
+        onConfirm: () => {
+          this.hideQuizKeyboard();
+
+          if (isFruitQuiz) {
+            const q = this.activeTreeQuiz;
+            if (q) {
+              const def = FRUIT_TREES[q.treeType];
+              const tree = this.state.treePlots.find(t => t.type === q.treeType);
+              if (tree && def) {
+                tree.hearts = Math.max(0, (tree.hearts || def.maxHp) - 1);
+                if (tree.hearts <= 0) {
+                  tree.hearts = def.maxHp;
+                  tree.cooldown = 5;
+                  if (window.showToast) {
+                    window.showToast(`🥀 Cây ${def.name} đã hết tim do thoát ngang! Hãy thử lại sau 5s.`);
+                  }
+                } else {
+                  if (window.showToast) {
+                    window.showToast(`💧 Đã thoát phiên tưới. Cây ${def.name} bị trừ 1 máu (còn ${tree.hearts}/${def.maxHp} ❤️).`);
+                  }
+                }
+              }
+            }
+            this.activeTreeQuiz = null;
+            document.getElementById('farm-sheet-fruit-quiz')?.classList.remove('active');
+            this.saveState();
+            this.render();
+          } else {
+            const q = this.activeQuiz;
+            if (q) {
+              if (q.isWaterAll) {
+                let count = 0;
+                (q.waterablePlotIds || []).forEach(plotId => {
+                  const plot = this.state.plots.find(p => p.id === plotId);
+                  if (plot) {
+                    plot.hp -= 1;
+                    if (plot.hp <= 0) {
+                      plot.state = 'withered';
+                      if (plot.worm) plot.worm = null;
+                    }
+                    count++;
+                  }
+                });
+                this.saveState();
+                this.render();
+                if (window.showToast) {
+                  window.showToast(`💧 Đã thoát phiên tưới tất cả. ${count} cây bị trừ 1 máu!`);
+                }
+              } else if (!q.isAnimal && q.plotId) {
+                const plot = this.state.plots.find(p => p.id === q.plotId);
+                const crop = CROP_TYPES[q.cropType];
+                if (plot) {
+                  plot.hp -= 1;
+                  if (plot.hp <= 0) {
+                    plot.state = 'withered';
+                    if (plot.worm) plot.worm = null;
+                    this.saveState();
+                    this.render();
+                    if (window.showToast) {
+                      window.showToast(`🥀 Rất tiếc, cây ${crop ? crop.name : ''} đã héo chết do hết máu!`);
+                    }
+                  } else {
+                    this.saveState();
+                    this.render();
+                    if (window.showToast) {
+                      window.showToast(`💧 Đã thoát phiên chăm sóc. Cây ${crop ? crop.name : ''} bị trừ 1 máu (còn ${plot.hp} HP)!`);
+                    }
+                  }
+                }
+              } else if (q.isAnimal) {
+                if (window.showToast) {
+                  window.showToast('Đã thoát phiên cho vật nuôi ăn.');
+                }
+              }
+            }
+            this.activeQuiz = null;
+            document.getElementById('farm-sheet-quiz')?.classList.remove('active');
+            this.saveState();
+            this.render();
+          }
+        },
+        onCancel: () => {
+          // Tiếp tục làm: Giữ nguyên thẻ, focus lại ô input nếu đang ở dạng điền từ
+          if (!isFruitQuiz) {
+            const q = this.activeQuiz;
+            if (q && q.mode !== 'choice') {
+              const inp = document.getElementById('farm-quiz-input');
+              const typingContainer = document.getElementById('farm-quiz-typing-container');
+              if (inp && typingContainer && typingContainer.style.display !== 'none') {
+                inp.focus({ preventScroll: true });
+              }
+            }
+          } else {
+            const inp = document.getElementById('farm-fruit-input');
+            if (inp && inp.style.display !== 'none') {
+              inp.focus({ preventScroll: true });
+            }
+          }
+        }
       });
     },
 
@@ -1734,8 +1863,12 @@
         return;
       }
 
-      this.prepareFocusForMobile();
       const mode = this.getZoneQuizMode('crops', 0);
+      if (mode !== 'choice') {
+        this.prepareFocusForMobile();
+      } else {
+        this.hideQuizKeyboard();
+      }
       const word = this.pickNextWord();
 
       this.activeQuiz = {
@@ -2233,7 +2366,6 @@
     // QUIZ TƯỚI CÂY & BẮT SÂU
     // =========================================================================
     openQuiz(plotId, isWormQuiz = false) {
-      this.prepareFocusForMobile();
       const plot = this.state.plots.find(p => p.id === plotId);
       if (!plot) return;
 
@@ -2241,6 +2373,11 @@
 
       // Lấy dạng quiz từ cài đặt riêng cho Vườn Nông Sản (có hỗ trợ ngẫu nhiên)
       const mode = this.getZoneQuizMode('crops', plot.stage);
+      if (mode !== 'choice') {
+        this.prepareFocusForMobile();
+      } else {
+        this.hideQuizKeyboard();
+      }
 
       // Bốc từ ngẫu nhiên trong danh sách từ đang học
       const word = this.pickNextWord();
@@ -4471,6 +4608,11 @@
       document.querySelectorAll('.farm-sheet-backdrop').forEach(backdrop => {
         backdrop.addEventListener('click', (e) => {
           if (e.target === backdrop) {
+            // KHÔNG tự đóng thẻ Quiz (Tưới cây, Bắt sâu, Cây ăn quả) khi bấm ra ngoài backdrop
+            // để bảo vệ dữ liệu và tránh bị mất thẻ khi gõ hoặc click input trên điện thoại
+            if (backdrop.classList.contains('farm-quiz-backdrop') || backdrop.id === 'farm-sheet-quiz' || backdrop.id === 'farm-sheet-fruit-quiz') {
+              return;
+            }
             backdrop.classList.remove('active');
           }
         });
@@ -4484,11 +4626,28 @@
         }, { passive: false });
       });
 
+      // Ngăn chặn sự kiện click bên trong thẻ Quiz nổi bọt ra ngoài backdrop
+      document.querySelectorAll('.farm-quiz-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+      });
+
       document.querySelectorAll('.farm-sheet-btn-close').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const backdrop = btn.closest('.farm-sheet-backdrop');
+          if (!backdrop) return;
+
+          // Nếu là thẻ Quiz: Chỉ khi nhấn X mới hiển thị xác nhận và trừ 1 máu cây khi thoát
+          if (backdrop.classList.contains('farm-quiz-backdrop') || backdrop.id === 'farm-sheet-quiz' || backdrop.id === 'farm-sheet-fruit-quiz') {
+            this.requestExitQuiz(backdrop.id);
+            return;
+          }
+
           document.getElementById('farm-quiz-input')?.blur();
           document.body.classList.remove('keyboard-open');
-          btn.closest('.farm-sheet-backdrop')?.classList.remove('active');
+          backdrop.classList.remove('active');
         });
       });
 
@@ -4517,6 +4676,15 @@
         const inp = document.getElementById('farm-quiz-input');
         const typingContainer = document.getElementById('farm-quiz-typing-container');
         if (inp && typingContainer && typingContainer.style.display !== 'none') {
+          inp.focus({ preventScroll: true });
+        }
+      });
+
+      // Chạm vào thân quiz trái cây để kích hoạt focus mở lại bàn phím nếu vô tình bấm trượt ra ngoài
+      document.getElementById('farm-fruit-quiz-body')?.addEventListener('click', (e) => {
+        if (e.target.closest('button, .farm-quiz-opt-btn, .btn-audio')) return;
+        const inp = document.getElementById('farm-fruit-input');
+        if (inp && inp.style.display !== 'none') {
           inp.focus({ preventScroll: true });
         }
       });
@@ -4558,12 +4726,16 @@
         document.getElementById('farm-levelup-overlay')?.classList.remove('active');
       });
 
-      // 9. Phím ESC để đóng sheet hoặc đóng farm
+      // 9. Phím ESC để đóng sheet hoặc đóng farm (với quiz thì hỏi xác nhận)
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.isOpen) {
           const activeSheet = document.querySelector('.farm-sheet-backdrop.active');
           if (activeSheet) {
-            activeSheet.classList.remove('active');
+            if (activeSheet.classList.contains('farm-quiz-backdrop') || activeSheet.id === 'farm-sheet-quiz' || activeSheet.id === 'farm-sheet-fruit-quiz') {
+              this.requestExitQuiz(activeSheet.id);
+            } else {
+              activeSheet.classList.remove('active');
+            }
           } else {
             this.close();
           }
