@@ -1227,7 +1227,11 @@ class StudyManager {
   }
 
   handleTypingSubmit() {
-    if (this.waitingForTap) return;
+    // Nếu đang trong trạng thái chờ để sang câu tiếp theo -> chuyển câu ngay
+    if (this.waitingForTap) {
+      this.advanceToNextQuestion();
+      return;
+    }
 
     const input = document.getElementById('quiz-typing-input');
     // Chuẩn hóa: trim và loại bỏ khoảng trắng thừa ở giữa các từ
@@ -1235,11 +1239,6 @@ class StudyManager {
     const correctWord = this.currentQuizItem.word.word.trim().replace(/\s+/g, ' ').toLowerCase();
 
     const isCorrect = val === correctWord;
-    
-    // Chỉ khi trả lời sai mới ẩn bàn phím để người dùng quan sát đáp án rõ ràng
-    if (!isCorrect && input) {
-      input.blur();
-    }
 
     this.processAnswerResult(isCorrect, this.currentQuizItem.type);
   }
@@ -1331,8 +1330,11 @@ class StudyManager {
       feedbackBox.textContent = 'Chính xác';
 
     } else {
-      // Khi sai: ẩn bàn phím để nhìn đáp án
-      document.getElementById('quiz-typing-input')?.blur();
+      // Khi sai: Bàn phím vẫn không mất (không ẩn bàn phím) để người dùng có thể nhấn Enter sang câu tiếp theo
+      const input = document.getElementById('quiz-typing-input');
+      if (input) {
+        input.focus({ preventScroll: true });
+      }
 
       // QUY TẮC PHẠT MỚI: Reset tiến trình và bắt ôn lại theo config đã chọn
       progress.listeningCount = 0;
