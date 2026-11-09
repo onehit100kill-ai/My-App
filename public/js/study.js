@@ -52,6 +52,18 @@ class StudyManager {
 
   // === XỬ LÝ FOCUS ĐỒNG BỘ TRÊN MOBILE ===
   prepareFocusForMobile() {
+    // Chỉ kích hoạt trước bàn phím nếu cấu hình phiên học BẮT ĐẦU bằng câu điền từ hoặc nghe
+    const profile = this.currentStudyProfile || this.currentConfigProfile || 'all';
+    const conf = profile === 'intensive' 
+      ? this.intensiveSettings 
+      : (this.studySettings[profile] || this.studySettings['all'] || { listening: 1, typing: 1, choice: 1, ai: 1 });
+    const willStartWithTyping = ((conf.listening || 0) > 0) || ((conf.typing || 0) > 0);
+    if (!willStartWithTyping) {
+      // Khi câu chọn từ (trắc nghiệm) xuất hiện: Tuyệt đối KHÔNG hiển thị bàn phím
+      this.hideQuizKeyboard();
+      return;
+    }
+
     const modal = document.getElementById('modal-study-room');
     const input = document.getElementById('quiz-typing-input');
     const quizView = document.getElementById('view-quiz');
@@ -62,9 +74,28 @@ class StudyManager {
       modal.style.opacity = '0.01'; // Ẩn trực quan nhưng vẫn render để focus
       quizView.style.display = 'block';
       typingContainer.style.display = 'flex';
-      input.focus();
+      input.disabled = false;
+      input.readOnly = false;
+      input.focus({ preventScroll: true });
       input.click();
     }
+  }
+
+  // === ẨN BÀN PHÍM ẢO KHI VÀO CÂU CHỌN TỪ HOẶC RỜI CÂU ĐIỀN TỪ ===
+  hideQuizKeyboard() {
+    const input = document.getElementById('quiz-typing-input');
+    if (input) {
+      input.blur();
+      input.disabled = true;
+      input.readOnly = true;
+    }
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      document.activeElement.blur();
+    }
+    document.body.classList.remove('keyboard-open');
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
   }
 
   // === CÀI ĐẶT SỐ LẦN ÔN TẬP ===
@@ -586,6 +617,7 @@ class StudyManager {
     if (isCompleted) {
       this.clearSessionState();
       this.setWaitingForTap(false);
+      this.hideQuizKeyboard();
       const modal = document.getElementById('modal-study-room');
       if (modal) {
         modal.classList.remove('active');
@@ -602,6 +634,7 @@ class StudyManager {
       onConfirm: () => {
         this.clearSessionState();
         this.setWaitingForTap(false);
+        this.hideQuizKeyboard();
         const modal = document.getElementById('modal-study-room');
         if (modal) {
           modal.classList.remove('active');
@@ -619,11 +652,11 @@ class StudyManager {
       return;
     }
 
+    const profile = this.currentConfigProfile || 'all';
+    this.currentStudyProfile = profile;
     this.prepareFocusForMobile(); // Kích hoạt focus đồng bộ trước khi await
 
     try {
-      const profile = this.currentConfigProfile || 'all';
-      this.currentStudyProfile = profile;
       let status = 'all';
       if (profile === 'learned') status = 'learned';
       else if (profile === 'unlearned') status = 'unlearned';
@@ -642,7 +675,7 @@ class StudyManager {
         modal.classList.remove('active');
         modal.style.opacity = '';
       }
-      document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím
+      this.hideQuizKeyboard();
       
       let filterText = '';
       if (profile === 'learned') filterText = 'đã thuộc';
@@ -658,8 +691,8 @@ class StudyManager {
             confirmText: 'Ôn lại toàn bộ',
             cancelText: 'Hủy',
             onConfirm: async () => {
-              this.prepareFocusForMobile();
               this.currentStudyProfile = 'all'; // Tự động chuyển profile sang all để ôn
+              this.prepareFocusForMobile();
               const dayObj = await window.api.getDay(dayId);
               const title = dayObj.data ? dayObj.data.title : `Ngày ${dayId}`;
               this.openStudyRoom(resAll.data, `Ôn lại toàn bộ: ${title}`);
@@ -676,20 +709,19 @@ class StudyManager {
         modal.classList.remove('active');
         modal.style.opacity = '';
       }
-      document.getElementById('quiz-typing-input')?.blur();
+      this.hideQuizKeyboard();
       alert('Lỗi tải từ ôn tập: ' + err.message);
     }
   }
 
   // === BẮT ĐẦU HỌC CHUYÊN SÂU ===
   async startIntensiveStudy() {
+    this.studySettings['intensive'] = this.intensiveSettings;
+    this.currentStudyProfile = 'intensive'; 
     this.prepareFocusForMobile();
     try {
       const res = await window.api.getIntensiveWords();
       if (res.success && res.data.length > 0) {
-        // Set profile 'intensive' to bypass standard settings and use intensiveSettings
-        this.studySettings['intensive'] = this.intensiveSettings;
-        this.currentStudyProfile = 'intensive'; 
         this.openStudyRoom(res.data, '🔥 Ôn tập Chuyên Sâu');
       } else {
         const modal = document.getElementById('modal-study-room');
@@ -697,7 +729,7 @@ class StudyManager {
           modal.classList.remove('active');
           modal.style.opacity = '';
         }
-        document.getElementById('quiz-typing-input')?.blur();
+        this.hideQuizKeyboard();
         alert('Chưa có từ vựng nào trong danh sách chuyên sâu để ôn tập.');
       }
     } catch (err) {
@@ -706,7 +738,7 @@ class StudyManager {
         modal.classList.remove('active');
         modal.style.opacity = '';
       }
-      document.getElementById('quiz-typing-input')?.blur();
+      this.hideQuizKeyboard();
       alert('Lỗi tải từ chuyên sâu: ' + err.message);
     }
   }
@@ -814,7 +846,7 @@ class StudyManager {
           modal.classList.remove('active');
           modal.style.opacity = '';
         }
-        document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím
+        this.hideQuizKeyboard();
         
         let filterText = '';
         if (profile === 'learned') filterText = 'đã thuộc';
@@ -832,6 +864,7 @@ class StudyManager {
         modal.classList.remove('active');
         modal.style.opacity = '';
       }
+      this.hideQuizKeyboard();
       alert('Lỗi tải từ: ' + err.message);
     }
   }
@@ -1066,6 +1099,8 @@ class StudyManager {
       typingContainer.style.display = 'flex';
 
       const input = document.getElementById('quiz-typing-input');
+      input.disabled = false;
+      input.readOnly = false;
       input.value = '';
 
       // Tự động phát âm thanh
@@ -1094,6 +1129,8 @@ class StudyManager {
       typingContainer.style.display = 'flex';
 
       const input = document.getElementById('quiz-typing-input');
+      input.disabled = false;
+      input.readOnly = false;
       input.value = '';
 
       input.focus({ preventScroll: true });
@@ -1131,6 +1168,8 @@ class StudyManager {
       typingContainer.style.display = 'flex';
 
       const input = document.getElementById('quiz-typing-input');
+      input.disabled = false;
+      input.readOnly = false;
       input.value = '';
 
       input.focus({ preventScroll: true });
@@ -1140,11 +1179,11 @@ class StudyManager {
 
     } else {
       // Phần Chọn nghĩa: Hiện từ tiếng Anh, hiện phiên âm IPA và audio
+      // Khi câu chọn từ xuất hiện: Tuyệt đối KHÔNG hiển thị bàn phím
+      this.hideQuizKeyboard();
+
       if (promptContainer) promptContainer.style.display = 'flex';
       if (listeningContainer) listeningContainer.style.display = 'none';
-      
-      const input = document.getElementById('quiz-typing-input');
-      if (input) input.blur(); // Chắc chắn bàn phím ảo thụt xuống khi sang câu hỏi chọn nghĩa
 
       questionText.textContent = w.word;
       if (questionSubtext) {
@@ -1216,6 +1255,7 @@ class StudyManager {
       event.preventDefault();
       event.stopPropagation();
     }
+    this.hideQuizKeyboard();
     if (this.waitingForTap || this._choiceAnswered) return;
     this._choiceAnswered = true;
 
@@ -1337,10 +1377,17 @@ class StudyManager {
       feedbackBox.textContent = 'Chính xác';
 
     } else {
-      // Khi sai: Bàn phím vẫn không mất (không ẩn bàn phím) để người dùng có thể nhấn Enter sang câu tiếp theo
-      const input = document.getElementById('quiz-typing-input');
-      if (input) {
-        input.focus({ preventScroll: true });
+      // Khi sai: Bàn phím vẫn không mất (không ẩn bàn phím) đối với dạng điền từ để người dùng có thể nhấn Enter sang câu tiếp theo
+      if (isTypingMode) {
+        const input = document.getElementById('quiz-typing-input');
+        if (input) {
+          input.disabled = false;
+          input.readOnly = false;
+          input.focus({ preventScroll: true });
+        }
+      } else {
+        // Đối với câu trắc nghiệm (chọn từ) sai: Tuyệt đối KHÔNG hiển thị bàn phím
+        this.hideQuizKeyboard();
       }
 
       // QUY TẮC PHẠT MỚI: Reset tiến trình và bắt ôn lại theo config đã chọn
@@ -1401,8 +1448,7 @@ class StudyManager {
   showCompletionScreen() {
     this.clearSessionState();
     this.setWaitingForTap(false);
-    document.getElementById('quiz-typing-input')?.blur();
-    document.body.classList.remove('keyboard-open');
+    this.hideQuizKeyboard();
 
     // Phát nhạc chúc mừng "teo tèo teo téo teooo" vui nhộn khi giao diện xuất hiện
     this.playVictoryFanfare();
