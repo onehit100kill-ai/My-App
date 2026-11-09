@@ -2548,12 +2548,6 @@
         if (audioBtn) audioBtn.style.display = 'none';
         if (typingContainer) typingContainer.style.display = 'flex';
 
-        if (questionText) questionText.textContent = '⚡ Groq AI đang tạo câu đố...';
-        if (questionSubtext) {
-          questionSubtext.style.display = 'block';
-          questionSubtext.textContent = `Tạo ngữ cảnh cho từ "${q.word.word}"`;
-        }
-
         if (input) {
           input.value = '';
           input.placeholder = 'Điền từ còn thiếu vào chỗ trống...';
@@ -2562,27 +2556,48 @@
           requestAnimationFrame(() => input.focus({ preventScroll: true }));
         }
 
-        try {
-          const aiRes = await window.api.generateAiSentence(q.word.word, q.word.meaning);
-          const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
-          if (aiRes && aiRes.success && sentence) {
-            const hint = aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || q.word.meaning;
-            const masked = sentence.replace(
-              new RegExp(q.word.word, 'gi'),
-              '<span style="color: var(--accent-blue, #38bdf8); text-decoration: underline; font-weight: 700;">_____</span>'
-            );
-            if (questionText) questionText.innerHTML = masked;
-            if (questionSubtext) {
-              questionSubtext.style.display = 'block';
-              questionSubtext.textContent = `💡 Gợi ý nghĩa: ${hint}`;
-            }
-          } else {
-            throw new Error(aiRes?.message || 'Không sinh được câu');
+        // 1. Ưu tiên lấy ngẫu nhiên 1 trong 5 câu đã lưu sẵn trong CSDL
+        if (Array.isArray(q.word.aiQuestions) && q.word.aiQuestions.length > 0) {
+          const randItem = q.word.aiQuestions[Math.floor(Math.random() * q.word.aiQuestions.length)];
+          const masked = (randItem.sentence || '').replace(
+            /_____/g,
+            '<span style="color: var(--accent-blue, #38bdf8); text-decoration: underline; font-weight: 700;">_____</span>'
+          );
+          if (questionText) questionText.innerHTML = masked;
+          if (questionSubtext) {
+            questionSubtext.style.display = 'block';
+            questionSubtext.textContent = `💡 Gợi ý nghĩa: ${randItem.hint || q.word.meaning}`;
           }
-        } catch (e) {
-          console.warn('Lỗi gọi AI, fallback sang điền từ cơ bản:', e);
-          if (questionText) questionText.textContent = q.word.meaning;
-          if (questionSubtext) questionSubtext.style.display = 'none';
+        } else {
+          // 2. Nếu chưa có sẵn, gọi API để tạo câu (API sẽ tự động lưu 5 câu vào CSDL)
+          if (questionText) questionText.textContent = '⚡ Groq AI đang tạo câu đố...';
+          if (questionSubtext) {
+            questionSubtext.style.display = 'block';
+            questionSubtext.textContent = `Tạo ngữ cảnh cho từ "${q.word.word}"`;
+          }
+
+          try {
+            const aiRes = await window.api.generateAiSentence(q.word.word, q.word.meaning);
+            const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
+            if (aiRes && aiRes.success && sentence) {
+              const hint = aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || q.word.meaning;
+              const masked = sentence.replace(
+                /_____/g,
+                '<span style="color: var(--accent-blue, #38bdf8); text-decoration: underline; font-weight: 700;">_____</span>'
+              );
+              if (questionText) questionText.innerHTML = masked;
+              if (questionSubtext) {
+                questionSubtext.style.display = 'block';
+                questionSubtext.textContent = `💡 Gợi ý nghĩa: ${hint}`;
+              }
+            } else {
+              throw new Error(aiRes?.message || 'Không sinh được câu');
+            }
+          } catch (e) {
+            console.warn('Lỗi gọi AI, fallback sang điền từ cơ bản:', e);
+            if (questionText) questionText.textContent = q.word.meaning;
+            if (questionSubtext) questionSubtext.style.display = 'none';
+          }
         }
 
         if (input) {
@@ -3912,52 +3927,86 @@
       let quizHtml = '';
 
       if (mode === 'ai') {
-        bodyEl.innerHTML = `
-          <div class="farm-quiz-prompt-card" style="padding: 24px 16px; text-align: center;">
-            <div style="font-size: 28px; margin-bottom: 6px;">⚡</div>
-            <div style="font-size: 0.95rem; color: #f59e0b; font-weight: 700;">Groq AI đang tạo câu đố cho Cây ${def.name}...</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Ngữ cảnh cho từ "${currentWord.word}"</div>
-          </div>
-        `;
-        sheet.classList.add('active');
+        let aiData = null;
+        if (Array.isArray(currentWord.aiQuestions) && currentWord.aiQuestions.length > 0) {
+          const randItem = currentWord.aiQuestions[Math.floor(Math.random() * currentWord.aiQuestions.length)];
+          aiData = {
+            sentence: randItem.sentence,
+            hint: randItem.hint || currentWord.meaning,
+            provider: 'Database'
+          };
+        }
 
-        try {
-          const aiRes = await window.api.generateAiSentence(currentWord.word, currentWord.meaning);
-          const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
-          if (aiRes && aiRes.success && sentence) {
-            const aiData = {
-              sentence: sentence,
-              hint: aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || currentWord.meaning,
-              provider: aiRes?.provider || aiRes?.data?.provider || 'Groq'
-            };
-            const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
-            quizHtml = `
-              <div class="farm-quiz-prompt-card">
-                <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 700;">${providerTag}:</span>
-                <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
-                  "${aiData.sentence}"
-                </div>
-                ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
-              </div>
-              <div style="margin-top: 14px;">
-                <input type="text" id="farm-fruit-input" class="form-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
-              </div>
-              <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
-            `;
-          } else {
-            throw new Error('AI generation failed');
-          }
-        } catch (e) {
+        if (aiData) {
+          const providerTag = '⚡ AI';
           quizHtml = `
             <div class="farm-quiz-prompt-card">
-              <div class="farm-quiz-prompt-meaning">${this.escapeHtml(currentWord.meaning)}</div>
-              ${currentWord.example ? `<div class="farm-quiz-prompt-example">"${this.escapeHtml(currentWord.example)}"</div>` : ''}
+              <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 700;">${providerTag}:</span>
+              <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
+                "${aiData.sentence}"
+              </div>
+              ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
             </div>
             <div style="margin-top: 14px;">
-              <input type="text" id="farm-fruit-input" class="form-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+              <input type="text" id="farm-fruit-input" class="form-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
             </div>
             <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
           `;
+          bodyEl.innerHTML = quizHtml;
+          sheet.classList.add('active');
+          const fruitInput = document.getElementById('farm-fruit-input');
+          fruitInput?.focus({ preventScroll: true });
+        } else {
+          bodyEl.innerHTML = `
+            <div class="farm-quiz-prompt-card" style="padding: 24px 16px; text-align: center;">
+              <div style="font-size: 28px; margin-bottom: 6px;">⚡</div>
+              <div style="font-size: 0.95rem; color: #f59e0b; font-weight: 700;">Groq AI đang tạo câu đố cho Cây ${def.name}...</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Ngữ cảnh cho từ "${currentWord.word}"</div>
+            </div>
+          `;
+          sheet.classList.add('active');
+
+          try {
+            const aiRes = await window.api.generateAiSentence(currentWord.word, currentWord.meaning);
+            const sentence = aiRes?.data?.sentence || aiRes?.sentence || aiRes?.sentences?.[0]?.sentence;
+            if (aiRes && aiRes.success && sentence) {
+              const aiData = {
+                sentence: sentence,
+                hint: aiRes?.data?.hint || aiRes?.hint || aiRes?.sentences?.[0]?.hint || currentWord.meaning,
+                provider: aiRes?.provider || aiRes?.data?.provider || 'Groq'
+              };
+              const providerTag = aiData.provider ? `⚡ ${aiData.provider}` : '🤖 AI';
+              quizHtml = `
+                <div class="farm-quiz-prompt-card">
+                  <span style="font-size: 0.8rem; color: #f59e0b; font-weight: 700;">${providerTag}:</span>
+                  <div class="farm-quiz-question-word" style="font-size: 1.15rem; line-height: 1.5; color: #f1f5f9; margin: 8px 0; font-weight: 600;">
+                    "${aiData.sentence}"
+                  </div>
+                  ${aiData.hint ? `<div style="font-size: 0.82rem; color: #38bdf8; font-style: italic;">💡 Gợi ý nghĩa: ${aiData.hint}</div>` : ''}
+                </div>
+                <div style="margin-top: 14px;">
+                  <input type="text" id="farm-fruit-input" class="form-input" placeholder="Điền từ còn thiếu vào chỗ trống..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+                </div>
+                <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
+              `;
+            } else {
+              throw new Error('AI generation failed');
+            }
+          } catch (e) {
+            quizHtml = `
+              <div class="farm-quiz-prompt-card">
+                <div class="farm-quiz-prompt-meaning">${this.escapeHtml(currentWord.meaning)}</div>
+                ${currentWord.example ? `<div class="farm-quiz-prompt-example">"${this.escapeHtml(currentWord.example)}"</div>` : ''}
+              </div>
+              <div style="margin-top: 14px;">
+                <input type="text" id="farm-fruit-input" class="form-input" placeholder="Gõ từ tiếng Anh..." autocomplete="off" autocorrect="off" autocapitalize="none" enterkeyhint="go">
+              </div>
+              <button type="button" class="btn btn-primary" id="farm-fruit-submit-btn" style="margin-top: 14px; width: 100%; min-height: 44px;">Kiểm Tra</button>
+            `;
+          }
+          bodyEl.innerHTML = quizHtml;
+          const fruitInput = document.getElementById('farm-fruit-input');
+          fruitInput?.focus({ preventScroll: true });
         }
       } else if (mode === 'listening') {
         quizHtml = `

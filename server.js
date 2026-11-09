@@ -111,9 +111,28 @@ async function seedInitialData() {
   }
 }
 
+// Đảm bảo cấu trúc cột mới aiQuestions trên bảng Words
+async function ensureDatabaseSchema() {
+  try {
+    const dialect = sequelize.getDialect();
+    if (dialect === 'postgres') {
+      await sequelize.query('ALTER TABLE "Words" ADD COLUMN IF NOT EXISTS "aiQuestions" TEXT;');
+    } else {
+      const [cols] = await sequelize.query('PRAGMA table_info(Words);');
+      const hasAi = cols.some(c => c.name === 'aiQuestions');
+      if (!hasAi) {
+        await sequelize.query('ALTER TABLE Words ADD COLUMN aiQuestions TEXT;');
+      }
+    }
+  } catch (e) {
+    console.warn('[Database] Schema check notice:', e.message);
+  }
+}
+
 // Khởi động server sau khi đồng bộ Database
 sequelize.sync().then(async () => {
   console.log('[Database] Kết nối và đồng bộ cấu trúc bảng thành công.');
+  await ensureDatabaseSchema();
   await seedInitialData();
   await keyPool.syncKeysFromDatabase(GameState);
 

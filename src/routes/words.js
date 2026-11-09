@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
 const { Word, Day, Section } = require('../models');
+const { generateFiveSentencesForWord } = require('../services/aiService');
 
 // GET /api/words - Lấy danh sách từ theo dayId và trạng thái thuộc
 router.get('/', async (req, res) => {
@@ -166,6 +167,16 @@ router.post('/', async (req, res) => {
       isLearned: !!isLearned,
       isIntensive: req.body.isIntensive !== undefined ? !!req.body.isIntensive : false
     });
+
+    // Chuẩn bị trước 5 câu hỏi trong nền cho từ mới lưu vào CSDL
+    generateFiveSentencesForWord(newWord.word, newWord.meaning)
+      .then(async questions => {
+        if (Array.isArray(questions) && questions.length > 0) {
+          newWord.aiQuestions = questions;
+          await newWord.save();
+        }
+      })
+      .catch(e => console.warn('[Word Auto-AI] Lỗi tạo câu hỏi nền:', e.message));
 
     res.status(201).json({ success: true, data: newWord });
   } catch (error) {

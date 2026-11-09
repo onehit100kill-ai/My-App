@@ -741,11 +741,292 @@ async function fallbackToOpenRouter(word, meaning) {
   throw new Error('API Phụ 2 OpenRouter không thể tạo câu: ' + lastErr);
 }
 
+/**
+ * Kiểm tra và chuẩn hoá danh sách câu hỏi AI đảm bảo không bị lỗi ngữ pháp
+ */
+function validateGeneratedSentences(sentences, targetWord) {
+  if (!Array.isArray(sentences)) return [];
+  const cleanTarget = (targetWord || '').trim().toLowerCase();
+  if (!cleanTarget) return [];
+  const valid = [];
+
+  for (const item of sentences) {
+    if (!item || typeof item.sentence !== 'string') continue;
+    let sent = item.sentence.trim();
+
+    // Chuẩn hoá chỗ trống nếu AI dùng 3 gạch hoặc nhiều gạch
+    if (/_{3,}/.test(sent)) {
+      sent = sent.replace(/_{3,}/g, '_____');
+    }
+
+    // 1. Phải có đúng 1 chỗ trống "_____"
+    const blankMatches = sent.match(/_____/g);
+    if (!blankMatches || blankMatches.length !== 1) continue;
+
+    // 2. Từ mục tiêu không được xuất hiện ở ngoài chỗ trống (đảm bảo không bị lộ từ)
+    const withoutBlank = sent.replace(/_____/g, ' ');
+    const escapedWord = cleanTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
+    if (wordRegex.test(withoutBlank)) continue;
+
+    // 3. Đảm bảo ngữ pháp cơ bản: ít nhất 4 từ, bắt đầu bằng chữ hoa hoặc dấu ngoặc kép, kết thúc bằng dấu câu (. ? !)
+    const wordsInSent = sent.split(/\s+/).filter(Boolean);
+    if (wordsInSent.length < 4) continue;
+
+    // Viết hoa chữ cái đầu nếu chưa viết hoa
+    if (/^[a-z]/.test(sent)) {
+      sent = sent.charAt(0).toUpperCase() + sent.slice(1);
+    }
+    // Đảm bảo kết thúc bằng dấu chấm nếu thiếu
+    if (!/[.?!]"?$/.test(sent)) {
+      sent = sent + '.';
+    }
+
+    valid.push({
+      sentence: sent,
+      answer: targetWord.trim(),
+      hint: (item.hint || item.vietnamese || '').trim()
+    });
+  }
+
+  return valid;
+}
+
+/**
+ * Trích xuất danh sách câu hỏi theo từ vựng không phân biệt hoa thường
+ */
+function extractSentencesForWord(resultsMap, word) {
+  if (!resultsMap || typeof resultsMap !== 'object') return [];
+  const clean = (word || '').toLowerCase().trim();
+  if (Array.isArray(resultsMap[word])) return resultsMap[word];
+  if (Array.isArray(resultsMap[clean])) return resultsMap[clean];
+  for (const k of Object.keys(resultsMap)) {
+    if (k.toLowerCase().trim() === clean && Array.isArray(resultsMap[k])) {
+      return resultsMap[k];
+    }
+  }
+  return [];
+}
+
+/**
+ * Fallback sinh câu hàng loạt bằng Google Gemini Flash
+ */
+async function generateBatchWithGemini(cleanList, promptSystem, promptUser) {
+  if (!process.env.GEMINI_API_KEY) return {};
+  const geminiModels = [
+    process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-2.5-flash'
+  ];
+
+  const fullPrompt = `${promptSystem}\n\nTask:\n${promptUser}`;
+
+  for (const m of geminiModels) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.5,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!res.ok) continue;
+      const data = await res.json();
+      const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (txt) {
+        const cleanJson = txt.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        const resultsMap = parsed.results || parsed;
+        const validatedResults = {};
+        for (const item of cleanList) {
+          const raw = extractSentencesForWord(resultsMap, item.word);
+          const valid = validateGeneratedSentences(raw, item.word);
+          if (valid.length > 0) validatedResults[item.word] = valid;
+        }
+        return validatedResults;
+      }
+    } catch (e) { }
+  }
+  return {};
+}
+
+/**
+ * Fallback sinh câu hàng loạt bằng OpenRouter
+ */
+async function generateBatchWithOpenRouter(cleanList, promptSystem, promptUser) {
+  if (!process.env.OPENROUTER_API_KEY) return {};
+  const model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct';
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: promptSystem },
+          { role: 'user', content: promptUser }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.5
+      })
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    if (content) {
+      const parsed = JSON.parse(content.replace(/```json/gi, '').replace(/```/g, '').trim());
+      const resultsMap = parsed.results || parsed;
+      const validatedResults = {};
+      for (const item of cleanList) {
+        const raw = extractSentencesForWord(resultsMap, item.word);
+        const valid = validateGeneratedSentences(raw, item.word);
+        if (valid.length > 0) validatedResults[item.word] = valid;
+      }
+      return validatedResults;
+    }
+  } catch (e) { }
+  return {};
+}
+
+/**
+ * Sinh đồng loạt 5 câu hỏi điền từ theo nhóm từ (Batch 1-5 từ)
+ */
+async function generateSentencesForWordBatch(wordsList) {
+  const cleanList = (wordsList || []).filter(w => w && w.word && w.word.trim());
+  if (cleanList.length === 0) return {};
+
+  const promptSystem = `You are an expert Cambridge/Oxford English educator and lexicographer.
+For each vocabulary word provided, create exactly 5 diverse, natural, grammatically flawless English fill-in-the-blank sentences (everyday A2-B1 level).
+Strict Rules:
+1. Replace the target word in each sentence with exactly "_____".
+2. The target word must NOT appear anywhere else in that sentence.
+3. Every sentence must follow 100% correct English grammar, collocations, prepositions, and punctuation.
+4. Provide a clear, natural Vietnamese translation for each sentence as a hint.
+5. Sentences for the same word must vary in sentence structure and context.
+6. Return strictly a JSON object:
+{
+  "results": {
+    "word": [
+      {
+        "sentence": "She was _____ about her upcoming interview.",
+        "answer": "word",
+        "hint": "Cô ấy tự tin về buổi phỏng vấn sắp tới."
+      }
+    ]
+  }
+}`;
+
+  const promptUser = JSON.stringify(cleanList.map(w => ({ word: w.word.trim(), meaning: (w.meaning || '').trim() })));
+
+  const maxAttempts = Math.max(1, keyPool.keys.length) * GROQ_MODELS.length;
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    const apiKey = keyPool.getAvailableKey();
+    if (!apiKey) break;
+
+    const model = GROQ_MODELS[(attempts - 1) % GROQ_MODELS.length];
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: promptSystem },
+            { role: 'user', content: promptUser }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.5
+        })
+      });
+
+      if (res.status === 429) {
+        const retryHeader = res.headers.get('retry-after');
+        const retrySec = retryHeader ? parseInt(retryHeader, 10) : null;
+        keyPool.markExhausted(apiKey, retrySec);
+        continue;
+      }
+
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content || '';
+      if (rawText) {
+        const cleanJsonStr = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJsonStr);
+        const resultsMap = parsed.results || parsed;
+
+        const validatedResults = {};
+        for (const item of cleanList) {
+          const rawSentences = extractSentencesForWord(resultsMap, item.word);
+          const valid = validateGeneratedSentences(rawSentences, item.word);
+          if (valid.length > 0) {
+            validatedResults[item.word] = valid;
+          }
+        }
+        if (Object.keys(validatedResults).length > 0) {
+          return validatedResults;
+        }
+      }
+    } catch (e) { }
+  }
+
+  // Fallback sang Gemini
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const geminiRes = await generateBatchWithGemini(cleanList, promptSystem, promptUser);
+      if (Object.keys(geminiRes).length > 0) return geminiRes;
+    } catch (e) { }
+  }
+
+  // Fallback sang OpenRouter
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      const openRouterRes = await generateBatchWithOpenRouter(cleanList, promptSystem, promptUser);
+      if (Object.keys(openRouterRes).length > 0) return openRouterRes;
+    } catch (e) { }
+  }
+
+  return {};
+}
+
+/**
+ * Sinh đúng 5 câu hỏi chuẩn cho 1 từ vựng
+ */
+async function generateFiveSentencesForWord(word, meaning) {
+  const cleanWord = (word || '').trim();
+  const cleanMeaning = (meaning || '').trim();
+  if (!cleanWord) return [];
+
+  const batchRes = await generateSentencesForWordBatch([{ word: cleanWord, meaning: cleanMeaning }]);
+  const found = batchRes[cleanWord] || batchRes[cleanWord.toLowerCase()];
+  if (Array.isArray(found) && found.length > 0) {
+    return found;
+  }
+  return [];
+}
+
 module.exports = {
   keyPool,
   generateSentenceWithGroq,
   generateAiLesson,
   fallbackToGemini,
-  fallbackToOpenRouter
+  fallbackToOpenRouter,
+  validateGeneratedSentences,
+  generateSentencesForWordBatch,
+  generateFiveSentencesForWord
 };
 

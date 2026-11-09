@@ -1145,13 +1145,26 @@ class StudyManager {
       if (listeningContainer) listeningContainer.style.display = 'none';
 
       let sentenceText = '';
-      if (this.aiData && Array.isArray(this.aiData.sentences)) {
+      let hintText = w.meaning;
+
+      // 1. Ưu tiên lấy ngẫu nhiên 1 trong 5 câu đã chuẩn bị sẵn trong CSDL
+      if (Array.isArray(w.aiQuestions) && w.aiQuestions.length > 0) {
+        const randQ = w.aiQuestions[Math.floor(Math.random() * w.aiQuestions.length)];
+        if (randQ && randQ.sentence) {
+          sentenceText = randQ.sentence;
+          if (randQ.hint) hintText = randQ.hint;
+        }
+      }
+
+      // 2. Nếu từ chưa có sẵn trong CSDL, lấy từ this.aiData phiên học hiện tại
+      if (!sentenceText && this.aiData && Array.isArray(this.aiData.sentences)) {
         const found = this.aiData.sentences.find(s => 
           (s.word && s.word.trim().toLowerCase() === w.word.trim().toLowerCase()) ||
           (s.answer && s.answer.trim().toLowerCase() === w.word.trim().toLowerCase())
         );
         if (found && found.sentence) {
           sentenceText = found.sentence;
+          if (found.hint) hintText = found.hint;
         }
       }
 
@@ -1163,7 +1176,7 @@ class StudyManager {
       } else if (this._aiLoading) {
         questionText.innerHTML = '<span style="color: var(--accent-cyan); font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">⏳ AI đang tạo câu đố theo ngữ cảnh...</span>';
       } else {
-        // AI chưa tạo hoặc danh sách bài học chưa có từ này -> Tạo ngay theo yêu cầu qua API
+        // AI chưa tạo hoặc danh sách bài học chưa có từ này -> Tạo ngay theo yêu cầu qua API (lưu 5 câu vào CSDL)
         questionText.innerHTML = '<span style="color: var(--accent-cyan); font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">⏳ AI đang tạo câu đố theo ngữ cảnh...</span>';
         const currentWordId = w.id;
         window.api.generateAiSentence(w.word, w.meaning)
@@ -1175,13 +1188,17 @@ class StudyManager {
               this.aiData.sentences.push({
                 word: w.word,
                 answer: w.word,
-                sentence: genSentence
+                sentence: genSentence,
+                hint: res?.hint || res?.data?.hint || w.meaning
               });
               if (this.currentQuizItem && this.currentQuizItem.type === 'ai' && this.currentQuizItem.word.id === currentWordId) {
                 questionText.innerHTML = genSentence.replace(
                   /_____/g,
                   '<span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>'
                 );
+                if (questionSubtext && (res?.hint || res?.data?.hint)) {
+                  questionSubtext.textContent = `💡 Gợi ý nghĩa: ${res.hint || res.data.hint}`;
+                }
               }
             } else {
               if (this.currentQuizItem && this.currentQuizItem.type === 'ai' && this.currentQuizItem.word.id === currentWordId) {
@@ -1199,7 +1216,7 @@ class StudyManager {
 
       if (questionSubtext) {
         questionSubtext.style.display = 'block';
-        questionSubtext.textContent = `💡 Nghĩa tiếng Việt: ${w.meaning}`;
+        questionSubtext.textContent = `💡 Gợi ý nghĩa: ${hintText}`;
       }
       audioBtn.style.display = 'none';
 
