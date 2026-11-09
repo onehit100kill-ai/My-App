@@ -1372,16 +1372,31 @@ input:checked + .ios-slider:before {
 }
 
 /* ==========================================================================
-   Study Modal: Full Screen Experience
+   Study Modal: Tách riêng từng thẻ với class CSS độc lập
    ========================================================================== */
 .study-modal-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 1. THẺ HỌC CHÍNH (Study Quiz Card - Trắc nghiệm, Điền từ, Nghe) */
+.study-quiz-card {
+  max-width: 860px;
+  width: 92%;
+  height: 85vh;
+  min-height: 480px;
+  max-height: min(88vh, 760px);
+  margin: auto;
+}
+
+/* 2. THẺ THÔNG BÁO CUỐI (Study Summary Card - Tổng kết kết quả hoàn thành) */
+.study-summary-card {
   max-width: 880px;
   width: 94%;
   height: 92vh;
   min-height: 560px;
   max-height: min(94vh, 920px);
-  display: flex;
-  flex-direction: column;
+  margin: auto;
 }
 
 .study-modal-card .modal-body {
@@ -2369,12 +2384,22 @@ input:checked + .ios-slider:before {
     grid-template-columns: 1fr;
   }
 
-  .study-modal-card {
+  .study-quiz-card {
+    height: 88vh;
+    height: 88dvh;
+    max-height: 90vh;
+    max-height: 90dvh;
+    min-height: 440px;
+    width: 96%;
+  }
+
+  .study-summary-card {
     height: 95vh;
     height: 95dvh;
     max-height: 96vh;
     max-height: 96dvh;
     min-height: 520px;
+    width: 96%;
   }
 
   .study-header-bar {
@@ -2605,8 +2630,18 @@ input:checked + .ios-slider:before {
     color: #ffffff;
   }
 
-  /* Tối ưu hóa Giao diện Ôn Tập trên Điện Thoại (iPhone 12 Pro Max) */
-  .study-modal-card {
+  /* Tối ưu hóa riêng từng thẻ trên Điện Thoại (iPhone 12 Pro Max & Mobile) */
+  .study-quiz-card {
+    height: auto;
+    min-height: 380px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    margin: auto;
+    width: 100%;
+    border-radius: var(--radius-xl);
+  }
+
+  .study-summary-card {
     height: 94vh;
     height: 94dvh;
     min-height: 520px;

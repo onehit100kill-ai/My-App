@@ -876,6 +876,13 @@ class StudyManager {
 
     document.getElementById('view-congrats').style.display = 'none';
     document.getElementById('view-quiz').style.display = 'block';
+
+    // Đảm bảo thẻ học chính dùng đúng class chuyên biệt study-quiz-card
+    const studyCard = document.querySelector('.study-modal-card') || document.getElementById('study-room-card');
+    if (studyCard) {
+      studyCard.classList.remove('study-summary-card');
+      studyCard.classList.add('study-quiz-card');
+    }
   }
 
   // Cập nhật thanh tiến độ theo số lần hoàn thành mục tiêu cài đặt
@@ -1407,6 +1414,13 @@ class StudyManager {
       if (congratsView) {
         congratsView.style.display = 'flex';
         congratsView.style.flexDirection = 'column';
+      }
+
+      // Chuyển thẻ sang class chuyên biệt study-summary-card để nới rộng không gian cho thẻ con
+      const studyCard = document.querySelector('.study-modal-card') || document.getElementById('study-room-card');
+      if (studyCard) {
+        studyCard.classList.remove('study-quiz-card');
+        studyCard.classList.add('study-summary-card');
       }
 
       const fill = document.getElementById('study-progress-fill');

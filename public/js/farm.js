@@ -1332,8 +1332,9 @@
         sheet.classList.add('active');
         sheet.style.opacity = '0.01';
         typingContainer.style.display = 'flex';
-        input.focus();
+        input.focus({ preventScroll: true });
         input.click();
+        requestAnimationFrame(() => input.focus({ preventScroll: true }));
       }
     },
 
