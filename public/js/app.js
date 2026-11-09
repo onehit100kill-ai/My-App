@@ -32,7 +32,16 @@ window.showToast = function(message, duration = 2500) {
     document.body.appendChild(toast);
   }
 
-  toast.textContent = message;
+  // Chuẩn hóa icon tiền xu khớp 100% với HUD tổng số tiền
+  const coinImgHtml = '<img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin" style="width: 18px; height: 18px; object-fit: contain; vertical-align: -3px; display: inline-block; margin: 0 2px;">';
+  let formatted = String(message || '');
+  if (formatted.includes('🪙')) {
+    formatted = formatted.replace(/🪙/g, coinImgHtml);
+  } else if (/(\d+)\s*vàng/i.test(formatted)) {
+    // Nếu trong thông báo có nhắc đến số vàng mà chưa có icon, tự động thêm icon đồng xu
+    formatted = formatted.replace(/(\d+\s*vàng)/gi, `$1 ${coinImgHtml}`);
+  }
+  toast.innerHTML = formatted;
   toast.style.transform = 'translateX(-50%) translateY(0)';
   toast.style.opacity = '1';
 

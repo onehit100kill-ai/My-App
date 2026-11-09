@@ -3273,7 +3273,7 @@
 
       const bonusStr = bonuses.join('<br>');
       if (titleEl) titleEl.textContent = `🎉 Lên Cấp ${lvl}!`;
-      if (descEl) descEl.innerHTML = `Bạn nhận được:<br><b style="color:#fbbf24;">+20 vàng</b><br>${bonusStr}`;
+      if (descEl) descEl.innerHTML = `Bạn nhận được:<br><b style="color:#fbbf24;">+20 vàng <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin" style="width:16px; height:16px; vertical-align:-2px; display:inline-block;"></b><br>${bonusStr}`;
 
       overlay.classList.add('active');
     },

@@ -510,12 +510,13 @@
         <div id="view-quiz" class="study-view-panel">
           <div class="quiz-container">
 
-            <!-- Container riêng cho phần Nghe điền từ -->
-            <div id="quiz-listening-container"
-              style="display: none; flex-direction: column; align-items: center; gap: 20px; padding: 30px 0;">
-              <button type="button" class="btn-audio" id="quiz-big-audio-btn"
-                style="width: 80px; height: 80px; font-size: 36px; border-radius: 50%; box-shadow: 0 4px 15px rgba(56,139,253,0.3);">🔊</button>
-              <div style="color: var(--text-secondary); font-size: 0.95rem;">Nghe và điền từ chính xác</div>
+            <!-- Container riêng cho phần Nghe điền từ: đồng bộ thẻ prompt giống hệt Điền từ -->
+            <div class="quiz-prompt-card quiz-listening-card" id="quiz-listening-container" style="display: none;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 14px;">
+                <button type="button" class="btn-audio" id="quiz-big-audio-btn"
+                  style="width: 48px; height: 48px; font-size: 22px; border-radius: 50%; box-shadow: 0 4px 14px rgba(56,139,253,0.35);">🔊</button>
+                <div style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 600;">Nghe và điền từ chính xác</div>
+              </div>
             </div>
 
             <!-- Container gốc cho Điền từ & Trắc nghiệm -->
@@ -1144,10 +1145,10 @@
         </div>
         <div class="farm-sheet-body" id="farm-quiz-body">
           <div class="quiz-container farm-quiz-container">
-            <!-- 1. Nghe điền từ -->
-            <div id="farm-quiz-listening-container" style="display: none; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0;">
-              <button type="button" class="btn-audio" id="farm-quiz-play-audio" style="width: 74px; height: 74px; font-size: 32px; border-radius: 50%;">🔊</button>
-              <div style="font-size: 0.85rem; color: var(--text-secondary);">Nghe và gõ từ chính xác</div>
+            <!-- 1. Nghe điền từ: đồng bộ thẻ prompt giống hệt Điền từ -->
+            <div class="farm-quiz-prompt-card farm-quiz-listening-card" id="farm-quiz-listening-container" style="display: none; align-items: center; justify-content: center; gap: 12px;">
+              <button type="button" class="btn-audio" id="farm-quiz-play-audio" style="width: 44px; height: 44px; font-size: 20px; border-radius: 50%;">🔊</button>
+              <div style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 600;">Nghe và gõ từ chính xác</div>
             </div>
 
             <!-- 2. Thẻ gợi ý câu hỏi (Điền từ & Trắc nghiệm & AI) -->
@@ -1489,7 +1490,7 @@
       <div class="farm-levelup-card">
         <div class="farm-levelup-icon">🌟</div>
         <div class="farm-levelup-title" id="farm-levelup-title">🎉 Lên Cấp!</div>
-        <div class="farm-levelup-desc" id="farm-levelup-desc">+2 ô đất mới, +20 vàng</div>
+        <div class="farm-levelup-desc" id="farm-levelup-desc">+2 ô đất mới, +20 vàng <img class="farm-coin-icon-img" src="assets/farm/coin.png" alt="coin" style="width:18px; height:18px; vertical-align:-3px; display:inline-block;"></div>
         <button type="button" class="btn btn-primary" id="farm-levelup-btn-continue"
           style="width: 100%; min-height: 44px;">Tiếp tục chăm sóc</button>
       </div>

@@ -1573,6 +1573,14 @@ body.keyboard-open .farm-quiz-card,
   gap: 8px;
 }
 
+.farm-quiz-listening-card {
+  min-height: 72px;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px;
+}
+
 .farm-quiz-question-word {
   font-size: 1.35rem;
   font-weight: 800;

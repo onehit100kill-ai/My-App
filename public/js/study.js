@@ -24,6 +24,7 @@ class StudyManager {
     this.currentQuizItem = null;
     this.waitingForTap = false;
     this.aiData = null; // Dữ liệu câu & bài đọc AI tải từ backend
+    this._aiLoading = false; // Trạng thái đang tải câu hỏi AI từ backend
 
     // Cài đặt số lần ôn tập theo 3 loại (mặc định ai = 1)
     this.studySettings = {
@@ -1143,21 +1144,59 @@ class StudyManager {
       if (promptContainer) promptContainer.style.display = 'flex';
       if (listeningContainer) listeningContainer.style.display = 'none';
 
-      let sentenceText = 'Please complete the sentence: _____';
+      let sentenceText = '';
       if (this.aiData && Array.isArray(this.aiData.sentences)) {
         const found = this.aiData.sentences.find(s => 
-          (s.word && s.word.toLowerCase() === w.word.toLowerCase()) ||
-          (s.answer && s.answer.toLowerCase() === w.word.toLowerCase())
+          (s.word && s.word.trim().toLowerCase() === w.word.trim().toLowerCase()) ||
+          (s.answer && s.answer.trim().toLowerCase() === w.word.trim().toLowerCase())
         );
         if (found && found.sentence) {
           sentenceText = found.sentence;
         }
       }
 
-      questionText.innerHTML = sentenceText.replace(
-        /_____/g, 
-        '<span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>'
-      );
+      if (sentenceText) {
+        questionText.innerHTML = sentenceText.replace(
+          /_____/g, 
+          '<span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>'
+        );
+      } else if (this._aiLoading) {
+        questionText.innerHTML = '<span style="color: var(--accent-cyan); font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">⏳ AI đang tạo câu đố theo ngữ cảnh...</span>';
+      } else {
+        // AI chưa tạo hoặc danh sách bài học chưa có từ này -> Tạo ngay theo yêu cầu qua API
+        questionText.innerHTML = '<span style="color: var(--accent-cyan); font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">⏳ AI đang tạo câu đố theo ngữ cảnh...</span>';
+        const currentWordId = w.id;
+        window.api.generateAiSentence(w.word, w.meaning)
+          .then(res => {
+            if (!this.aiData) this.aiData = { sentences: [] };
+            if (!Array.isArray(this.aiData.sentences)) this.aiData.sentences = [];
+            const genSentence = res?.sentence || res?.data?.sentence || res?.sentences?.[0]?.sentence;
+            if (genSentence) {
+              this.aiData.sentences.push({
+                word: w.word,
+                answer: w.word,
+                sentence: genSentence
+              });
+              if (this.currentQuizItem && this.currentQuizItem.type === 'ai' && this.currentQuizItem.word.id === currentWordId) {
+                questionText.innerHTML = genSentence.replace(
+                  /_____/g,
+                  '<span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>'
+                );
+              }
+            } else {
+              if (this.currentQuizItem && this.currentQuizItem.type === 'ai' && this.currentQuizItem.word.id === currentWordId) {
+                questionText.innerHTML = `Complete the sentence: <span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>`;
+              }
+            }
+          })
+          .catch(e => {
+            console.warn('Lỗi tạo câu AI đơn lẻ:', e);
+            if (this.currentQuizItem && this.currentQuizItem.type === 'ai' && this.currentQuizItem.word.id === currentWordId) {
+              questionText.innerHTML = `Complete the sentence: <span style="color: var(--accent-blue); text-decoration: underline; font-weight: 700;">_____</span>`;
+            }
+          });
+      }
+
       if (questionSubtext) {
         questionSubtext.style.display = 'block';
         questionSubtext.textContent = `💡 Nghĩa tiếng Việt: ${w.meaning}`;
@@ -1660,10 +1699,14 @@ class StudyManager {
 
   async loadAiDataForSession(wordsList) {
     this.aiData = null;
+    this._aiLoading = true;
     const btnReading = document.getElementById('btn-study-reading-passage');
     if (btnReading) btnReading.style.display = 'none';
 
-    if (!wordsList || wordsList.length === 0) return;
+    if (!wordsList || wordsList.length === 0) {
+      this._aiLoading = false;
+      return;
+    }
 
     try {
       const dayId = window.treeViewManager?.currentDayId || null;
@@ -1673,9 +1716,15 @@ class StudyManager {
         if (btnReading && res.passage) {
           btnReading.style.display = 'inline-flex';
         }
+        // Nếu hiện tại đang ở câu hỏi AI, tự động re-render để hiển thị câu hỏi AI vừa tạo
+        if (this.currentQuizItem && this.currentQuizItem.type === 'ai') {
+          this.renderQuizQuestion();
+        }
       }
     } catch (err) {
       console.warn('AI generate error (graceful fallback):', err);
+    } finally {
+      this._aiLoading = false;
     }
   }
 

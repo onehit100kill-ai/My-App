@@ -1379,14 +1379,30 @@ input:checked + .ios-slider:before {
   flex-direction: column;
 }
 
-/* 1. THẺ HỌC CHÍNH (Study Quiz Card - Trắc nghiệm, Điền từ, Nghe) */
+/* 1. THẺ HỌC CHÍNH (Study Quiz Card - Trắc nghiệm, Điền từ, Nghe)
+   Căn theo vị trí cao nhất thêm margin top 5% theo yêu cầu của người dùng */
+#modal-study-room.modal-backdrop {
+  align-items: flex-start !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
+}
+
+#modal-study-room .study-quiz-card,
 .study-quiz-card {
   max-width: 860px;
   width: 92%;
   height: 85vh;
   min-height: 480px;
-  max-height: min(88vh, 760px);
-  margin: auto;
+  max-height: min(85vh, 760px);
+  margin: 5% auto 0 auto !important;
+  align-self: flex-start !important;
+}
+
+/* Thẻ nghe nhìn tương tự thẻ điền từ (đồng bộ kích thước & vị trí) */
+.quiz-listening-card {
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 2. THẺ THÔNG BÁO CUỐI (Study Summary Card - Tổng kết kết quả hoàn thành) */
@@ -2631,14 +2647,30 @@ input:checked + .ios-slider:before {
   }
 
   /* Tối ưu hóa riêng từng thẻ trên Điện Thoại (iPhone 12 Pro Max & Mobile) */
+  #modal-study-room.modal-backdrop {
+    align-items: flex-start !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  body.keyboard-open #modal-study-room .study-quiz-card,
+  .modal-backdrop:has(input:focus) #modal-study-room .study-quiz-card,
+  #modal-study-room .study-quiz-card,
   .study-quiz-card {
     height: auto;
     min-height: 380px;
-    max-height: 90vh;
-    max-height: 90dvh;
-    margin: auto;
+    max-height: calc(90vh - 5%);
+    max-height: calc(90dvh - 5%);
+    margin: 5% auto 0 auto !important;
+    align-self: flex-start !important;
     width: 100%;
     border-radius: var(--radius-xl);
+  }
+
+  .quiz-listening-card {
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .study-summary-card {
