@@ -1375,11 +1375,11 @@ input:checked + .ios-slider:before {
    Study Modal: Full Screen Experience
    ========================================================================== */
 .study-modal-card {
-  max-width: 860px;
-  width: 92%;
-  height: 85vh;
-  min-height: 480px;
-  max-height: min(88vh, 760px);
+  max-width: 880px;
+  width: 94%;
+  height: 92vh;
+  min-height: 560px;
+  max-height: min(94vh, 920px);
   display: flex;
   flex-direction: column;
 }
@@ -1750,9 +1750,9 @@ input:checked + .ios-slider:before {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 420px;
+  min-height: 440px;
   max-height: 100%;
-  padding: 0;
+  padding: 4px 0 0 0;
   overflow: hidden;
 }
 
@@ -1817,7 +1817,7 @@ input:checked + .ios-slider:before {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
-  min-height: 140px;
+  min-height: 160px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   background: var(--bg-surface-elevated);
@@ -2370,8 +2370,11 @@ input:checked + .ios-slider:before {
   }
 
   .study-modal-card {
-    height: 94vh;
-    max-height: 94vh;
+    height: 95vh;
+    height: 95dvh;
+    max-height: 96vh;
+    max-height: 96dvh;
+    min-height: 520px;
   }
 
   .study-header-bar {
@@ -2604,9 +2607,11 @@ input:checked + .ios-slider:before {
 
   /* Tối ưu hóa Giao diện Ôn Tập trên Điện Thoại (iPhone 12 Pro Max) */
   .study-modal-card {
-    height: auto;
-    min-height: 360px;
-    max-height: 90vh;
+    height: 94vh;
+    height: 94dvh;
+    min-height: 520px;
+    max-height: 96vh;
+    max-height: 96dvh;
     margin: auto;
     width: 100%;
     border-radius: var(--radius-xl);

@@ -1392,6 +1392,7 @@ class StudyManager {
 
   // === 4. KHI ÔN TẬP XONG: HIỂN THỊ DANH SÁCH CÁC TỪ VỪA HỌC KÈM NÚT SỬA TRẠNG THÁI ===
   showCompletionScreen() {
+    this.clearSessionState();
     this.setWaitingForTap(false);
     document.getElementById('quiz-typing-input')?.blur();
     document.body.classList.remove('keyboard-open');
@@ -1414,11 +1415,7 @@ class StudyManager {
       const correctList = this.words.filter(w => !this.wrongWords || !this.wrongWords.has(w.id));
       const wrongList = this.words.filter(w => this.wrongWords && this.wrongWords.has(w.id));
 
-      // Cập nhật thống kê và badge số lượng
-      const badgeCorrect = document.getElementById('summary-badge-correct');
-      if (badgeCorrect) badgeCorrect.textContent = `✅ ${correctList.length} đúng`;
-      const badgeWrong = document.getElementById('summary-badge-wrong');
-      if (badgeWrong) badgeWrong.textContent = `❌ ${wrongList.length} cần ôn lại`;
+      // Cập nhật số lượng các từ đúng và cần ôn lại
       const countCorrect = document.getElementById('summary-count-correct');
       if (countCorrect) countCorrect.textContent = `${correctList.length} từ`;
       const countWrong = document.getElementById('summary-count-wrong');
