@@ -360,7 +360,12 @@ class StudyManager {
     });
 
     // Submit gõ từ chính tả
-    document.getElementById('btn-submit-typing')?.addEventListener('click', (e) => {
+    const submitBtn = document.getElementById('btn-submit-typing');
+    submitBtn?.addEventListener('pointerdown', (e) => {
+      // Giữ focus trên input để bàn phím ảo không bị thu lại khi chạm nút submit trên điện thoại
+      e.preventDefault();
+    });
+    submitBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.handleTypingSubmit();
     });
@@ -374,8 +379,8 @@ class StudyManager {
     });
 
     // Xử lý phím Enter trên ô gõ từ:
-    // 1. Chưa submit -> Enter để nộp bài
-    // 2. Đã có kết quả (waitingForTap) -> Enter để chuyển sang câu tiếp theo ngay lập tức (không cần dùng chuột)
+    // 1. Chưa submit -> Enter để nộp bài (nếu đúng thì sang câu tiếp ngay và không ẩn bàn phím)
+    // 2. Đã có kết quả sai (waitingForTap) -> Enter để chuyển sang câu tiếp theo
     document.getElementById('quiz-typing-input')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -383,7 +388,6 @@ class StudyManager {
         if (this.waitingForTap) {
           this.advanceToNextQuestion();
         } else {
-          document.getElementById('quiz-typing-input')?.blur(); // Ẩn bàn phím ảo trên điện thoại khi submit
           this.handleTypingSubmit();
         }
       }
@@ -1226,12 +1230,17 @@ class StudyManager {
     if (this.waitingForTap) return;
 
     const input = document.getElementById('quiz-typing-input');
-    if (input) input.blur(); // Ẩn bàn phím ảo trên điện thoại
     // Chuẩn hóa: trim và loại bỏ khoảng trắng thừa ở giữa các từ
-    const val = input.value.trim().replace(/\s+/g, ' ').toLowerCase();
+    const val = input ? input.value.trim().replace(/\s+/g, ' ').toLowerCase() : '';
     const correctWord = this.currentQuizItem.word.word.trim().replace(/\s+/g, ' ').toLowerCase();
 
     const isCorrect = val === correctWord;
+    
+    // Chỉ khi trả lời sai mới ẩn bàn phím để người dùng quan sát đáp án rõ ràng
+    if (!isCorrect && input) {
+      input.blur();
+    }
+
     this.processAnswerResult(isCorrect, this.currentQuizItem.type);
   }
 
@@ -1240,6 +1249,7 @@ class StudyManager {
     const wordObj = this.currentQuizItem.word;
     const progress = this.wordProgressMap.get(wordObj.id) || { listeningCount: 0, typingCount: 0, choiceCount: 0 };
     const conf = this.studySettings[this.currentStudyProfile];
+    const isTypingMode = type === 'typing' || type === 'listening' || type === 'ai';
 
     // Phát âm thanh NGAY LẬP TỨC để trình duyệt iOS ghi nhận đây là kết quả của user gesture.
     // Ngoại trừ phần nghe điền (listening) để tránh loạn âm với câu tiếp theo
@@ -1247,10 +1257,43 @@ class StudyManager {
       window.wordsManager.playPronunciation(wordObj.word, wordObj.audioUrl);
     }
 
-    // KHÔNG TỰ ĐỘNG THU GỌN BÀN PHÍM. 
-    // Cho phép người dùng giữ bàn phím để gõ Enter liên tục chuyển câu hoặc type tiếp.
-    // Nếu câu tiếp theo là chọn nghĩa (choice), bàn phím sẽ tự động thu ở renderQuizQuestion.
-    
+    // NẾU LÀ DẠNG ĐIỀN TỪ (typing/listening/ai) VÀ TRẢ LỜI ĐÚNG:
+    // Chuyển ngay sang câu tiếp theo, KHÔNG hiển thị đáp án và KHÔNG ẩn bàn phím
+    if (isTypingMode && isCorrect) {
+      if (feedbackBox) {
+        feedbackBox.style.display = 'none';
+        feedbackBox.textContent = '';
+      }
+
+      if (type === 'listening') {
+        progress.listeningCount = (progress.listeningCount || 0) + 1;
+        this.listeningQueue.shift();
+        if (progress.listeningCount < conf.listening) {
+          this.listeningQueue.push(wordObj);
+        }
+      } else if (type === 'typing') {
+        progress.typingCount = (progress.typingCount || 0) + 1;
+        this.typingQueue.shift();
+        if (progress.typingCount < conf.typing) {
+          this.typingQueue.push(wordObj);
+        }
+      } else {
+        progress.aiCount = (progress.aiCount || 0) + 1;
+        this.aiQueue.shift();
+        const targetAi = conf.ai !== undefined ? conf.ai : 1;
+        if (progress.aiCount < targetAi) {
+          this.aiQueue.push(wordObj);
+        }
+      }
+
+      this.updateProgressBar();
+      this.saveSessionState();
+
+      // Sang câu tiếp theo ngay lập tức, giữ bàn phím mở
+      this.advanceToNextQuestion();
+      return;
+    }
+
     feedbackBox.style.display = 'block';
 
     if (isCorrect) {
@@ -1288,6 +1331,9 @@ class StudyManager {
       feedbackBox.textContent = 'Chính xác';
 
     } else {
+      // Khi sai: ẩn bàn phím để nhìn đáp án
+      document.getElementById('quiz-typing-input')?.blur();
+
       // QUY TẮC PHẠT MỚI: Reset tiến trình và bắt ôn lại theo config đã chọn
       progress.listeningCount = 0;
       progress.typingCount = 0;
@@ -1345,6 +1391,8 @@ class StudyManager {
   // === 4. KHI ÔN TẬP XONG: HIỂN THỊ DANH SÁCH CÁC TỪ VỪA HỌC KÈM NÚT SỬA TRẠNG THÁI ===
   showCompletionScreen() {
     this.setWaitingForTap(false);
+    document.getElementById('quiz-typing-input')?.blur();
+    document.body.classList.remove('keyboard-open');
     
     // Cập nhật DOM nhanh gọn bằng requestAnimationFrame để không giật lag
     requestAnimationFrame(() => {

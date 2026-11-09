@@ -16,10 +16,10 @@ class GroqKeyPool {
 
   // Tải danh sách key từ biến môi trường
   reloadKeys() {
-    const rawKeys = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
+    const rawKeys = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ || '';
     const parsed = rawKeys
       .split(/[,;\n\s]+/)
-      .map(k => k.trim())
+      .map(k => k.trim().replace(/^["'`]+|["'`]+$/g, '').trim())
       .filter(k => k.startsWith('gsk_'));
 
     // Giữ lại các key mới không bị trùng
@@ -30,9 +30,108 @@ class GroqKeyPool {
     }
   }
 
+  // Đồng bộ và nạp key từ Cloud Database (Neon PostgreSQL) nếu môi trường online chưa cấu hình env
+  async syncKeysFromDatabase(GameState) {
+    try {
+      if (!GameState) return;
+
+      const envGroq = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').trim().replace(/^["'`]+|["'`]+$/g, '');
+      const envGemini = (process.env.GEMINI_API_KEY || '').trim().replace(/^["'`]+|["'`]+$/g, '');
+      const envOpenRouter = (process.env.OPENROUTER_API_KEY || '').trim().replace(/^["'`]+|["'`]+$/g, '');
+
+      let row = await GameState.findOne({ where: { key: 'system_ai_config' } });
+
+      if (envGroq || envGemini || envOpenRouter) {
+        // Nếu môi trường có cấu hình, lưu sao lưu lên Database Cloud để các client/worker khác cùng dùng
+        const payload = {
+          groqKeys: envGroq,
+          geminiKey: envGemini,
+          openRouterKey: envOpenRouter,
+          updatedAt: Date.now()
+        };
+
+        if (!row) {
+          await GameState.create({
+            key: 'system_ai_config',
+            slot: 'system',
+            gameType: 'config',
+            data: JSON.stringify(payload),
+            clientUpdatedAt: Date.now()
+          });
+        } else {
+          try {
+            const current = JSON.parse(row.data || '{}');
+            const merged = {
+              groqKeys: envGroq || current.groqKeys || '',
+              geminiKey: envGemini || current.geminiKey || '',
+              openRouterKey: envOpenRouter || current.openRouterKey || '',
+              updatedAt: Date.now()
+            };
+            row.data = JSON.stringify(merged);
+            row.clientUpdatedAt = Date.now();
+            await row.save();
+          } catch (e) { }
+        }
+      } else if (row && row.data) {
+        // Nếu môi trường chưa có key (ví dụ deploy Render chưa cấu hình Environment Variables):
+        // Tự động khôi phục key từ Cloud Database Neon PostgreSQL!
+        try {
+          const cfg = JSON.parse(row.data);
+          if (cfg.groqKeys && !process.env.GROQ_API_KEYS) {
+            process.env.GROQ_API_KEYS = cfg.groqKeys;
+          }
+          if (cfg.geminiKey && !process.env.GEMINI_API_KEY) {
+            process.env.GEMINI_API_KEY = cfg.geminiKey;
+          }
+          if (cfg.openRouterKey && !process.env.OPENROUTER_API_KEY) {
+            process.env.OPENROUTER_API_KEY = cfg.openRouterKey;
+          }
+          this.reloadKeys();
+          console.log('[AI Service] Đã tự động khôi phục cấu hình AI từ Cloud Database thành công!');
+        } catch (e) { }
+      }
+    } catch (err) {
+      console.warn('[AI Service] Không thể đồng bộ key từ DB:', err.message);
+    }
+  }
+
+  // Lưu thêm key vào Database để lưu trữ vĩnh viễn
+  async saveKeyToDatabase(newKey, GameState) {
+    try {
+      if (!GameState || !newKey) return;
+      let row = await GameState.findOne({ where: { key: 'system_ai_config' } });
+      let currentData = {};
+      if (row && row.data) {
+        try { currentData = JSON.parse(row.data); } catch (e) { }
+      }
+      const existingKeys = (currentData.groqKeys || '').split(/[,;\n\s]+/).filter(Boolean);
+      if (!existingKeys.includes(newKey)) {
+        existingKeys.push(newKey);
+      }
+      currentData.groqKeys = existingKeys.join(',');
+      currentData.updatedAt = Date.now();
+
+      if (!row) {
+        await GameState.create({
+          key: 'system_ai_config',
+          slot: 'system',
+          gameType: 'config',
+          data: JSON.stringify(currentData),
+          clientUpdatedAt: Date.now()
+        });
+      } else {
+        row.data = JSON.stringify(currentData);
+        row.clientUpdatedAt = Date.now();
+        await row.save();
+      }
+    } catch (e) {
+      console.warn('[AI Service] saveKeyToDatabase error:', e.message);
+    }
+  }
+
   // Thêm key trực tiếp trong lúc app đang chạy
   addKey(key) {
-    const cleanKey = (key || '').trim();
+    const cleanKey = (key || '').trim().replace(/^["'`]+|["'`]+$/g, '').trim();
     if (cleanKey.startsWith('gsk_') && !this.keys.includes(cleanKey)) {
       this.keys.push(cleanKey);
       this.keyCooldowns.delete(cleanKey); // Reset cooldown nếu add lại

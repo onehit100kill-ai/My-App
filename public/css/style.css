@@ -2093,7 +2093,17 @@ input:checked + .ios-slider:before {
     transform: scale(0.95);
   }
 
-  /* Khi hiển thị bàn phím ảo trên mobile: căn lại vị trí thẻ không bị đẩy cao lên trên */
+  /* Animation di chuyển thẻ khi bàn phím ảo xuất hiện / ẩn trong 0.4s */
+  @keyframes modalMoveUpKeyboard {
+    0% {
+      transform: translateY(220px);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  /* Khi hiển thị bàn phím ảo trên mobile: căn lại vị trí thẻ không bị đẩy cao lên trên và có animation 0.4s */
   body.keyboard-open .modal-backdrop,
   .modal-backdrop:has(input:focus) {
     align-items: flex-start !important;
@@ -2107,7 +2117,7 @@ input:checked + .ios-slider:before {
     margin: 0 auto !important;
     max-height: calc(100dvh - 12px) !important;
     align-self: flex-start !important;
-    transform: none !important;
+    animation: modalMoveUpKeyboard 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   body.keyboard-open .modal-card .quiz-container,

@@ -1,16 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const { keyPool, generateSentenceWithGroq, generateAiLesson } = require('../services/aiService');
+const { GameState } = require('../models');
 
 /**
  * GET /api/ai/status
  * Kiểm tra xem Groq API key đã được cấu hình hay chưa
  */
-router.get('/status', (req, res) => {
-  const status = keyPool.getStatus();
+router.get('/status', async (req, res) => {
+  let status = keyPool.getStatus();
+  if (status.totalKeys === 0 && GameState) {
+    await keyPool.syncKeysFromDatabase(GameState);
+    status = keyPool.getStatus();
+  }
+
+  const cleanGemini = (process.env.GEMINI_API_KEY || '').trim().replace(/^["'`]+|["'`]+$/g, '');
+  const cleanOpenRouter = (process.env.OPENROUTER_API_KEY || '').trim().replace(/^["'`]+|["'`]+$/g, '');
+
   const hasGroq = status.totalKeys > 0;
-  const hasGemini = !!process.env.GEMINI_API_KEY;
-  const hasOpenRouter = !!process.env.OPENROUTER_API_KEY;
+  const hasGemini = !!(cleanGemini && !cleanGemini.includes('your_gemini'));
+  const hasOpenRouter = !!(cleanOpenRouter && !cleanOpenRouter.includes('your_openrouter'));
 
   res.json({
     success: true,
@@ -26,12 +35,21 @@ router.get('/status', (req, res) => {
 
 /**
  * POST /api/ai/add-key
- * Thêm API key Groq phụ trực tiếp mà không cần khởi động lại server
+ * Thêm API key Groq phụ trực tiếp mà không cần khởi động lại server và lưu vào DB
  * Body: { key: "gsk_..." }
  */
-router.post('/add-key', (req, res) => {
-  const { key } = req.body;
-  if (!key || !key.startsWith('gsk_')) {
+router.post('/add-key', async (req, res) => {
+  let { key } = req.body;
+  if (!key) {
+    return res.status(400).json({
+      success: false,
+      message: 'Vui lòng cung cấp key Groq.'
+    });
+  }
+
+  key = String(key).trim().replace(/^["'`]+|["'`]+$/g, '').trim();
+
+  if (!key.startsWith('gsk_')) {
     return res.status(400).json({
       success: false,
       message: 'Key Groq không hợp lệ (cần bắt đầu bằng gsk_).'
@@ -39,11 +57,14 @@ router.post('/add-key', (req, res) => {
   }
 
   const added = keyPool.addKey(key);
+  if (GameState) {
+    await keyPool.saveKeyToDatabase(key, GameState);
+  }
   const status = keyPool.getStatus();
 
   return res.json({
     success: true,
-    message: added ? 'Đã thêm key Groq phụ thành công vào nhóm xoay vòng!' : 'Key này đã tồn tại trong danh sách.',
+    message: added ? 'Đã thêm key Groq thành công và lưu trữ đồng bộ trên Cloud!' : 'Key này đã tồn tại trong danh sách.',
     totalKeys: status.totalKeys,
     activeKeys: status.activeKeysCount
   });

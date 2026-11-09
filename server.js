@@ -3,7 +3,8 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const { sequelize, Section, Day, Word } = require('./src/models');
+const { sequelize, Section, Day, Word, GameState } = require('./src/models');
+const { keyPool } = require('./src/services/aiService');
 const sectionRoutes = require('./src/routes/sections');
 const dayRoutes = require('./src/routes/days');
 const wordRoutes = require('./src/routes/words');
@@ -114,6 +115,7 @@ async function seedInitialData() {
 sequelize.sync().then(async () => {
   console.log('[Database] Kết nối và đồng bộ cấu trúc bảng thành công.');
   await seedInitialData();
+  await keyPool.syncKeysFromDatabase(GameState);
 
   app.listen(PORT, () => {
     console.log(`\n==================================================`);
