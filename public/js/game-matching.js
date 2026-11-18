@@ -396,15 +396,13 @@
 
       // Hiển thị kết quả
       const finalTimeEl = document.getElementById('matching-final-time');
-      const finalMovesEl = document.getElementById('matching-final-moves');
       const bestRecordEl = document.getElementById('matching-best-record');
       const newRecordBadge = document.getElementById('matching-new-record-badge');
 
       if (finalTimeEl) finalTimeEl.textContent = this.formatTime(timeSec);
-      if (finalMovesEl) finalMovesEl.textContent = `${moves} lượt`;
 
       if (bestRecordEl && result.record) {
-        bestRecordEl.textContent = `${this.formatTime(result.record.timeSec)} (${result.record.moves} lượt)`;
+        bestRecordEl.textContent = this.formatTime(result.record.timeSec);
       }
 
       if (newRecordBadge) {
@@ -451,10 +449,8 @@
 
       if (!current) {
         isNewRecord = true;
-      } else {
-        if (timeSec < current.timeSec || (timeSec === current.timeSec && moves < current.moves)) {
-          isNewRecord = true;
-        }
+      } else if (timeSec < current.timeSec) {
+        isNewRecord = true;
       }
 
       if (isNewRecord) {

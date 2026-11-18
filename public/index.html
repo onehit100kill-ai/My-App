@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/farm.css">
-  <link rel="stylesheet" href="css/game-matching.css?v=2">
+  <link rel="stylesheet" href="css/game-matching.css?v=3">
 </head>
 
 <body>
@@ -1531,8 +1531,7 @@
         <span class="matching-topic-label" id="matching-topic-label">Đang tải...</span>
       </div>
       <div class="matching-hud-center">
-        <div class="matching-stat-chip">⏱️ <span id="matching-timer">00:00</span></div>
-        <div class="matching-stat-chip">🔄 <span id="matching-moves">0 lượt</span></div>
+        <div class="matching-stat-chip matching-timer-chip">⏱️ <span id="matching-timer">00:00</span></div>
       </div>
       <div class="matching-hud-right">
         <button type="button" class="matching-btn-icon" id="matching-btn-restart" title="Chơi lại">🔄</button>
@@ -1559,10 +1558,6 @@
             <span>⏱️ Thời gian:</span>
             <b id="matching-final-time">00:00</b>
           </div>
-          <div class="matching-record-row">
-            <span>🔄 Số lượt ghép:</span>
-            <b id="matching-final-moves">0 lượt</b>
-          </div>
           <div class="matching-record-row matching-best-row">
             <span>🏆 Kỷ lục tốt nhất:</span>
             <b id="matching-best-record">--:--</b>
@@ -1587,7 +1582,7 @@
   <script src="js/study.js?v=2"></script>
   <script src="js/app.js?v=2"></script>
   <script src="js/farm.js?v=1"></script>
-  <script src="js/game-matching.js?v=3"></script>
+  <script src="js/game-matching.js?v=4"></script>
 
 </body>
 
