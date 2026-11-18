@@ -16,7 +16,7 @@
     rel="stylesheet">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/farm.css">
   <link rel="stylesheet" href="css/game-matching.css?v=2">
 </head>
@@ -308,20 +308,20 @@
             </div>
 
             <!-- Phiên âm IPA & Nút phát âm (STT ẩn khi tạo từ mới vì tự động tăng) -->
-            <div class="form-row" style="margin-top: 10px; align-items: center;">
+            <div class="form-row form-row-ipa" style="display: block; width: 100%; margin-top: 10px;">
               <!-- Ẩn số thứ tự khi tạo từ vì tự động tăng -->
               <div class="form-group" id="word-order-group" style="display: none;">
                 <label class="form-label">Thứ tự (#)</label>
                 <input type="number" id="word-order-input" class="form-input" min="1" placeholder="Tự động">
               </div>
-              <div class="form-group" style="flex: 1; margin: 0;">
+              <div class="form-group" style="width: 100%; margin: 0;">
                 <label class="form-label" style="display: flex; align-items: center; justify-content: space-between;">
                   <span>Phiên âm IPA <span id="ipa-status-icon" class="status-icon"
                       style="display: none;"></span></span>
                   <button type="button" class="btn-audio" id="btn-preview-audio" title="Nghe thử phát âm"
                     style="display: none; width: 24px; height: 24px; font-size: 13px;">🔊</button>
                 </label>
-                <input type="text" id="word-ipa-input" class="form-input" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
+                <input type="text" id="word-ipa-input" class="form-input" style="width: 100%;" placeholder="Ví dụ: /ˈkɑːnfɪdənt/">
               </div>
             </div>
           </div>
@@ -1583,11 +1583,11 @@
   <!-- Scripts -->
   <script src="js/api.js?v=2"></script>
   <script src="js/treeview.js?v=2"></script>
-  <script src="js/words.js?v=2"></script>
+  <script src="js/words.js?v=3"></script>
   <script src="js/study.js?v=2"></script>
   <script src="js/app.js?v=2"></script>
   <script src="js/farm.js?v=1"></script>
-  <script src="js/game-matching.js?v=2"></script>
+  <script src="js/game-matching.js?v=3"></script>
 
 </body>
 

@@ -1126,10 +1126,23 @@ input:checked + .ios-slider:before {
 /* ==========================================================================
    Quizlet-Style Card Layout for Modal Thêm/Sửa Từ
    ========================================================================== */
+#modal-word.modal-backdrop {
+  overflow-y: auto;
+}
+
 .modal-quizlet-card {
-  max-width: 660px;
+  max-width: 650px;
+  height: auto;
+  max-height: none;
+  margin: auto;
   overflow: visible !important;
   position: relative;
+}
+
+#modal-word #form-word {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .modal-quizlet-card .modal-header {
@@ -1149,6 +1162,7 @@ input:checked + .ios-slider:before {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  max-height: none !important;
   overflow: visible !important;
 }
 
@@ -1165,11 +1179,19 @@ input:checked + .ios-slider:before {
   z-index: 10;
 }
 
-.quizlet-card-block:focus-within {
+.quizlet-card-block:focus-within,
+.quizlet-card-block:has(.autocomplete-dropdown[style*="block"]) {
   border-color: rgba(56, 139, 253, 0.4);
   background: rgba(56, 139, 253, 0.02);
   box-shadow: 0 0 12px rgba(56, 139, 253, 0.1);
-  z-index: 100 !important;
+  z-index: 200 !important;
+}
+
+/* Dropdown gợi ý nghĩa ở khối dưới mở hướng lên trên để không bị che nút Lưu hay bàn phím ảo */
+#meaning-autocomplete-dropdown {
+  top: auto;
+  bottom: calc(100% + 6px);
+  max-height: 220px;
 }
 
 .quizlet-block-header {
@@ -2384,16 +2406,43 @@ input:checked + .ios-slider:before {
     padding-bottom: calc(14px + env(safe-area-inset-bottom, 10px));
   }
 
-  .modal-quizlet-card {
-    margin: 15px auto auto auto !important;
-    align-self: flex-start !important;
-    width: 95% !important;
-    border-radius: var(--radius-xl) !important;
+  #modal-word.modal-backdrop {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding: 12px !important;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 24px !important;
   }
 
-  .quizlet-modal-body {
+  #modal-word .modal-quizlet-card,
+  body.keyboard-open #modal-word .modal-quizlet-card,
+  #modal-word.modal-backdrop:has(input:focus) .modal-quizlet-card {
+    margin: 5% auto 24px auto !important;
+    align-self: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    border-radius: var(--radius-xl) !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  body.keyboard-open #modal-word .modal-quizlet-card,
+  #modal-word.modal-backdrop:has(input:focus) .modal-quizlet-card {
+    margin-top: 4px !important;
+  }
+
+  #modal-word .quizlet-modal-body {
     padding: 14px 16px;
-    max-height: calc(88vh - 140px);
+    gap: 12px;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  #modal-word .modal-footer {
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 6px));
   }
 
   .quiz-options-grid {
@@ -2869,89 +2918,6 @@ input:checked + .ios-slider:before {
   input, select, textarea, .form-input, .form-select, .form-textarea, #global-search-input {
     font-size: 16px !important;
   }
-}
-
-/* ==========================================================================
-   Autocomplete & Input Icons
-   ========================================================================== */
-.autocomplete-wrapper {
-  position: relative;
-}
-
-.autocomplete-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  margin-top: 4px;
-  max-height: 250px;
-  overflow-y: auto;
-  z-index: 1000;
-  box-shadow: var(--shadow-lg);
-}
-
-.autocomplete-item {
-  padding: 10px 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--border-color);
-  transition: var(--transition);
-  font-size: 0.95rem;
-}
-
-.autocomplete-item:last-child {
-  border-bottom: none;
-}
-
-.autocomplete-item:hover, .autocomplete-item.active {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.autocomplete-icon {
-  font-size: 1.1rem;
-}
-
-.autocomplete-text {
-  flex: 1;
-  color: var(--text-primary);
-}
-
-.autocomplete-text strong {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.autocomplete-select-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  opacity: 0;
-  transition: var(--transition);
-}
-
-.autocomplete-item:hover .autocomplete-select-hint,
-.autocomplete-item.active .autocomplete-select-hint {
-  opacity: 1;
-}
-
-.input-with-icon-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.input-lead-icon {
-  position: absolute;
-  left: 12px;
-  font-size: 1.1rem;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-.form-input.has-lead-icon {
-  padding-left: 36px;
 }
 
 /* Status icon styling */

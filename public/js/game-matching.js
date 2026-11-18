@@ -3,7 +3,8 @@
  * VOCABMASTER - GAME GHÉP TỪ VỚI NGHĨA (MATCHING GAME)
  * Lưới 4x4 (16 ô: 8 từ tiếng Anh + 8 nghĩa tiếng Việt) hiển thị trực tiếp.
  * Không úp thẻ, không phải game lật thẻ trí nhớ.
- * Đúng: phát âm + xanh lá + mờ biến mất.
+ * Chỉ phát âm khi nhấn vào thẻ tiếng Anh; đúng/sai không phát âm lại.
+ * Đúng: xanh lá + mờ biến mất.
  * Sai: rung lắc đỏ + bỏ chọn sau 600ms.
  * Đồng hồ đếm giờ + số lượt thử + lưu kỷ lục localStorage.
  * Expose: window.MatchingGame
@@ -285,6 +286,14 @@
       });
     },
 
+    pronounceCardIfEnglish(cardEl) {
+      if (cardEl.getAttribute('data-type') !== 'en') return;
+      const wordText = cardEl.querySelector('.matching-card-text')?.textContent;
+      if (wordText && window.wordsManager?.playPronunciation) {
+        try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
+      }
+    },
+
     // =========================================================================
     // XỬ LÝ CHỌN VÀ GHÉP TỪ VỚI NGHĨA TRÊN LƯỚI MA TRẬN 4X4
     // =========================================================================
@@ -298,13 +307,8 @@
         cardEl.classList.add('selected');
         this.selectedCard = cardEl;
 
-        // Nếu chọn từ tiếng Anh, phát âm nhẹ
-        if (cardEl.getAttribute('data-type') === 'en') {
-          const wordText = cardEl.querySelector('.matching-card-text')?.textContent;
-          if (wordText && window.wordsManager?.playPronunciation) {
-            try { window.wordsManager.playPronunciation(wordText); } catch (e) {}
-          }
-        }
+        // Chỉ đọc khi nhấn vào thẻ tiếng Anh
+        this.pronounceCardIfEnglish(cardEl);
         return;
       }
 
@@ -318,6 +322,9 @@
       // 3. Đã có thẻ 1 đang chọn (cardA), vừa nhấp thẻ thứ 2 (cardB)
       const cardA = this.selectedCard;
       const cardB = cardEl;
+
+      // Chỉ đọc khi nhấn vào thẻ tiếng Anh (khi đúng hay sai không đọc lại)
+      this.pronounceCardIfEnglish(cardB);
 
       this.movesCount += 1;
       this.updateMovesDisplay();
@@ -333,13 +340,6 @@
       if (isMatch) {
         // ================= GHÉP ĐÚNG: 2 THẺ BIẾN MẤT =================
         this.playSound('match');
-
-        // Phát âm từ tiếng Anh vừa ghép đúng
-        const enCard = typeA === 'en' ? cardA : cardB;
-        const enWord = enCard.querySelector('.matching-card-text')?.textContent;
-        if (enWord && window.wordsManager?.playPronunciation) {
-          try { window.wordsManager.playPronunciation(enWord); } catch (e) {}
-        }
 
         // Viền xanh lá sáng rực báo đúng
         cardA.classList.remove('selected');

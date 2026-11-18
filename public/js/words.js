@@ -196,7 +196,7 @@ class WordsManager {
       }
 
       return `
-        <div class="autocomplete-item" data-index="${idx}" data-word="${this.escapeHtml(word)}" onclick="wordsManager.selectAutocompleteWord('${this.escapeJs(word)}')">
+        <div class="autocomplete-item" data-index="${idx}" data-word="${this.escapeHtml(word)}" onmousedown="event.preventDefault()" onclick="wordsManager.selectAutocompleteWord('${this.escapeJs(word)}')">
           <span class="autocomplete-icon">🔍</span>
           <span class="autocomplete-text">${highlighted}</span>
           <span class="autocomplete-select-hint">Chọn ↵</span>
@@ -222,6 +222,8 @@ class WordsManager {
   }
 
   selectAutocompleteWord(word) {
+    clearTimeout(this.autocompleteTimer);
+    clearTimeout(this.lookupDebounceTimer);
     const wordInput = document.getElementById('word-english-input');
     if (wordInput) {
       wordInput.value = word;
@@ -336,7 +338,7 @@ class WordsManager {
       }
 
       return `
-        <div class="autocomplete-item" data-index="${idx}" onclick="wordsManager.selectMeaningAutocomplete('${this.escapeJs(meaning)}')">
+        <div class="autocomplete-item" data-index="${idx}" onmousedown="event.preventDefault()" onclick="wordsManager.selectMeaningAutocomplete('${this.escapeJs(meaning)}')">
           <span class="autocomplete-icon">💡</span>
           <span class="autocomplete-text">${highlighted}</span>
           <span class="autocomplete-select-hint">Chọn ↵</span>
@@ -363,11 +365,10 @@ class WordsManager {
 
   selectMeaningAutocomplete(meaning) {
     const meaningInput = document.getElementById('word-meaning-input');
+    this.hideMeaningAutocomplete();
     if (meaningInput) {
       meaningInput.value = meaning;
-      meaningInput.focus();
     }
-    this.hideMeaningAutocomplete();
   }
 
   hideMeaningAutocomplete() {
