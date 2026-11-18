@@ -14,6 +14,11 @@
 (function () {
   'use strict';
 
+  const DEFAULT_MATCHING_SETTINGS = {
+    wordSource: 'unlearned', // 'unlearned' | 'learned' | 'custom'
+    selectedDayIds: []
+  };
+
   const MatchingGame = {
     isOpen: false,
     timerInterval: null,
@@ -23,21 +28,201 @@
     selectedCard: null,
     isLocked: false,
     currentWords: [],
+    settings: { ...DEFAULT_MATCHING_SETTINGS },
+    cachedSections: [],
 
     // Khởi tạo các sự kiện giao diện
     init() {
+      this.loadSettings();
       this.bindEvents();
       this.syncCloudBestRecord();
+    },
+
+    loadSettings() {
+      try {
+        const raw = localStorage.getItem('vm_matching_settings');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          this.settings = {
+            wordSource: ['unlearned', 'learned', 'custom'].includes(parsed.wordSource) ? parsed.wordSource : 'unlearned',
+            selectedDayIds: Array.isArray(parsed.selectedDayIds) ? parsed.selectedDayIds : []
+          };
+        }
+      } catch (e) {
+        this.settings = { ...DEFAULT_MATCHING_SETTINGS };
+      }
+    },
+
+    saveSettings() {
+      try {
+        localStorage.setItem('vm_matching_settings', JSON.stringify(this.settings));
+      } catch (e) {}
     },
 
     bindEvents() {
       document.getElementById('matching-btn-close')?.addEventListener('click', () => this.close());
       document.getElementById('matching-btn-restart')?.addEventListener('click', () => this.restart());
+      document.getElementById('matching-btn-settings')?.addEventListener('click', () => this.openSettingsModal());
       document.getElementById('matching-victory-restart-btn')?.addEventListener('click', () => this.restart());
       document.getElementById('matching-victory-close-btn')?.addEventListener('click', () => {
         this.hideVictoryModal();
         this.close();
       });
+
+      // Sự kiện trong Overlay Cài đặt nguồn từ
+      const settingsOverlay = document.getElementById('matching-settings-overlay');
+      document.getElementById('matching-settings-close-btn')?.addEventListener('click', () => this.closeSettingsModal(true));
+      document.getElementById('matching-settings-cancel-btn')?.addEventListener('click', () => this.closeSettingsModal(true));
+      document.getElementById('matching-settings-save-btn')?.addEventListener('click', () => this.saveSettingsFromUI());
+
+      settingsOverlay?.addEventListener('click', (e) => {
+        if (e.target === settingsOverlay) this.closeSettingsModal(true);
+      });
+
+      document.querySelectorAll('input[name="matching-word-source"]').forEach(r => {
+        r.addEventListener('change', (e) => {
+          const wrap = document.getElementById('matching-custom-days-wrap');
+          if (wrap) wrap.style.display = (e.target.value === 'custom') ? 'block' : 'none';
+        });
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen) {
+          const overlay = document.getElementById('matching-settings-overlay');
+          if (overlay && overlay.classList.contains('active')) {
+            this.closeSettingsModal(true);
+          }
+        }
+      });
+    },
+
+    // =========================================================================
+    // CÀI ĐẶT NGUỒN TỪ (GIỐNG GAME NÔNG TRẠI)
+    // =========================================================================
+    async openSettingsModal() {
+      const overlay = document.getElementById('matching-settings-overlay');
+      if (!overlay) return;
+
+      // Tạm dừng đồng hồ khi đang chọn cài đặt
+      this.stopTimer();
+
+      const radio = overlay.querySelector(`input[name="matching-word-source"][value="${this.settings.wordSource}"]`);
+      if (radio) radio.checked = true;
+
+      const customWrap = document.getElementById('matching-custom-days-wrap');
+      if (customWrap) {
+        customWrap.style.display = (this.settings.wordSource === 'custom') ? 'block' : 'none';
+      }
+
+      await this.renderCustomDaysChecklist();
+
+      const bodyEl = overlay.querySelector('.matching-settings-body');
+      if (bodyEl) bodyEl.scrollTop = 0;
+
+      overlay.classList.add('active');
+    },
+
+    closeSettingsModal(resumeTimer = false) {
+      const overlay = document.getElementById('matching-settings-overlay');
+      if (overlay) overlay.classList.remove('active');
+
+      if (resumeTimer && this.isOpen && this.matchedPairsCount < this.currentWords.length) {
+        this.startTimer();
+      }
+    },
+
+    async renderCustomDaysChecklist() {
+      const container = document.getElementById('matching-custom-days-checklist');
+      if (!container) return;
+
+      try {
+        let sections = [];
+        if (window.api && typeof window.api.getSections === 'function') {
+          const secRes = await window.api.getSections();
+          sections = secRes.data || [];
+        } else if (window.treeViewManager?.sections) {
+          sections = window.treeViewManager.sections;
+        }
+        this.cachedSections = sections;
+
+        let html = '';
+        for (const sec of sections) {
+          const days = sec.days || [];
+          if (days.length === 0) continue;
+
+          const allChecked = days.every(d => this.settings.selectedDayIds.some(id => String(id) === String(d.id)));
+
+          html += `
+            <label class="matching-section-check-row">
+              <input type="checkbox" class="matching-section-checkbox" data-section-id="${sec.id}" ${allChecked ? 'checked' : ''}>
+              <span>📁 ${this.escapeHtml(sec.title)}</span>
+            </label>
+          `;
+          for (const d of days) {
+            const isChecked = this.settings.selectedDayIds.some(id => String(id) === String(d.id));
+            html += `
+              <label class="matching-radio-item matching-day-check-item">
+                <input type="checkbox" class="matching-custom-day-checkbox" data-section-id="${sec.id}" value="${d.id}" ${isChecked ? 'checked' : ''}>
+                <span>${this.escapeHtml(d.title)}</span>
+              </label>
+            `;
+          }
+        }
+        container.innerHTML = html || '<div style="color:#94a3b8; font-size:0.82rem; padding:6px;">Chưa có ngày học nào</div>';
+
+        // Gắn sự kiện chọn tất cả ngày trong một Phần
+        container.querySelectorAll('.matching-section-checkbox').forEach(secCb => {
+          secCb.addEventListener('change', () => {
+            const secId = secCb.getAttribute('data-section-id');
+            container.querySelectorAll(`.matching-custom-day-checkbox[data-section-id="${secId}"]`).forEach(dayCb => {
+              dayCb.checked = secCb.checked;
+            });
+          });
+        });
+
+        // Đồng bộ lại checkbox Phần khi tích/bỏ từng Ngày
+        container.querySelectorAll('.matching-custom-day-checkbox').forEach(dayCb => {
+          dayCb.addEventListener('change', () => {
+            const secId = dayCb.getAttribute('data-section-id');
+            const secCb = container.querySelector(`.matching-section-checkbox[data-section-id="${secId}"]`);
+            if (secCb) {
+              const allDays = Array.from(container.querySelectorAll(`.matching-custom-day-checkbox[data-section-id="${secId}"]`));
+              secCb.checked = allDays.length > 0 && allDays.every(cb => cb.checked);
+            }
+          });
+        });
+      } catch (e) {
+        container.innerHTML = '<div style="color:#94a3b8; font-size:0.82rem; padding:6px;">Không tải được danh sách ngày</div>';
+      }
+    },
+
+    async saveSettingsFromUI() {
+      const overlay = document.getElementById('matching-settings-overlay');
+      if (!overlay) return;
+
+      const sourceRadio = overlay.querySelector('input[name="matching-word-source"]:checked');
+      const wordSource = sourceRadio ? sourceRadio.value : 'unlearned';
+      const selectedDayIds = [];
+
+      if (wordSource === 'custom') {
+        overlay.querySelectorAll('.matching-custom-day-checkbox:checked').forEach(cb => {
+          selectedDayIds.push(parseInt(cb.value, 10));
+        });
+        if (selectedDayIds.length === 0) {
+          if (window.showToast) window.showToast('⚠️ Vui lòng chọn ít nhất 1 ngày để chơi!');
+          return;
+        }
+      }
+
+      this.settings.wordSource = wordSource;
+      this.settings.selectedDayIds = selectedDayIds;
+      this.saveSettings();
+      this.closeSettingsModal(false);
+
+      if (window.showToast) {
+        window.showToast('✅ Đã lưu nguồn từ! Đang tạo ván mới...');
+      }
+      await this.startNewGame();
     },
 
     // =========================================================================
@@ -67,6 +252,7 @@
     close() {
       this.isOpen = false;
       this.stopTimer();
+      this.closeSettingsModal(false);
 
       const gameView = document.getElementById('matching-game-view');
       const bubble = document.getElementById('game-bubble');
@@ -123,72 +309,95 @@
     },
 
     // =========================================================================
-    // NGUỒN TỪ: Ưu tiên chưa thuộc -> Bù đã thuộc -> Fallback
+    // NGUỒN TỪ: Lấy ngẫu nhiên 8 từ từ danh sách đã chọn trong Cài đặt
     // =========================================================================
     async fetchWords() {
-      const dayId = window.treeViewManager?.currentDayId;
-      let words = [];
+      let selectedPool = [];
+      const source = this.settings.wordSource || 'unlearned';
 
-      // 1. Nếu có Ngày đang chọn
-      if (dayId && window.api) {
+      const appendUnique = (targetArr, items) => {
+        for (const w of (items || [])) {
+          if (!w || !w.word || !w.meaning) continue;
+          const exists = targetArr.some(item =>
+            (item.id && w.id && String(item.id) === String(w.id)) ||
+            item.word.toLowerCase() === w.word.toLowerCase()
+          );
+          if (!exists) targetArr.push(w);
+        }
+      };
+
+      // 1. Tải toàn bộ danh sách từ theo nguồn đã chọn trong Cài đặt
+      if (window.api) {
         try {
-          const resUnlearned = await window.api.getWords(dayId, 'unlearned');
-          const unlearned = resUnlearned.data || [];
-          words = words.concat(unlearned);
-
-          if (words.length < 8) {
-            const resLearned = await window.api.getWords(dayId, 'learned');
-            const learned = resLearned.data || [];
-            for (const w of learned) {
-              if (!words.some(item => item.id === w.id)) {
-                words.push(w);
-                if (words.length >= 8) break;
-              }
+          if (source === 'unlearned') {
+            const res = await window.api.getUnlearnedWords();
+            appendUnique(selectedPool, res.data || []);
+          } else if (source === 'learned') {
+            let sections = this.cachedSections || [];
+            if (sections.length === 0 && typeof window.api.getSections === 'function') {
+              const secRes = await window.api.getSections();
+              sections = secRes.data || [];
+              this.cachedSections = sections;
+            }
+            const allDayIds = [];
+            sections.forEach(sec => (sec.days || []).forEach(d => allDayIds.push(d.id)));
+            if (allDayIds.length > 0 && typeof window.api.getWordsByDays === 'function') {
+              const res = await window.api.getWordsByDays(allDayIds, 'learned');
+              appendUnique(selectedPool, res.data || []);
+            } else if (window.treeViewManager?.currentDayId) {
+              const res = await window.api.getWords(window.treeViewManager.currentDayId, 'learned');
+              appendUnique(selectedPool, res.data || []);
+            }
+          } else if (source === 'custom' && this.settings.selectedDayIds.length > 0) {
+            if (typeof window.api.getWordsByDays === 'function') {
+              const res = await window.api.getWordsByDays(this.settings.selectedDayIds, 'all');
+              appendUnique(selectedPool, res.data || []);
             }
           }
         } catch (e) {
-          console.warn('Lỗi lấy từ theo ngày:', e);
+          console.warn('Lỗi tải danh sách từ theo cài đặt:', e);
         }
       }
 
-      // 2. Nếu vẫn chưa đủ 8 từ, lấy từ chưa thuộc toàn hệ thống
-      if (words.length < 8 && window.api) {
+      // 2. Xáo trộn NGẪU NHIÊN trong danh sách đã chọn và lấy tối đa 8 từ
+      let chosen = this.shuffle(selectedPool).slice(0, 8);
+
+      // 3. Nếu danh sách đã chọn có ít hơn 8 từ, bù thêm từ kho để đủ lưới 4x4 (16 ô)
+      if (chosen.length < 8 && window.api) {
+        const originalCount = chosen.length;
+        const extraPool = [];
         try {
-          const resAllUnlearned = await window.api.getUnlearnedWords();
-          const allUnlearned = resAllUnlearned.data || [];
-          for (const w of allUnlearned) {
-            if (!words.some(item => item.id === w.id)) {
-              words.push(w);
-              if (words.length >= 8) break;
+          const resUnlearned = await window.api.getUnlearnedWords();
+          appendUnique(extraPool, resUnlearned.data || []);
+        } catch (e) {}
+
+        if (chosen.length + extraPool.length < 8) {
+          try {
+            const sections = this.cachedSections.length > 0
+              ? this.cachedSections
+              : (window.treeViewManager?.sections || []);
+            const allDayIds = [];
+            sections.forEach(sec => (sec.days || []).forEach(d => allDayIds.push(d.id)));
+            if (allDayIds.length > 0 && typeof window.api.getWordsByDays === 'function') {
+              const resAll = await window.api.getWordsByDays(allDayIds, 'all');
+              appendUnique(extraPool, resAll.data || []);
             }
-          }
-        } catch (e) {
-          console.warn('Lỗi lấy từ chưa thuộc toàn app:', e);
+          } catch (e) {}
+        }
+
+        const shuffledExtra = this.shuffle(extraPool);
+        for (const w of shuffledExtra) {
+          if (chosen.length >= 8) break;
+          appendUnique(chosen, [w]);
+        }
+
+        if (originalCount > 0 && originalCount < 8 && window.showToast) {
+          window.showToast(`ℹ️ Danh sách chọn có ${originalCount} từ, đã bổ sung thêm cho đủ 8 cặp.`);
         }
       }
 
-      // 3. Nếu vẫn chưa đủ 8 từ, quét tất cả các ngày trong sections
-      if (words.length < 8 && window.treeViewManager?.sections && window.api) {
-        const sections = window.treeViewManager.sections;
-        for (const sec of sections) {
-          if (words.length >= 8) break;
-          for (const day of (sec.days || [])) {
-            if (words.length >= 8) break;
-            try {
-              const res = await window.api.getWords(day.id, 'all');
-              for (const w of (res.data || [])) {
-                if (!words.some(item => item.id === w.id)) {
-                  words.push(w);
-                  if (words.length >= 8) break;
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
-
-      // 4. Fallback mặc định nếu database chưa có từ nào
-      if (words.length < 8) {
+      // 4. Fallback mặc định nếu database chưa đủ 8 từ
+      if (chosen.length < 8) {
         const fallbackList = [
           { id: 'fb_1', word: 'Achieve', ipa: '/əˈtʃiːv/', meaning: 'Đạt được' },
           { id: 'fb_2', word: 'Improve', ipa: '/ɪmˈpruːv/', meaning: 'Cải thiện' },
@@ -199,33 +408,41 @@
           { id: 'fb_7', word: 'Remember', ipa: '/rɪˈmembər/', meaning: 'Ghi nhớ' },
           { id: 'fb_8', word: 'Knowledge', ipa: '/ˈnɑːlɪdʒ/', meaning: 'Kiến thức' }
         ];
-        for (const fb of fallbackList) {
-          if (!words.some(item => item.word.toLowerCase() === fb.word.toLowerCase())) {
-            words.push(fb);
-            if (words.length >= 8) break;
-          }
+        for (const fb of this.shuffle(fallbackList)) {
+          if (chosen.length >= 8) break;
+          appendUnique(chosen, [fb]);
         }
       }
 
-      // Trộn ngẫu nhiên và chọn đúng 8 từ
-      return this.shuffle(words).slice(0, 8);
+      return this.shuffle(chosen).slice(0, 8);
     },
 
     updateTopicLabel() {
       const label = document.getElementById('matching-topic-label');
       if (!label) return;
 
-      const dayId = window.treeViewManager?.currentDayId;
-      if (dayId && window.treeViewManager?.sections) {
-        let foundTitle = '';
-        for (const sec of window.treeViewManager.sections) {
-          const d = (sec.days || []).find(x => x.id === dayId);
-          if (d) {
-            foundTitle = `${sec.title} • ${d.title}`;
-            break;
+      const source = this.settings.wordSource || 'unlearned';
+      if (source === 'unlearned') {
+        label.textContent = 'Từ chưa thuộc';
+      } else if (source === 'learned') {
+        label.textContent = 'Từ đã thuộc';
+      } else if (source === 'custom') {
+        const count = this.settings.selectedDayIds.length;
+        if (count === 1) {
+          const targetId = String(this.settings.selectedDayIds[0]);
+          const sections = this.cachedSections.length > 0 ? this.cachedSections : (window.treeViewManager?.sections || []);
+          let foundTitle = '';
+          for (const sec of sections) {
+            const d = (sec.days || []).find(x => String(x.id) === targetId);
+            if (d) {
+              foundTitle = `${sec.title} • ${d.title}`;
+              break;
+            }
           }
+          label.textContent = foundTitle || 'Tuỳ chọn (1 ngày)';
+        } else {
+          label.textContent = count > 0 ? `Tuỳ chọn (${count} ngày)` : 'Tuỳ chọn';
         }
-        label.textContent = foundTitle || `Ngày ${dayId}`;
       } else {
         label.textContent = 'Kho Từ Vựng';
       }

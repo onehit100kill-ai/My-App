@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/farm.css">
-  <link rel="stylesheet" href="css/game-matching.css?v=3">
+  <link rel="stylesheet" href="css/game-matching.css?v=4">
 </head>
 
 <body>
@@ -1534,6 +1534,7 @@
         <div class="matching-stat-chip matching-timer-chip">⏱️ <span id="matching-timer">00:00</span></div>
       </div>
       <div class="matching-hud-right">
+        <button type="button" class="matching-btn-icon" id="matching-btn-settings" title="Cài đặt nguồn từ">⚙️</button>
         <button type="button" class="matching-btn-icon" id="matching-btn-restart" title="Chơi lại">🔄</button>
         <button type="button" class="matching-btn-icon matching-btn-close" id="matching-btn-close"
           title="Đóng game">✕</button>
@@ -1573,6 +1574,43 @@
         </div>
       </div>
     </div>
+
+    <!-- Overlay Cài Đặt Nguồn Từ (Giống Game Nông Trại) -->
+    <div class="matching-settings-overlay" id="matching-settings-overlay">
+      <div class="matching-settings-card">
+        <div class="matching-settings-header">
+          <h3 class="matching-settings-title">⚙️ Cài Đặt Nguồn Từ</h3>
+          <button type="button" class="matching-btn-icon matching-btn-close" id="matching-settings-close-btn"
+            title="Đóng">✕</button>
+        </div>
+        <div class="matching-settings-body">
+          <div class="matching-settings-group">
+            <div class="matching-settings-label">📚 Chọn nguồn từ vựng (lấy ngẫu nhiên 8 từ):</div>
+            <label class="matching-radio-item">
+              <input type="radio" name="matching-word-source" value="unlearned" checked>
+              <span>Từ chưa thuộc (Mặc định)</span>
+            </label>
+            <label class="matching-radio-item">
+              <input type="radio" name="matching-word-source" value="learned">
+              <span>Từ đã thuộc (Chế độ ôn lại)</span>
+            </label>
+            <label class="matching-radio-item">
+              <input type="radio" name="matching-word-source" value="custom">
+              <span>Tuỳ chọn theo Ngày & Phần</span>
+            </label>
+            <div id="matching-custom-days-wrap" class="matching-custom-days-wrap" style="display: none;">
+              <div class="matching-custom-days-list" id="matching-custom-days-checklist">
+                <!-- Render động checklist Phần & Ngày -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="matching-settings-footer">
+          <button type="button" class="btn btn-secondary" id="matching-settings-cancel-btn">Hủy</button>
+          <button type="button" class="btn btn-primary" id="matching-settings-save-btn">💾 Lưu & Chơi</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
@@ -1582,7 +1620,7 @@
   <script src="js/study.js?v=2"></script>
   <script src="js/app.js?v=2"></script>
   <script src="js/farm.js?v=1"></script>
-  <script src="js/game-matching.js?v=4"></script>
+  <script src="js/game-matching.js?v=5"></script>
 
 </body>
 

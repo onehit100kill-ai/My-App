@@ -472,7 +472,177 @@
   min-height: 42px;
 }
 
-/* 9. ĐIỀU CHỈNH RESPONSIVE CHO MÀN HÌNH NHỎ (MOBILE <= 640px) */
+/* 9. OVERLAY CÀI ĐẶT NGUỒN TỪ (GIỐNG GAME NÔNG TRẠI) */
+.matching-settings-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.matching-settings-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.matching-settings-card {
+  background: #161b22;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+  transform: translateY(16px) scale(0.98);
+  transition: transform 0.22s ease;
+}
+
+.matching-settings-overlay.active .matching-settings-card {
+  transform: translateY(0) scale(1);
+}
+
+.matching-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.matching-settings-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.matching-settings-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.matching-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.matching-settings-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 2px;
+}
+
+.matching-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.matching-radio-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.matching-radio-item input[type="radio"],
+.matching-radio-item input[type="checkbox"] {
+  accent-color: #38bdf8;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.matching-custom-days-wrap {
+  margin-top: 4px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.matching-custom-days-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.matching-section-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #38bdf8;
+  font-size: 0.85rem;
+  margin-top: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.matching-section-check-row:first-child {
+  margin-top: 0;
+}
+
+.matching-section-check-row:hover {
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.matching-section-check-row input[type="checkbox"] {
+  accent-color: #38bdf8;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.matching-day-check-item {
+  margin-left: 18px;
+  padding: 6px 10px;
+  font-size: 0.84rem;
+}
+
+.matching-settings-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.matching-settings-footer button {
+  flex: 1;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+/* 10. ĐIỀU CHỈNH RESPONSIVE CHO MÀN HÌNH NHỎ (MOBILE <= 640px) */
 @media (max-width: 640px) {
   .matching-topic-label {
     display: none;
@@ -484,26 +654,27 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+    gap: 6px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 10px 10px;
     min-height: 54px;
   }
   .matching-title-badge {
-    font-size: 0.82rem;
-    padding: 5px 10px;
-    gap: 5px;
+    font-size: 0.78rem;
+    padding: 5px 9px;
+    gap: 4px;
   }
   .matching-stat-chip {
-    font-size: 0.84rem;
-    padding: 5px 12px;
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    gap: 4px;
   }
   .matching-btn-icon {
-    width: 34px;
-    height: 34px;
-    font-size: 15px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
   .matching-hud-right {
-    gap: 6px;
+    gap: 5px;
   }
   .matching-grid {
     gap: 6px;
